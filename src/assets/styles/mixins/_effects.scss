@@ -1,0 +1,5 @@
+@use 'sass:math';
+
+@for $i from 0 through 10 {
+  .combo-op-#{$i} { opacity: #{math.div($i, 10)} !important; }
+}

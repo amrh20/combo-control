@@ -1,0 +1,17 @@
+// Define your scale
+$line-heights: (
+  "1": 1,
+  "12": 1.2,
+  "15": 1.5,
+  "16": 1.6,
+  "17": 1.7,
+  "18": 1.8,
+  "2": 2
+);
+
+// Loop to generate classes
+@each $name, $value in $line-heights {
+  .combo-lh-#{$name} {
+    line-height: #{$value} !important;
+  }
+}

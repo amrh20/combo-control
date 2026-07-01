@@ -1,0 +1,57 @@
+.orders-management {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  &__title {
+    margin: 0 0 4px;
+    font-family: 'Alexandria', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--Combo-text-text-display);
+    line-height: 1.3;
+  }
+
+  &__subtitle {
+    margin: 0;
+    font-size: 13px;
+    color: var(--Combo-text-text-secondary-paragraph);
+    max-width: 520px;
+  }
+
+  &__live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--Combo-text-text-success);
+    background: var(--Combo-bg-background-success-50);
+    border: 1px solid var(--Combo-border-border-success-light);
+    border-radius: 20px;
+    flex-shrink: 0;
+  }
+
+  &__live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--Combo-bg-background-success);
+    animation: orders-live-pulse 1.8s ease-in-out infinite;
+  }
+}
+
+@keyframes orders-live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.85); }
+}

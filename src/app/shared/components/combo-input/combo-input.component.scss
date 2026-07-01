@@ -1,0 +1,49 @@
+.combo-input {
+  position: relative;
+  width: 100%;
+
+  &--with-icon .combo-input__field {
+    padding-left: 36px !important;
+  }
+
+  &__icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    color: var(--Combo-icon-icon-neutral);
+    pointer-events: none;
+    z-index: 1;
+  }
+}
+
+:host ::ng-deep {
+  .combo-input__field.p-inputtext,
+  .combo-input__field {
+    width: 100%;
+    font-family: 'Alexandria', sans-serif;
+    font-size: 14px;
+    color: var(--Combo-text-text-default) !important;
+    background-color: var(--Combo-bg-background-card) !important;
+    border: 1px solid var(--Combo-form-field-border-default) !important;
+    border-radius: 8px !important;
+    padding: 9px 12px !important;
+    box-shadow: none !important;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+
+    &:focus {
+      border-color: var(--Combo-border-border-primary) !important;
+      box-shadow: 0 0 0 3px var(--Combo-bg-background-primary-50) !important;
+    }
+
+    &::placeholder {
+      color: var(--Combo-text-text-secondary-paragraph);
+    }
+
+    &:disabled {
+      background-color: var(--Combo-bg-background-neutral-100) !important;
+      cursor: not-allowed;
+    }
+  }
+}

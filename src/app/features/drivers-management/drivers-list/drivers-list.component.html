@@ -1,0 +1,141 @@
+<div class="drivers-list">
+
+  <div class="drivers-list__header">
+    <div class="drivers-list__header-text">
+      <h1 class="drivers-list__title">Drivers & Fleet Management</h1>
+      <p class="drivers-list__subtitle">
+        Monitor driver availability, account status, and delivery performance across zones.
+      </p>
+    </div>
+  </div>
+
+  <div class="drivers-list__toolbar">
+    <div class="drivers-list__search-wrap">
+      <combo-input
+        inputId="driverSearch"
+        type="search"
+        icon="pi-search"
+        placeholder="Search by name, phone, or zone..."
+        [value]="searchQuery()"
+        (valueChange)="onSearchChange($event)"
+      />
+      @if (searchQuery()) {
+        <button
+          type="button"
+          class="drivers-list__search-clear"
+          title="Clear search"
+          (click)="clearSearch()"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      }
+    </div>
+    <span class="drivers-list__result-count">
+      {{ filteredDrivers().length }} driver{{ filteredDrivers().length === 1 ? '' : 's' }}
+    </span>
+  </div>
+
+  <div class="drivers-list__card">
+    <p-table
+      [value]="filteredDrivers()"
+      [paginator]="true"
+      [rows]="10"
+      [rowsPerPageOptions]="[10, 25]"
+      [tableStyle]="{ 'min-width': '72rem' }"
+      sortMode="single"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th pSortableColumn="id" class="drivers-list__th" style="width: 100px">
+            Driver ID <p-sortIcon field="id" />
+          </th>
+          <th pSortableColumn="name" class="drivers-list__th">
+            Name <p-sortIcon field="name" />
+          </th>
+          <th class="drivers-list__th" style="width: 150px">Phone</th>
+          <th pSortableColumn="zoneName" class="drivers-list__th">
+            Assigned Zone <p-sortIcon field="zoneName" />
+          </th>
+          <th pSortableColumn="availability" class="drivers-list__th" style="width: 130px">
+            Availability <p-sortIcon field="availability" />
+          </th>
+          <th pSortableColumn="accountStatus" class="drivers-list__th" style="width: 120px">
+            Account <p-sortIcon field="accountStatus" />
+          </th>
+          <th class="drivers-list__th drivers-list__th--center" style="width: 140px">
+            Active
+          </th>
+          <th class="drivers-list__th drivers-list__th--center" style="width: 200px">
+            Actions
+          </th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-driver>
+        <tr [class.drivers-list__row--inactive]="driver.accountStatus === 'inactive'">
+          <td>
+            <code class="drivers-list__id-pill">{{ driver.id }}</code>
+          </td>
+          <td>
+            <span class="drivers-list__name" dir="rtl">{{ driver.name }}</span>
+          </td>
+          <td>
+            <span class="drivers-list__phone">{{ driver.phone }}</span>
+          </td>
+          <td>
+            <span class="drivers-list__zone">
+              <i class="pi pi-map-marker"></i>
+              <span dir="rtl">{{ driver.zoneName }}</span>
+            </span>
+          </td>
+          <td>
+            <span
+              class="drivers-list__badge"
+              [class]="'drivers-list__badge--' + driver.availability"
+            >
+              <span class="drivers-list__badge-dot"></span>
+              {{ availabilityConfig[driver.availability].label }}
+            </span>
+          </td>
+          <td>
+            <span
+              class="drivers-list__badge drivers-list__badge--account"
+              [class]="'drivers-list__badge--account-' + driver.accountStatus"
+            >
+              {{ accountStatusConfig[driver.accountStatus].label }}
+            </span>
+          </td>
+          <td class="drivers-list__td--center">
+            <p-toggleswitch
+              [ngModel]="isAccountActive(driver)"
+              (ngModelChange)="onAccountToggle(driver.id, $event)"
+              [inputId]="'acct-' + driver.id"
+            />
+          </td>
+          <td class="drivers-list__td--center">
+            <a
+              [routerLink]="['/drivers', driver.id]"
+              class="drivers-list__profile-btn"
+            >
+              <i class="pi pi-user"></i>
+              View Full Profile & Stats
+            </a>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="8" class="drivers-list__empty">
+            @if (searchQuery()) {
+              No drivers match your search.
+            } @else {
+              No drivers found.
+            }
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+</div>

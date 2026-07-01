@@ -1,0 +1,70 @@
+<div class="zone-map">
+
+  <!-- Location search -->
+  <div class="zone-map__search" (focusout)="closeSearchResults()">
+    <div class="zone-map__search-wrap">
+      <i class="pi pi-search zone-map__search-icon"></i>
+      <input
+        type="text"
+        class="zone-map__search-input"
+        placeholder="Search for an area… e.g. Nasr City, Zamalek"
+        [value]="searchQuery()"
+        (input)="onSearchInput($event)"
+        (focus)="onSearchFocus()"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      @if (searchLoading()) {
+        <i class="pi pi-spin pi-spinner zone-map__search-spinner"></i>
+      } @else if (searchQuery()) {
+        <button
+          type="button"
+          class="zone-map__search-clear"
+          (mousedown)="$event.preventDefault()"
+          (click)="clearSearch()"
+          aria-label="Clear search"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      }
+    </div>
+
+    @if (searchOpen() && searchResults().length > 0) {
+      <ul class="zone-map__search-results">
+        @for (place of searchResults(); track place.placeId) {
+          <li>
+            <button
+              type="button"
+              class="zone-map__search-result"
+              (mousedown)="$event.preventDefault()"
+              (click)="selectPlace(place)"
+            >
+              <i class="pi pi-map-marker"></i>
+              <span>{{ place.displayName }}</span>
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+
+  <!-- Leaflet mounts here -->
+  <div #mapContainer class="zone-map__canvas"></div>
+
+  <!-- Area badge (Phase 4) -->
+  @if (hasPolygon() && areaSqKm() !== null) {
+    <div class="zone-map__badge">
+      <i class="pi pi-chart-pie"></i>
+      <span>Area: {{ areaSqKm() | number: '1.0-2' }} km²</span>
+    </div>
+  }
+
+  <!-- Helper hint while nothing is drawn -->
+  @if (!hasPolygon()) {
+    <div class="zone-map__hint">
+      <i class="pi pi-pencil"></i>
+      Use the polygon tool (top-left) to draw the delivery zone.
+    </div>
+  }
+
+</div>

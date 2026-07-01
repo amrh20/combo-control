@@ -1,0 +1,23 @@
+<header class="topbar">
+  <div class="topbar__start">
+    <button class="topbar__icon-btn" (click)="toggleSidebar.emit()" aria-label="Toggle sidebar">
+      <i class="pi pi-bars"></i>
+    </button>
+    <h1 class="topbar__title">{{ pageTitle() }}</h1>
+  </div>
+
+  <div class="topbar__end">
+    <!-- Notification bell -->
+    <button class="topbar__icon-btn topbar__icon-btn--border" aria-label="Notifications">
+      <i class="pi pi-bell"></i>
+      <span class="topbar__badge">3</span>
+    </button>
+
+    <!-- User chip -->
+    <div class="topbar__user">
+      <div class="topbar__avatar">A</div>
+      <span class="topbar__username">Admin</span>
+      <i class="pi pi-chevron-down" style="font-size: 11px"></i>
+    </div>
+  </div>
+</header>

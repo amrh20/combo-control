@@ -1,0 +1,111 @@
+<div class="ops-board">
+
+  <!-- ── Left: Active Orders List ─────────────────────────── -->
+  <aside class="ops-board__list-panel">
+    <div class="ops-board__list-header">
+      <h2 class="ops-board__list-title">Active Orders</h2>
+      <span class="ops-board__list-count">{{ filteredActiveOrders().length }}</span>
+    </div>
+
+    <div class="ops-board__search">
+      <combo-input
+        inputId="orderSearch"
+        type="search"
+        icon="pi-search"
+        placeholder="Order ID, customer name, or phone..."
+        [value]="searchQuery()"
+        (valueChange)="onSearchChange($event)"
+      />
+      @if (searchQuery()) {
+        <button
+          type="button"
+          class="ops-board__search-clear"
+          title="Clear search"
+          (click)="clearSearch()"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      }
+    </div>
+
+    <div class="ops-board__list-scroll">
+      @if (groupedOrders().length === 0) {
+        <div class="ops-board__empty">
+          <i class="pi" [class.pi-search]="searchQuery()" [class.pi-inbox]="!searchQuery()"></i>
+          @if (searchQuery()) {
+            <p>No orders match your search.</p>
+          } @else {
+            <p>No active orders right now.</p>
+          }
+        </div>
+      }
+
+      @for (group of groupedOrders(); track group.status) {
+        <div class="ops-board__status-group">
+          <div class="ops-board__status-group-header">
+            <span
+              class="ops-board__status-dot"
+              [class]="'ops-board__status-dot--' + group.status"
+            ></span>
+            <span class="ops-board__status-group-label">{{ group.label }}</span>
+            <span class="ops-board__status-group-count">{{ group.orders.length }}</span>
+          </div>
+
+          @for (order of group.orders; track order.id) {
+            <button
+              type="button"
+              class="ops-board__order-card"
+              [class.ops-board__order-card--selected]="selectedOrderId() === order.id"
+              (click)="selectOrder(order.id)"
+            >
+              <div class="ops-board__order-card-top">
+                <code class="ops-board__order-id">{{ order.id }}</code>
+                <span class="ops-board__order-age">{{ formatAge(order.createdAt) }}</span>
+              </div>
+
+              <span class="ops-board__customer-name" dir="rtl">{{ order.customer.name }}</span>
+
+              <div class="ops-board__order-meta">
+                <span class="ops-board__zone">
+                  <i class="pi pi-map-marker"></i>
+                  <span dir="rtl">{{ order.zoneName }}</span>
+                </span>
+                <span class="ops-board__total">
+                  {{ calcTotal(order) | number: '1.2-2' }} {{ currency }}
+                </span>
+              </div>
+
+              <div class="ops-board__shop-tags">
+                @for (shop of order.shopGroups; track shop.shopId) {
+                  <span class="ops-board__shop-tag" dir="rtl">{{ shop.shopName }}</span>
+                }
+              </div>
+            </button>
+          }
+        </div>
+      }
+    </div>
+  </aside>
+
+  <!-- ── Right: Order Details / Action Panel ──────────────── -->
+  <section class="ops-board__detail-panel">
+    @if (selectedOrder(); as order) {
+      <ctrl-order-action-panel
+        [order]="order"
+        [zoneDrivers]="zoneDrivers()"
+        (itemOutOfStock)="onItemOutOfStock($event)"
+        (itemUpdate)="onItemUpdate($event)"
+        (itemDelete)="onItemDelete($event)"
+        (advanceStatus)="onAdvanceStatus($event)"
+        (dispatch)="onDispatch($event)"
+      />
+    } @else {
+      <div class="ops-board__detail-empty">
+        <i class="pi pi-list-check"></i>
+        <h3>Select an order</h3>
+        <p>Choose an active order from the list to review and dispatch.</p>
+      </div>
+    }
+  </section>
+
+</div>

@@ -1,0 +1,113 @@
+<div class="zones-management">
+
+  <!-- ── Page Header ──────────────────────────────────────── -->
+  <div class="zones-management__header">
+    <div class="zones-management__header-text">
+      <h1 class="zones-management__title">Zones Management</h1>
+      <p class="zones-management__subtitle">Manage delivery hubs, streets, and coverage areas.</p>
+    </div>
+
+    <p-button
+      label="Create New Zone"
+      icon="pi pi-plus"
+      styleClass="zones-management__create-btn"
+      [routerLink]="['/zones/create']"
+    />
+  </div>
+
+  <!-- ── Table Card ───────────────────────────────────────── -->
+  <div class="zones-management__card">
+    <p-table
+      [value]="zones"
+      [paginator]="true"
+      [rows]="10"
+      [rowsPerPageOptions]="[10, 25, 50]"
+      [tableStyle]="{ 'min-width': '56rem' }"
+      sortMode="single"
+    >
+
+      <!-- Header -->
+      <ng-template pTemplate="header">
+        <tr>
+          <th pSortableColumn="id" class="zones-management__th" style="width: 110px">
+            Zone ID <p-sortIcon field="id" />
+          </th>
+          <th pSortableColumn="name" class="zones-management__th">
+            Zone Name <p-sortIcon field="name" />
+          </th>
+          <th class="zones-management__th">Description / Coverage Area</th>
+          <th pSortableColumn="status" class="zones-management__th" style="width: 140px">
+            Status <p-sortIcon field="status" />
+          </th>
+          <th pSortableColumn="shopCount" class="zones-management__th zones-management__th--center" style="width: 130px">
+            No. of Shops <p-sortIcon field="shopCount" />
+          </th>
+          <th class="zones-management__th zones-management__th--center" style="width: 110px">Actions</th>
+        </tr>
+      </ng-template>
+
+      <!-- Body -->
+      <ng-template pTemplate="body" let-zone>
+        <tr>
+          <!-- Zone ID -->
+          <td>
+            <code class="zones-management__id-pill">{{ zone.id }}</code>
+          </td>
+
+          <!-- Zone Name (Arabic) -->
+          <td>
+            <span class="zones-management__zone-name">{{ zone.name }}</span>
+          </td>
+
+          <!-- Coverage Description -->
+          <td class="zones-management__coverage">{{ zone.coverage }}</td>
+
+          <!-- Status Badge -->
+          <td>
+            <span
+              class="zones-management__badge"
+              [ngClass]="'zones-management__badge--' + zone.status"
+            >
+              <span class="zones-management__badge-dot"></span>
+              {{ zone.status === 'active' ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+
+          <!-- Shop Count -->
+          <td class="zones-management__td--center">
+            <span class="zones-management__shop-count">{{ zone.shopCount }}</span>
+          </td>
+
+          <!-- Actions: View + Edit -->
+          <td>
+            <div class="zones-management__actions">
+              <a
+                [routerLink]="['/zones', zone.id]"
+                class="zones-management__action-btn zones-management__action-btn--view"
+                title="View zone"
+              >
+                <i class="pi pi-eye"></i>
+              </a>
+              <a
+                [routerLink]="['/zones/edit', zone.id]"
+                class="zones-management__action-btn zones-management__action-btn--edit"
+                title="Edit zone"
+              >
+                <i class="pi pi-pencil"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <!-- Empty State -->
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="6" class="zones-management__empty">No zones found.</td>
+        </tr>
+      </ng-template>
+
+    </p-table>
+  </div>
+
+</div>

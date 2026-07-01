@@ -1,0 +1,84 @@
+<div class="zone-form">
+
+  <!-- ── Page Header ─────────────────────────────────────── -->
+  <div class="zone-form__header">
+    <button type="button" class="zone-form__back-btn" (click)="cancel()">
+      <i class="pi pi-arrow-left"></i>
+      Back to Zones
+    </button>
+    <h1 class="zone-form__title">{{ isEditMode ? 'Edit Zone' : 'Create New Zone' }}</h1>
+    <p class="zone-form__subtitle">
+      {{ isEditMode ? 'Update the details for zone ' + zoneId : 'Define a new delivery hub or coverage area.' }}
+    </p>
+  </div>
+
+  <!-- ── Form Card ────────────────────────────────────────── -->
+  <div class="zone-form__card">
+    <h2 class="zone-form__section-title">Zone Information</h2>
+
+    <div class="row g-4">
+
+      <!-- Zone Name -->
+      <div class="col-md-6">
+        <div class="zone-form__field">
+          <label class="zone-form__label" for="zoneName">Zone Name <span class="zone-form__required">*</span></label>
+          <input
+            id="zoneName"
+            type="text"
+            pInputText
+            [(ngModel)]="form.name"
+            name="zoneName"
+            placeholder="e.g. مجمع شطر ١٣"
+            class="zone-form__input"
+          />
+        </div>
+      </div>
+
+      <!-- Status Toggle -->
+      <div class="col-md-6">
+        <div class="zone-form__field">
+          <label class="zone-form__label">Status</label>
+          <div class="zone-form__toggle-row">
+            <p-toggleswitch [(ngModel)]="form.isActive" name="status" inputId="statusToggle" />
+            <span
+              class="zone-form__toggle-label"
+              [ngClass]="form.isActive ? 'zone-form__toggle-label--active' : 'zone-form__toggle-label--inactive'"
+            >
+              {{ form.isActive ? 'Active' : 'Inactive' }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Coverage Area (full width) -->
+      <div class="col-12">
+        <div class="zone-form__field">
+          <label class="zone-form__label" for="coverage">Description / Coverage Area</label>
+          <textarea
+            id="coverage"
+            pTextarea
+            [(ngModel)]="form.coverage"
+            name="coverage"
+            rows="3"
+            placeholder="e.g. شارع الملك فهد – حي النزهة"
+            class="zone-form__input zone-form__input--textarea"
+          ></textarea>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Action Buttons ──────────────────────────────────── -->
+    <div class="zone-form__actions">
+      <button type="button" class="zone-form__btn zone-form__btn--ghost" (click)="cancel()">
+        Cancel
+      </button>
+      <button type="button" class="zone-form__btn zone-form__btn--primary" (click)="save()">
+        <i class="pi pi-check"></i>
+        {{ isEditMode ? 'Save Changes' : 'Create Zone' }}
+      </button>
+    </div>
+
+  </div>
+
+</div>

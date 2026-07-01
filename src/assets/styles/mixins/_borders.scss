@@ -1,0 +1,9 @@
+@for $i from 0 through 100 {
+  .combo-br-#{$i} { border-radius: #{$i}px !important; }
+}
+
+// لعمل شكل دائرة كاملة
+.combo-br-circle { border-radius: 50% !important; }
+
+// لعمل شكل كبسولة (Pill) كما في الصور المطلوبة
+.combo-br-pill { border-radius: 9999px !important; }

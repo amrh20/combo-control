@@ -1,0 +1,23 @@
+<div class="stat-card" [ngClass]="'stat-card--' + variant()">
+  <div class="stat-card__header">
+    <div class="stat-card__icon-wrap">
+      <i class="pi" [ngClass]="icon()"></i>
+    </div>
+
+    @if (change()) {
+      <span class="stat-card__change" [ngClass]="{
+        'stat-card__change--up':   changeDir() === 'up',
+        'stat-card__change--down': changeDir() === 'down'
+      }">
+        @if (changeDir() === 'up')   { <i class="pi pi-arrow-up"></i> }
+        @if (changeDir() === 'down') { <i class="pi pi-arrow-down"></i> }
+        {{ change() }}
+      </span>
+    }
+  </div>
+
+  <div class="stat-card__body">
+    <p class="stat-card__value">{{ value() }}</p>
+    <p class="stat-card__label">{{ label() }}</p>
+  </div>
+</div>

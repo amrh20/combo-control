@@ -1,0 +1,18 @@
+<div class="admin-layout" [class.admin-layout--collapsed]="sidebarCollapsed()">
+  <aside class="admin-layout__sidebar">
+    <ctrl-sidebar
+      [collapsed]="sidebarCollapsed()"
+      (toggleCollapse)="toggleSidebar()"
+    />
+  </aside>
+
+  <div class="admin-layout__body">
+    <header class="admin-layout__topbar">
+      <ctrl-topbar (toggleSidebar)="toggleSidebar()" />
+    </header>
+
+    <main class="admin-layout__content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

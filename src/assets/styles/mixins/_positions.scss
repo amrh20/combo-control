@@ -1,0 +1,42 @@
+// 1. Define the variables
+$spacing-values: (
+  0,
+  5,
+  10,
+  15,
+  20,
+  25,
+  30,
+  40,
+  50,
+  72,
+  96
+);
+$vertical-sides: (
+  top,
+  bottom
+);
+
+// 2. Generate Vertical Utilities (Top/Bottom stay the same)
+@each $side in $vertical-sides {
+  @each $value in $spacing-values {
+    .combo-#{$side}-#{$value} {
+      #{$side}: #{$value}px;
+    }
+  }
+}
+
+// 3. Generate Horizontal Utilities using Logical Properties
+// This is the "Magic" part: 'start' is right in RTL and left in LTR.
+@each $value in $spacing-values {
+
+  // Use 'start' for Right (in Arabic) / Left (in English)
+  .combo-start-#{$value} {
+    inset-inline-start: #{$value}px;
+  }
+
+  // Use 'end' for Left (in Arabic) / Right (in English)
+  .combo-end-#{$value} {
+    inset-inline-end: #{$value}px;
+  }
+}

@@ -1,0 +1,193 @@
+// ═══════════════════════════════════════════════════════════════════
+// Zone Map — Leaflet container + overlays
+// ═══════════════════════════════════════════════════════════════════
+:host {
+  display: block;
+  height: 100%;
+}
+
+.zone-map {
+  position: relative;
+  height: 100%;
+  min-height: 540px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--Combo-controls-control-border);
+
+  &__canvas {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    width: 100%;
+    background: var(--Combo-bg-background-neutral-100);
+  }
+
+  // ── Location search ───────────────────────────────
+  &__search {
+    position: absolute;
+    top: 14px;
+    left: 56px; // leave room for Geoman toolbar
+    right: 14px;
+    z-index: 1000;
+    max-width: 420px;
+  }
+
+  &__search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    height: 42px;
+    border-radius: 10px;
+    background: var(--Combo-bg-background-card);
+    border: 1px solid var(--Combo-controls-control-border);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+
+    &:focus-within {
+      border-color: var(--Combo-border-border-primary);
+      box-shadow: 0 0 0 3px var(--Combo-bg-background-primary-50), 0 4px 14px rgba(0, 0, 0, 0.12);
+    }
+  }
+
+  &__search-icon {
+    font-size: 14px;
+    color: var(--Combo-icon-icon-neutral);
+    flex-shrink: 0;
+  }
+
+  &__search-input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-family: 'Alexandria', sans-serif;
+    font-size: 13.5px;
+    color: var(--Combo-text-text-default);
+
+    &::placeholder {
+      color: var(--Combo-text-text-secondary-paragraph);
+    }
+  }
+
+  &__search-spinner {
+    font-size: 14px;
+    color: var(--Combo-icon-icon-primary);
+    flex-shrink: 0;
+  }
+
+  &__search-clear {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--Combo-icon-icon-neutral);
+    cursor: pointer;
+    flex-shrink: 0;
+
+    &:hover {
+      background: var(--Combo-bg-background-neutral-100);
+      color: var(--Combo-text-text-primary);
+    }
+  }
+
+  &__search-results {
+    list-style: none;
+    margin: 6px 0 0;
+    padding: 4px;
+    border-radius: 10px;
+    background: var(--Combo-bg-background-card);
+    border: 1px solid var(--Combo-controls-control-border);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+    max-height: 260px;
+    overflow-y: auto;
+  }
+
+  &__search-result {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    font-family: 'Alexandria', sans-serif;
+    font-size: 13px;
+    line-height: 1.4;
+    color: var(--Combo-text-text-default);
+    transition: background-color 0.15s ease;
+
+    .pi {
+      margin-top: 2px;
+      font-size: 13px;
+      color: var(--Combo-icon-icon-primary);
+      flex-shrink: 0;
+    }
+
+    &:hover {
+      background: var(--Combo-bg-background-primary-50);
+      color: var(--Combo-text-text-primary);
+    }
+  }
+
+  // ── Area badge ────────────────────────────────────
+  &__badge {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 1000; // above leaflet panes
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--Combo-bg-background-card);
+    border: 1px solid var(--Combo-border-border-primary-light);
+    color: var(--Combo-text-text-primary);
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+
+    .pi { font-size: 13px; }
+  }
+
+  // ── Empty-state hint ──────────────────────────────
+  &__hint {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: var(--Combo-bg-background-card);
+    border: 1px solid var(--Combo-border-border-neutral-secondary);
+    color: var(--Combo-text-text-secondary-paragraph);
+    font-size: 12.5px;
+    font-weight: 500;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+    white-space: nowrap;
+
+    .pi { font-size: 12px; color: var(--Combo-icon-icon-primary); }
+  }
+}
+
+// ── Tint Geoman action buttons toward the Combo palette ──
+:host ::ng-deep {
+  .leaflet-pm-toolbar .leaflet-pm-icon-polygon,
+  .leaflet-pm-toolbar .button-container a {
+    cursor: pointer;
+  }
+}

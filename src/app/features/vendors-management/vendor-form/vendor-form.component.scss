@@ -1,0 +1,342 @@
+// ═══════════════════════════════════════════════════════════════════
+// Vendor Form — BEM component styles
+// ═══════════════════════════════════════════════════════════════════
+
+.vendor-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 860px;
+
+  // ── Page header ───────────────────────────────────
+  &__header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__title {
+    margin: 0 0 4px;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--Combo-text-text-display);
+  }
+
+  &__subtitle {
+    margin: 0;
+    font-size: 13px;
+    color: var(--Combo-text-text-secondary-paragraph);
+  }
+
+  &__back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'Alexandria', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--Combo-text-text-secondary-paragraph);
+    padding: 0 0 8px;
+    transition: color 0.15s ease;
+
+    &:hover { color: var(--Combo-text-text-primary); }
+  }
+
+  // ── Form card ─────────────────────────────────────
+  &__card {
+    background-color: var(--Combo-bg-background-card);
+    border: 1px solid var(--Combo-controls-control-border);
+    border-radius: 12px;
+    padding: 28px 32px;
+  }
+
+  &__section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 24px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--Combo-text-text-display);
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--Combo-border-border-neutral-secondary);
+
+    .pi { font-size: 14px; color: var(--Combo-icon-icon-primary); }
+  }
+
+  // ── Form field ────────────────────────────────────
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--Combo-text-text-primary-paragraph);
+  }
+
+  &__required {
+    color: var(--Combo-text-text-error);
+    margin-left: 2px;
+  }
+
+  // ── SAR / currency prefix wrapper ─────────────────
+  &__affix-wrap {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid var(--Combo-form-field-border-default);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+
+    &:focus-within {
+      border-color: var(--Combo-border-border-primary);
+      box-shadow: 0 0 0 3px var(--Combo-bg-background-primary-50);
+    }
+  }
+
+  &__affix {
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    background-color: var(--Combo-bg-background-neutral-100);
+    border-right: 1px solid var(--Combo-form-field-border-default);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--Combo-text-text-secondary-paragraph);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  // ── Toggle row ────────────────────────────────────
+  &__toggle-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 8px 0;
+  }
+
+  &__toggle-body {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  &__toggle-state {
+    font-size: 14px;
+    font-weight: 600;
+    transition: color 0.2s ease;
+
+    &--on  { color: var(--Combo-text-text-success); }
+    &--off { color: var(--Combo-text-text-secondary-paragraph); }
+  }
+
+  &__toggle-hint {
+    font-size: 12px;
+    color: var(--Combo-text-text-secondary-paragraph);
+  }
+
+  &__logo-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 100px;
+    padding: 20px;
+    border: 2px dashed var(--Combo-border-border-neutral-secondary);
+    border-radius: 10px;
+    background: var(--Combo-bg-background-neutral-100);
+    color: var(--Combo-text-text-secondary-paragraph);
+    font-size: 13px;
+
+    .pi { font-size: 24px; color: var(--Combo-icon-icon-neutral); }
+  }
+
+  // ── Action buttons ────────────────────────────────
+  &__actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--Combo-border-border-neutral-secondary);
+  }
+
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 20px;
+    border-radius: 8px;
+    font-family: 'Alexandria', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.18s ease, border-color 0.18s ease;
+
+    &--primary {
+      background-color: var(--Combo-button-button-background-primary-default);
+      border: 1px solid var(--Combo-button-button-background-primary-default);
+      color: var(--Combo-text-text-oncolor-primary);
+
+      &:hover {
+        background-color: var(--Combo-button-button-background-primary-hovered);
+        border-color: var(--Combo-button-button-background-primary-hovered);
+      }
+    }
+
+    &--ghost {
+      background-color: transparent;
+      border: 1px solid var(--Combo-border-border-neutral-primary);
+      color: var(--Combo-text-text-primary-paragraph);
+
+      &:hover { background-color: var(--Combo-bg-background-neutral-100); }
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// PrimeNG overrides
+// ═══════════════════════════════════════════════════════════════════
+:host ::ng-deep {
+
+  // ── Text input ────────────────────────────────────
+  .vendor-form__input.p-inputtext,
+  .vendor-form__input {
+    width: 100%;
+    font-family: 'Alexandria', sans-serif;
+    font-size: 14px;
+    color: var(--Combo-text-text-default) !important;
+    background-color: var(--Combo-bg-background-card) !important;
+    border: 1px solid var(--Combo-form-field-border-default) !important;
+    border-radius: 8px !important;
+    padding: 10px 14px !important;
+    box-shadow: none !important;
+    transition: border-color 0.18s ease;
+
+    &:focus {
+      border-color: var(--Combo-border-border-primary) !important;
+      box-shadow: 0 0 0 3px var(--Combo-bg-background-primary-50) !important;
+    }
+
+    &::placeholder { color: var(--Combo-text-text-secondary-paragraph); }
+  }
+
+  // ── Select / Dropdown ─────────────────────────────
+  .vendor-form__select {
+    width: 100%;
+
+    &.p-select {
+      background-color: var(--Combo-bg-background-card) !important;
+      border: 1px solid var(--Combo-form-field-border-default) !important;
+      border-radius: 8px !important;
+      box-shadow: none !important;
+      padding: 2px 4px !important;
+
+      &:hover { border-color: var(--Combo-form-field-border-hovered) !important; }
+    }
+
+    .p-select-label {
+      font-family: 'Alexandria', sans-serif;
+      font-size: 14px;
+      color: var(--Combo-text-text-default) !important;
+      padding: 8px 10px !important;
+    }
+
+    .p-select-label.p-placeholder {
+      color: var(--Combo-text-text-secondary-paragraph) !important;
+    }
+
+    .p-select-dropdown {
+      color: var(--Combo-icon-icon-neutral) !important;
+    }
+  }
+
+  .p-select-overlay {
+    background-color: var(--Combo-bg-background-card) !important;
+    border: 1px solid var(--Combo-border-border-neutral-primary) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+
+    .p-select-option {
+      font-family: 'Alexandria', sans-serif;
+      font-size: 14px;
+      color: var(--Combo-text-text-default);
+      padding: 10px 14px !important;
+
+      &:hover,
+      &.p-select-option-selected {
+        background-color: var(--Combo-bg-background-primary-50) !important;
+        color: var(--Combo-text-text-primary) !important;
+      }
+    }
+  }
+
+  // ── Time Picker (p-datepicker, timeOnly mode) ──────
+  .vendor-form__timepicker {
+    width: 100%;
+
+    .p-datepicker-input {
+      width: 100% !important;
+      font-family: 'Alexandria', sans-serif !important;
+      font-size: 14px !important;
+      color: var(--Combo-text-text-default) !important;
+      background-color: var(--Combo-bg-background-card) !important;
+      border: 1px solid var(--Combo-form-field-border-default) !important;
+      border-radius: 8px !important;
+      padding: 10px 14px !important;
+      box-shadow: none !important;
+      transition: border-color 0.18s ease;
+
+      &:focus {
+        border-color: var(--Combo-border-border-primary) !important;
+        box-shadow: 0 0 0 3px var(--Combo-bg-background-primary-50) !important;
+        outline: none !important;
+      }
+
+      &::placeholder { color: var(--Combo-text-text-secondary-paragraph); }
+    }
+
+    // Clock icon button inside the picker
+    .p-datepicker-dropdown {
+      background: transparent !important;
+      border: none !important;
+      color: var(--Combo-icon-icon-neutral) !important;
+    }
+  }
+
+  // ── InputNumber (inside affix wrapper) ────────────
+  .vendor-form__number-input {
+    flex: 1;
+
+    .p-inputnumber-input {
+      width: 100% !important;
+      font-family: 'Alexandria', sans-serif !important;
+      font-size: 14px !important;
+      color: var(--Combo-text-text-default) !important;
+      background-color: var(--Combo-bg-background-card) !important;
+      border: none !important;
+      border-radius: 0 !important;
+      padding: 10px 14px !important;
+      box-shadow: none !important;
+      outline: none !important;
+    }
+  }
+
+  // ── Toggle switch ─────────────────────────────────
+  .p-toggleswitch.p-toggleswitch-checked .p-toggleswitch-slider {
+    background: var(--Combo-bg-background-success) !important;
+    border-color: var(--Combo-bg-background-success) !important;
+  }
+
+  .p-toggleswitch:not(.p-toggleswitch-checked) .p-toggleswitch-slider {
+    background: var(--Combo-bg-background-neutral-300) !important;
+  }
+}

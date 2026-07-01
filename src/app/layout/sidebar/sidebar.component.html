@@ -1,0 +1,38 @@
+<nav class="sidebar" [class.sidebar--collapsed]="collapsed()">
+
+  <!-- Logo -->
+  <div class="sidebar__logo">
+    <div class="sidebar__logo-mark">C</div>
+    @if (!collapsed()) {
+      <span class="sidebar__logo-text">Combo Control</span>
+    }
+  </div>
+
+  <!-- Nav items -->
+  <ul class="sidebar__nav">
+    @for (item of navItems; track item.route) {
+      <li>
+        <a
+          [routerLink]="item.route"
+          routerLinkActive="sidebar__link--active"
+          class="sidebar__link"
+          [title]="collapsed() ? item.label : ''"
+        >
+          <i class="pi sidebar__icon" [ngClass]="item.icon"></i>
+          @if (!collapsed()) {
+            <span class="sidebar__label">{{ item.label }}</span>
+          }
+        </a>
+      </li>
+    }
+  </ul>
+
+  <!-- Collapse toggle at bottom -->
+  <button class="sidebar__toggle" (click)="toggleCollapse.emit()">
+    <i class="pi" [ngClass]="collapsed() ? 'pi-angle-right' : 'pi-angle-left'"></i>
+    @if (!collapsed()) {
+      <span>Collapse</span>
+    }
+  </button>
+
+</nav>

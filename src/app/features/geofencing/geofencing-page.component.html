@@ -1,0 +1,49 @@
+<div class="geofencing">
+
+  <!-- ── Page Header ──────────────────────────────────────── -->
+  <div class="geofencing__header">
+    <div class="geofencing__header-text">
+      <h1 class="geofencing__title">Zone &amp; Geofencing</h1>
+      <p class="geofencing__subtitle">
+        Draw a delivery zone on the map and configure its details.
+      </p>
+    </div>
+
+    @if (areaSqKm() !== null) {
+      <span class="geofencing__area-pill">
+        <i class="pi pi-chart-pie"></i>
+        Area: {{ areaSqKm() }} km²
+      </span>
+    }
+  </div>
+
+  <!-- ── Split-screen body ────────────────────────────────── -->
+  <div class="row g-4 geofencing__body">
+
+    <!-- Left: Reactive form -->
+    <div class="col-12 col-md-4">
+      <ctrl-zone-form
+        [geometryReady]="geometryReady()"
+        (saveZone)="onSaveZone($event)"
+      />
+
+      <!-- Backend-ready payload preview -->
+      @if (lastPayload(); as payload) {
+        <div class="geofencing__payload">
+          <div class="geofencing__payload-head">
+            <i class="pi pi-database"></i>
+            <span>CreateZonePayload (sent to API)</span>
+          </div>
+          <pre class="geofencing__payload-body">{{ payload | json }}</pre>
+        </div>
+      }
+    </div>
+
+    <!-- Right: Map -->
+    <div class="col-12 col-md-8">
+      <ctrl-zone-map (polygonChanged)="onPolygonChanged($event)" />
+    </div>
+
+  </div>
+
+</div>

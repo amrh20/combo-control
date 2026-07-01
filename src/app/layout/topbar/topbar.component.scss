@@ -1,0 +1,96 @@
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  padding: 0 24px;
+  background-color: var(--Combo-bg-background-white);
+  border-bottom: 1px solid var(--Combo-border-border-neutral-secondary);
+
+  &__start,
+  &__end {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  &__title {
+    font-family: 'Kufam', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--Combo-text-text-display);
+    margin: 0;
+  }
+
+  // ── Shared icon button ────────────────────────────
+  &__icon-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    color: var(--Combo-text-text-primary-paragraph);
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.15s;
+
+    &:hover { background-color: var(--Combo-bg-background-neutral-100); }
+
+    &--border {
+      border: 1px solid var(--Combo-border-border-neutral-primary);
+    }
+  }
+
+  &__badge {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 9999px;
+    background-color: var(--Combo-bg-background-error);
+    color: var(--Combo-text-text-oncolor-primary);
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  // ── User chip ─────────────────────────────────────
+  &__user {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.15s;
+
+    &:hover { background-color: var(--Combo-bg-background-neutral-100); }
+  }
+
+  &__avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: var(--Combo-bg-background-primary);
+    color: var(--Combo-text-text-oncolor-primary);
+    font-weight: 700;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__username {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--Combo-text-text-display);
+  }
+}

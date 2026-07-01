@@ -1,0 +1,26 @@
+// Font Size Generator
+@for $i from 8 through 150 {
+    .combo-fs-#{$i} {
+      font-size: #{$i}px !important;
+    }
+  }
+  
+  // Font Colors
+.combo-text-white { color: var(--Combo-bg-background-white) !important; }
+
+// Line Height Utilities
+.combo-lh-1-1 { line-height: 1.1 !important; }
+
+// Custom Stroke Effect (للعناوين المميزة)
+.combo-text-stroke-white {
+    -webkit-text-stroke-color: var(--Combo-bg-background-white) !important;
+    -webkit-text-stroke-width: 26px !important;
+    paint-order: stroke !important;
+}
+
+  // Extra: Font Weights (اختياري لزيادة التحكم)
+  .font-bold { font-weight: 700 !important; }
+  .font-semibold { font-weight: 600 !important; }
+  .font-medium { font-weight: 500 !important; }
+  .font-light { font-weight: 300 !important; }
+  .font-black { font-weight: 900 !important; }

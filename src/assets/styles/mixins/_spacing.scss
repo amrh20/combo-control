@@ -1,0 +1,27 @@
+@for $i from 0 through 100 {
+  // Padding
+  .combo-p-#{$i} { padding: #{$i}px !important; }
+  .combo-pt-#{$i} { padding-top: #{$i}px !important; }
+  .combo-pb-#{$i} { padding-bottom: #{$i}px !important; }
+  .combo-pl-#{$i} { padding-left: #{$i}px !important; }
+  .combo-pr-#{$i} { padding-right: #{$i}px !important; }
+  .combo-px-#{$i} { padding-left: #{$i}px !important; padding-right: #{$i}px !important; }
+  .combo-py-#{$i} { padding-top: #{$i}px !important; padding-bottom: #{$i}px !important; }
+  
+  // Padding Logical Properties (Start & End)
+  .combo-pis-#{$i} { padding-inline-start: #{$i}px !important; }
+  .combo-pie-#{$i} { padding-inline-end: #{$i}px !important; }
+
+  // Margin
+  .combo-m-#{$i} { margin: #{$i}px !important; }
+  .combo-mt-#{$i} { margin-top: #{$i}px !important; }
+  .combo-mb-#{$i} { margin-bottom: #{$i}px !important; }
+  .combo-ml-#{$i} { margin-left: #{$i}px !important; }
+  .combo-mr-#{$i} { margin-right: #{$i}px !important; }
+  .combo-mx-#{$i} { margin-left: #{$i}px !important; margin-right: #{$i}px !important; }
+  .combo-my-#{$i} { margin-top: #{$i}px !important; margin-bottom: #{$i}px !important; }
+  
+  // Margin Logical Properties (Start & End)
+  .combo-mis-#{$i} { margin-inline-start: #{$i}px !important; }
+  .combo-mie-#{$i} { margin-inline-end: #{$i}px !important; }
+}

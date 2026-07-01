@@ -1,0 +1,125 @@
+<div class="zone-form">
+
+  <div class="zone-form__header">
+    <h2 class="zone-form__title">
+      <i class="pi pi-map-marker"></i>
+      Zone Details
+    </h2>
+    <p class="zone-form__subtitle">Fill in the details, then draw the coverage area on the map.</p>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="zone-form__body">
+
+    <!-- Zone Name -->
+    <div class="zone-form__field">
+      <label class="zone-form__label" for="zoneName">
+        Zone Name <span class="zone-form__required">*</span>
+      </label>
+      <input
+        id="zoneName"
+        type="text"
+        pInputText
+        formControlName="name"
+        placeholder="e.g. Nasr City — Sector 7"
+        class="zone-form__input"
+        [ngClass]="{ 'zone-form__input--invalid': invalid('name') }"
+      />
+      @if (invalid('name')) {
+        <small class="zone-form__error">A zone name (min 2 chars) is required.</small>
+      }
+    </div>
+
+    <!-- City -->
+    <div class="zone-form__field">
+      <label class="zone-form__label" for="citySelect">
+        City <span class="zone-form__required">*</span>
+      </label>
+      <p-select
+        inputId="citySelect"
+        [options]="cityOptions"
+        optionLabel="label"
+        optionValue="value"
+        formControlName="city"
+        placeholder="Select a city..."
+        styleClass="zone-form__select"
+      />
+      @if (invalid('city')) {
+        <small class="zone-form__error">Please select a city.</small>
+      }
+    </div>
+
+    <div class="row g-3">
+      <!-- Delivery Fee -->
+      <div class="col-6">
+        <div class="zone-form__field">
+          <label class="zone-form__label" for="deliveryFee">
+            Delivery Fee <span class="zone-form__required">*</span>
+          </label>
+          <p-inputnumber
+            inputId="deliveryFee"
+            formControlName="deliveryFee"
+            [min]="0"
+            mode="currency"
+            currency="EGP"
+            locale="en-EG"
+            styleClass="zone-form__number"
+          />
+        </div>
+      </div>
+
+      <!-- Minimum Order -->
+      <div class="col-6">
+        <div class="zone-form__field">
+          <label class="zone-form__label" for="minimumOrder">
+            Minimum Order <span class="zone-form__required">*</span>
+          </label>
+          <p-inputnumber
+            inputId="minimumOrder"
+            formControlName="minimumOrder"
+            [min]="0"
+            mode="currency"
+            currency="EGP"
+            locale="en-EG"
+            styleClass="zone-form__number"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Active / Inactive -->
+    <div class="zone-form__field">
+      <label class="zone-form__label">Status</label>
+      <div class="zone-form__toggle-row">
+        <p-toggleswitch formControlName="isActive" inputId="isActive" />
+        <span
+          class="zone-form__toggle-state"
+          [ngClass]="form.controls.isActive.value
+            ? 'zone-form__toggle-state--on'
+            : 'zone-form__toggle-state--off'"
+        >
+          {{ form.controls.isActive.value ? 'Active' : 'Inactive' }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Geometry requirement notice -->
+    @if (!geometryReady()) {
+      <div class="zone-form__notice">
+        <i class="pi pi-info-circle"></i>
+        Draw a polygon on the map to enable saving.
+      </div>
+    }
+
+    <!-- Save -->
+    <button
+      type="submit"
+      class="zone-form__btn zone-form__btn--primary"
+      [disabled]="!geometryReady()"
+    >
+      <i class="pi pi-check"></i>
+      Save Zone
+    </button>
+
+  </form>
+
+</div>

@@ -1,0 +1,237 @@
+<div class="vendor-form">
+
+  <div class="vendor-form__header">
+    <button type="button" class="vendor-form__back-btn" (click)="cancel()">
+      <i class="pi pi-arrow-left"></i>
+      Back to Vendors
+    </button>
+    <h1 class="vendor-form__title">{{ isEditMode ? 'Edit Shop' : 'Add New Shop' }}</h1>
+    <p class="vendor-form__subtitle">
+      @if (isEditMode) {
+        Update the details for shop {{ vendorId }}.
+      } @else {
+        Register a new shop and assign it to a delivery zone.
+      }
+    </p>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="save()">
+
+    <div class="vendor-form__card">
+      <h2 class="vendor-form__section-title">
+        <i class="pi pi-shop"></i>
+        Shop Details
+      </h2>
+
+      <div class="row g-4">
+        <div class="col-md-6">
+          <div class="vendor-form__field">
+            <label class="vendor-form__label" for="shopName">
+              Shop Name <span class="vendor-form__required">*</span>
+            </label>
+            <input
+              id="shopName"
+              type="text"
+              pInputText
+              formControlName="name"
+              placeholder="e.g. مطعم البيت"
+              class="vendor-form__input"
+              dir="rtl"
+            />
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="vendor-form__field">
+            <label class="vendor-form__label" for="phone">
+              Phone Number <span class="vendor-form__required">*</span>
+            </label>
+            <input
+              id="phone"
+              type="text"
+              pInputText
+              formControlName="phone"
+              placeholder="+966 50 000 0000"
+              class="vendor-form__input"
+            />
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="vendor-form__field">
+            <label class="vendor-form__label" for="contactPerson">
+              Contact Person <span class="vendor-form__required">*</span>
+            </label>
+            <input
+              id="contactPerson"
+              type="text"
+              pInputText
+              formControlName="contactPerson"
+              class="vendor-form__input"
+              dir="rtl"
+            />
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="vendor-form__field">
+            <label class="vendor-form__label" for="zoneSelect">
+              Assigned Zone <span class="vendor-form__required">*</span>
+            </label>
+            <p-select
+              inputId="zoneSelect"
+              [options]="zoneOptions"
+              optionLabel="name"
+              optionValue="id"
+              formControlName="zoneId"
+              placeholder="Select a zone..."
+              styleClass="vendor-form__select"
+            />
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="vendor-form__field">
+            <label class="vendor-form__label" for="categorySelect">
+              Category <span class="vendor-form__required">*</span>
+            </label>
+            <p-select
+              inputId="categorySelect"
+              [options]="categoryOptions"
+              optionLabel="label"
+              optionValue="value"
+              formControlName="category"
+              placeholder="Select category..."
+              styleClass="vendor-form__select"
+            />
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="vendor-form__field">
+            <label class="vendor-form__label">Shop Logo</label>
+            <div class="vendor-form__logo-placeholder">
+              <i class="pi pi-image"></i>
+              <span>Upload coming soon</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vendor-form__card">
+      <h2 class="vendor-form__section-title">
+        <i class="pi pi-sliders-h"></i>
+        Operational Settings
+      </h2>
+
+      <div class="row g-4">
+        <div class="col-md-6">
+          <div class="vendor-form__field">
+            <label class="vendor-form__label" for="openingTime">Opening Time</label>
+            <p-datepicker
+              inputId="openingTime"
+              formControlName="openingTime"
+              [timeOnly]="true"
+              [showSeconds]="false"
+              hourFormat="12"
+              styleClass="vendor-form__timepicker"
+            />
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="vendor-form__field">
+            <label class="vendor-form__label" for="closingTime">Closing Time</label>
+            <p-datepicker
+              inputId="closingTime"
+              formControlName="closingTime"
+              [timeOnly]="true"
+              [showSeconds]="false"
+              hourFormat="12"
+              styleClass="vendor-form__timepicker"
+            />
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="vendor-form__field">
+            <label class="vendor-form__label" for="overrideSelect">Live Status Override</label>
+            <p-select
+              inputId="overrideSelect"
+              [options]="overrideOptions"
+              optionLabel="label"
+              optionValue="value"
+              formControlName="liveStatusOverride"
+              styleClass="vendor-form__select"
+            />
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="vendor-form__field">
+            <label class="vendor-form__label" for="discountPercent">Discount Badge (%)</label>
+            <p-inputnumber
+              inputId="discountPercent"
+              formControlName="discountPercent"
+              [min]="0"
+              [max]="100"
+              suffix="%"
+              styleClass="vendor-form__number-input"
+            />
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="vendor-form__field">
+            <label class="vendor-form__label">Auto-Accept Orders</label>
+            <div class="vendor-form__toggle-row">
+              <p-toggleswitch formControlName="autoAccept" inputId="autoAccept" />
+              <div class="vendor-form__toggle-body">
+                <span
+                  class="vendor-form__toggle-state"
+                  [ngClass]="form.get('autoAccept')?.value
+                    ? 'vendor-form__toggle-state--on'
+                    : 'vendor-form__toggle-state--off'"
+                >
+                  {{ form.get('autoAccept')?.value ? 'Enabled' : 'Disabled' }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="vendor-form__field">
+            <label class="vendor-form__label">System Status</label>
+            <div class="vendor-form__toggle-row">
+              <p-toggleswitch
+                [ngModel]="form.get('systemStatus')?.value === 'active'"
+                (ngModelChange)="form.patchValue({ systemStatus: $event ? 'active' : 'inactive' })"
+                [ngModelOptions]="{ standalone: true }"
+                inputId="systemStatus"
+              />
+              <div class="vendor-form__toggle-body">
+                <span class="vendor-form__toggle-hint">
+                  Inactive shops are hidden from the customer app.
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="vendor-form__actions">
+        <button type="button" class="vendor-form__btn vendor-form__btn--ghost" (click)="cancel()">
+          Cancel
+        </button>
+        <button type="submit" class="vendor-form__btn vendor-form__btn--primary">
+          <i class="pi pi-check"></i>
+          {{ isEditMode ? 'Save Changes' : 'Add Shop' }}
+        </button>
+      </div>
+    </div>
+
+  </form>
+
+</div>

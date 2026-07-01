@@ -1,0 +1,68 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "cli": {
+    "packageManager": "npm",
+    "analytics": false
+  },
+  "newProjectRoot": "projects",
+  "projects": {
+    "combo-control": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": { "style": "scss" }
+      },
+      "root": "",
+      "sourceRoot": "src",
+      "prefix": "ctrl",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "src/main.ts",
+            "tsConfig": "tsconfig.app.json",
+            "inlineStyleLanguage": "scss",
+            "assets": [
+              { "glob": "**/*", "input": "src/assets", "output": "/assets" }
+            ],
+            "styles": [
+              "node_modules/primeicons/primeicons.css",
+              "node_modules/bootstrap/dist/css/bootstrap.min.css",
+              "node_modules/leaflet/dist/leaflet.css",
+              "node_modules/@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css",
+              "src/styles.scss"
+            ],
+            "scripts": []
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                { "type": "initial", "maximumWarning": "15MB", "maximumError": "15MB" },
+                { "type": "anyComponentStyle", "maximumWarning": "10MB", "maximumError": "10MB" }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "options": { "port": 4201 },
+          "configurations": {
+            "production": { "buildTarget": "combo-control:build:production" },
+            "development": { "buildTarget": "combo-control:build:development" }
+          },
+          "defaultConfiguration": "development"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test"
+        }
+      }
+    }
+  }
+}

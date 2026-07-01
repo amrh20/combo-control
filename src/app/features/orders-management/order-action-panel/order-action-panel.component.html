@@ -1,0 +1,272 @@
+<div class="order-action-panel">
+
+  <!-- ── Order Header ─────────────────────────────────────── -->
+  <div class="order-action-panel__header">
+    <div>
+      <div class="order-action-panel__header-top">
+        <code class="order-action-panel__id-pill">{{ order().id }}</code>
+        <span
+          class="order-action-panel__status-badge"
+          [class]="'order-action-panel__status-badge--' + order().status"
+        >
+          {{ statusConfig[order().status].label }}
+        </span>
+      </div>
+      <span class="order-action-panel__zone">
+        <i class="pi pi-map-marker"></i>
+        <span dir="rtl">{{ order().zoneName }}</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- ── Customer Info ────────────────────────────────────── -->
+  <div class="order-action-panel__card">
+    <h3 class="order-action-panel__card-title">
+      <i class="pi pi-user"></i>
+      Customer
+    </h3>
+    <div class="order-action-panel__customer-grid">
+      <div class="order-action-panel__field">
+        <span class="order-action-panel__field-label">Name</span>
+        <span class="order-action-panel__field-value" dir="rtl">{{ order().customer.name }}</span>
+      </div>
+      <div class="order-action-panel__field">
+        <span class="order-action-panel__field-label">Phone</span>
+        <a class="order-action-panel__field-value order-action-panel__phone" [href]="'tel:' + order().customer.phone">
+          {{ order().customer.phone }}
+        </a>
+      </div>
+      <div class="order-action-panel__field order-action-panel__field--full">
+        <span class="order-action-panel__field-label">Address</span>
+        <span class="order-action-panel__field-value" dir="rtl">{{ order().customer.address }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Editable Cart ────────────────────────────────────── -->
+  <div class="order-action-panel__card">
+    <h3 class="order-action-panel__card-title">
+      <i class="pi pi-shopping-cart"></i>
+      Cart
+    </h3>
+
+    @if (order().shopGroups.length === 0) {
+      <div class="order-action-panel__cart-empty">
+        <i class="pi pi-shopping-bag"></i>
+        <p>All items removed from this order.</p>
+      </div>
+    }
+
+    @for (group of order().shopGroups; track group.shopId) {
+      <div class="order-action-panel__shop-group">
+        <div class="order-action-panel__shop-header">
+          <i class="pi pi-shop"></i>
+          <span dir="rtl">{{ group.shopName }}</span>
+          <code class="order-action-panel__shop-id">{{ group.shopId }}</code>
+        </div>
+
+        <ul class="order-action-panel__item-list">
+          @for (item of group.items; track item.id) {
+            <li
+              class="order-action-panel__item"
+              [class.order-action-panel__item--oos]="item.outOfStock"
+              [class.order-action-panel__item--editing]="isEditing(item.id)"
+            >
+              <div class="order-action-panel__item-main">
+                <span class="order-action-panel__item-name" dir="rtl">{{ item.name }}</span>
+
+                @if (isEditing(item.id)) {
+                  <div class="order-action-panel__inline-edit">
+                    <div class="order-action-panel__inline-field">
+                      <label class="order-action-panel__inline-label">Qty</label>
+                      <input
+                        type="number"
+                        class="order-action-panel__inline-input"
+                        min="1"
+                        step="1"
+                        [(ngModel)]="editQuantity"
+                      />
+                    </div>
+                    <div class="order-action-panel__inline-field">
+                      <label class="order-action-panel__inline-label">Price</label>
+                      <input
+                        type="number"
+                        class="order-action-panel__inline-input"
+                        min="0"
+                        step="0.01"
+                        [(ngModel)]="editPrice"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      class="order-action-panel__save-btn"
+                      (click)="saveEdit(item.id)"
+                    >
+                      <i class="pi pi-check"></i>
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      class="order-action-panel__cancel-btn"
+                      (click)="cancelEdit()"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                } @else {
+                  <span class="order-action-panel__item-meta">
+                    {{ item.quantity }} × {{ item.price | number: '1.2-2' }} {{ currency }}
+                  </span>
+                  @if (item.outOfStock) {
+                    <span class="order-action-panel__oos-label">Out of Stock</span>
+                  }
+                }
+              </div>
+
+              <div class="order-action-panel__item-side">
+                <span class="order-action-panel__item-total">
+                  {{ lineTotal(item) | number: '1.2-2' }} {{ currency }}
+                </span>
+
+                <div class="order-action-panel__item-toolbar">
+                  @if (!isEditing(item.id)) {
+                    <button
+                      type="button"
+                      class="order-action-panel__tool-btn order-action-panel__tool-btn--edit"
+                      title="Edit quantity and price"
+                      (click)="startEdit(item)"
+                    >
+                      <i class="pi pi-pencil"></i>
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      class="order-action-panel__tool-btn order-action-panel__tool-btn--delete"
+                      title="Remove item"
+                      (click)="deleteItem(item.id)"
+                    >
+                      <i class="pi pi-trash"></i>
+                      Remove
+                    </button>
+                    <button
+                      type="button"
+                      class="order-action-panel__tool-btn order-action-panel__tool-btn--oos"
+                      [class.order-action-panel__tool-btn--oos-active]="item.outOfStock"
+                      (click)="toggleOutOfStock(item.id)"
+                      [title]="item.outOfStock ? 'Restore item' : 'Mark out of stock'"
+                    >
+                      <i class="pi" [class.pi-undo]="item.outOfStock" [class.pi-ban]="!item.outOfStock"></i>
+                      {{ item.outOfStock ? 'Restore' : 'OOS' }}
+                    </button>
+                  }
+                </div>
+              </div>
+            </li>
+          }
+        </ul>
+      </div>
+    }
+
+    <div class="order-action-panel__totals">
+      <div class="order-action-panel__total-row">
+        <span>Subtotal</span>
+        <span>{{ subtotal() | number: '1.2-2' }} {{ currency }}</span>
+      </div>
+      <div class="order-action-panel__total-row">
+        <span>Delivery Fee</span>
+        <span>{{ order().deliveryFee | number: '1.2-2' }} {{ currency }}</span>
+      </div>
+      <div class="order-action-panel__total-row order-action-panel__total-row--final">
+        <span>Final Cash Total</span>
+        <span>{{ finalTotal() | number: '1.2-2' }} {{ currency }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Status Controller ────────────────────────────────── -->
+  @if (nextAction(); as action) {
+    <div class="order-action-panel__card order-action-panel__card--actions">
+      <h3 class="order-action-panel__card-title">
+        <i class="pi pi-forward"></i>
+        Order Status
+      </h3>
+      <p-button
+        [label]="action.label"
+        [icon]="action.icon"
+        styleClass="order-action-panel__advance-btn"
+        (onClick)="onAdvanceStatus()"
+      />
+    </div>
+  }
+
+  <!-- ── Fleet Dispatch ───────────────────────────────────── -->
+  @if (order().status === 'ready') {
+    <div class="order-action-panel__card order-action-panel__card--dispatch">
+      <h3 class="order-action-panel__card-title">
+        <i class="pi pi-car"></i>
+        Dispatch to Driver
+      </h3>
+
+      <p class="order-action-panel__dispatch-hint">
+        Drivers assigned to zone
+        <strong dir="rtl">{{ order().zoneName }}</strong>
+      </p>
+
+      <div class="order-action-panel__driver-select">
+        <label class="order-action-panel__select-label" for="driverSelect">Select Driver</label>
+        <p-select
+          inputId="driverSelect"
+          [options]="zoneDrivers()"
+          optionLabel="name"
+          optionValue="id"
+          [(ngModel)]="selectedDriverId"
+          placeholder="Choose a driver..."
+          styleClass="order-action-panel__select"
+        >
+          <ng-template pTemplate="item" let-driver>
+            <div class="order-action-panel__driver-option">
+              <span class="order-action-panel__driver-name" dir="rtl">{{ driver.name }}</span>
+              <span
+                class="order-action-panel__driver-status"
+                [class.order-action-panel__driver-status--available]="driver.status === 'available'"
+                [class.order-action-panel__driver-status--busy]="driver.status === 'busy'"
+              >
+                {{ driverStatusLabel(driver.status) }}
+              </span>
+            </div>
+          </ng-template>
+          <ng-template pTemplate="selectedItem" let-driver>
+            @if (driver) {
+              <div class="order-action-panel__driver-option">
+                <span class="order-action-panel__driver-name" dir="rtl">{{ driver.name }}</span>
+                <span
+                  class="order-action-panel__driver-status"
+                  [class.order-action-panel__driver-status--available]="driver.status === 'available'"
+                  [class.order-action-panel__driver-status--busy]="driver.status === 'busy'"
+                >
+                  {{ driverStatusLabel(driver.status) }}
+                </span>
+              </div>
+            }
+          </ng-template>
+        </p-select>
+      </div>
+
+      <p-button
+        label="Assign & Dispatch"
+        icon="pi pi-send"
+        styleClass="order-action-panel__dispatch-btn"
+        [disabled]="!canDispatch"
+        (onClick)="onDispatch()"
+      />
+    </div>
+  }
+
+  @if (order().callCenterNotes) {
+    <div class="order-action-panel__notes">
+      <i class="pi pi-info-circle"></i>
+      {{ order().callCenterNotes }}
+    </div>
+  }
+
+</div>

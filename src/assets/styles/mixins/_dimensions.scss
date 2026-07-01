@@ -1,0 +1,4 @@
+@for $i from 0 through 1000 {
+    .combo-w-#{$i} { width: #{$i}px !important; }
+    .combo-he-#{$i} { height: #{$i}px !important; }
+  }

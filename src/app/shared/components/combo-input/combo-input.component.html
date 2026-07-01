@@ -1,0 +1,14 @@
+<div class="combo-input" [class.combo-input--with-icon]="icon()">
+  @if (icon()) {
+    <i class="combo-input__icon pi" [class]="icon()"></i>
+  }
+  <input
+    pInputText
+    class="combo-input__field"
+    [id]="inputId()"
+    [type]="type()"
+    [placeholder]="placeholder()"
+    [disabled]="disabled()"
+    [(ngModel)]="value"
+  />
+</div>

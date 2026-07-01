@@ -1,0 +1,336 @@
+<div class="vendor-details">
+
+  @if (!vendor()) {
+    <div class="vendor-details__not-found">
+      <i class="pi pi-exclamation-circle"></i>
+      <p>Shop not found.</p>
+      <button type="button" class="vendor-details__btn vendor-details__btn--ghost" (click)="goBack()">
+        Back to Vendors
+      </button>
+    </div>
+  }
+
+  @if (vendor(); as v) {
+    <div class="vendor-details__header">
+      <button type="button" class="vendor-details__back" (click)="goBack()">
+        <i class="pi pi-arrow-left"></i>
+        All Vendors
+      </button>
+
+      <div class="vendor-details__header-main">
+        <div class="vendor-details__avatar">{{ getInitials(v.name) }}</div>
+        <div class="vendor-details__header-info">
+          <h1 class="vendor-details__shop-name" dir="rtl">{{ v.name }}</h1>
+          <div class="vendor-details__meta">
+            <code class="vendor-details__id-pill">{{ v.id }}</code>
+            <span class="vendor-details__meta-item">
+              <i class="pi pi-map-marker"></i>
+              <span dir="rtl">{{ v.zoneName }}</span>
+            </span>
+            <span class="vendor-details__meta-item">
+              {{ categoryConfig[v.category].labelAr }}
+            </span>
+          </div>
+        </div>
+        <div class="vendor-details__header-actions">
+          <span
+            class="vendor-details__live-badge"
+            [ngClass]="'vendor-details__live-badge--' + liveStatus()"
+          >
+            <span class="vendor-details__live-dot"></span>
+            {{ liveStatusConfig[liveStatus()].labelAr }}
+          </span>
+          @if (v.systemStatus === 'inactive') {
+            <span class="vendor-details__system-badge">Hidden from app</span>
+          }
+          <div class="vendor-details__system-toggle">
+            <span class="vendor-details__system-label">Active</span>
+            <p-toggleswitch
+              [ngModel]="isSystemActive()"
+              (ngModelChange)="onSystemToggle($event)"
+              inputId="headerSystemToggle"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <form [formGroup]="vendorForm" class="vendor-details__form" (ngSubmit)="saveChanges()">
+
+      <!-- Card A: Basic Information -->
+      <div class="vendor-details__card">
+        <div class="vendor-details__card-head">
+          <h2 class="vendor-details__card-title">
+            <i class="pi pi-shop"></i>
+            Basic Information
+          </h2>
+        </div>
+
+        <div class="row g-4">
+          <div class="col-lg-8">
+            <div class="row g-4">
+              <div class="col-md-6">
+                <div class="vendor-details__field">
+                  <label class="vendor-details__label" for="shopName">Shop Name</label>
+                  <input
+                    id="shopName"
+                    type="text"
+                    pInputText
+                    formControlName="name"
+                    class="vendor-details__input"
+                    dir="rtl"
+                  />
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="vendor-details__field">
+                  <label class="vendor-details__label" for="phone">Phone Number</label>
+                  <input
+                    id="phone"
+                    type="text"
+                    pInputText
+                    formControlName="phone"
+                    class="vendor-details__input"
+                  />
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="vendor-details__field">
+                  <label class="vendor-details__label" for="contactPerson">Contact Person</label>
+                  <input
+                    id="contactPerson"
+                    type="text"
+                    pInputText
+                    formControlName="contactPerson"
+                    class="vendor-details__input"
+                    dir="rtl"
+                  />
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="vendor-details__field">
+                  <label class="vendor-details__label" for="zoneSelect">Assigned Zone</label>
+                  <p-select
+                    inputId="zoneSelect"
+                    [options]="zoneOptions"
+                    optionLabel="name"
+                    optionValue="id"
+                    formControlName="zoneId"
+                    styleClass="vendor-details__select"
+                  />
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="vendor-details__field">
+                  <label class="vendor-details__label" for="categorySelect">Category</label>
+                  <p-select
+                    inputId="categorySelect"
+                    [options]="categoryOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    formControlName="category"
+                    styleClass="vendor-details__select"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-4">
+            <div class="vendor-details__field">
+              <label class="vendor-details__label">Shop Logo</label>
+              <div class="vendor-details__logo-upload">
+                <div class="vendor-details__logo-preview">
+                  <span>{{ getInitials(v.name) }}</span>
+                </div>
+                <div class="vendor-details__logo-body">
+                  <p class="vendor-details__logo-hint">Upload a square logo (PNG/JPG, max 2 MB)</p>
+                  <button type="button" class="vendor-details__logo-btn" disabled>
+                    <i class="pi pi-upload"></i>
+                    Choose Image
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card B: Operational & Live Status -->
+      <div class="vendor-details__card">
+        <div class="vendor-details__card-head">
+          <h2 class="vendor-details__card-title">
+            <i class="pi pi-sliders-h"></i>
+            Operational & Live Status
+          </h2>
+        </div>
+
+        <div class="row g-4">
+          <div class="col-md-6">
+            <div class="vendor-details__field">
+              <label class="vendor-details__label" for="openingTime">Opening Time</label>
+              <p-datepicker
+                inputId="openingTime"
+                formControlName="openingTime"
+                [timeOnly]="true"
+                [showSeconds]="false"
+                hourFormat="12"
+                styleClass="vendor-details__timepicker"
+              />
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="vendor-details__field">
+              <label class="vendor-details__label" for="closingTime">Closing Time</label>
+              <p-datepicker
+                inputId="closingTime"
+                formControlName="closingTime"
+                [timeOnly]="true"
+                [showSeconds]="false"
+                hourFormat="12"
+                styleClass="vendor-details__timepicker"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="vendor-details__divider"></div>
+
+        <div class="vendor-details__field">
+          <label class="vendor-details__label">Live Status Override</label>
+          <p class="vendor-details__hint">
+            Manually override the shop's live state. When set to Auto, status follows working hours.
+          </p>
+          <div class="vendor-details__segmented" role="radiogroup" aria-label="Live status override">
+            @for (opt of overrideOptions; track opt.value) {
+              <label
+                class="vendor-details__segment"
+                [class.vendor-details__segment--active]="vendorForm.get('liveStatusOverride')?.value === opt.value"
+                [class.vendor-details__segment--busy]="opt.value === 'force_busy' && vendorForm.get('liveStatusOverride')?.value === opt.value"
+                [class.vendor-details__segment--closed]="opt.value === 'force_closed' && vendorForm.get('liveStatusOverride')?.value === opt.value"
+              >
+                <input
+                  type="radio"
+                  formControlName="liveStatusOverride"
+                  [value]="opt.value"
+                  class="vendor-details__segment-input"
+                />
+                <span class="vendor-details__segment-label">{{ opt.label }}</span>
+                <span class="vendor-details__segment-hint">{{ opt.hint }}</span>
+              </label>
+            }
+          </div>
+          @if (v.nextOpeningTime && liveStatus() === 'closed' && vendorForm.get('liveStatusOverride')?.value === 'auto') {
+            <p class="vendor-details__next-open">
+              <i class="pi pi-clock"></i>
+              Opens today at {{ v.nextOpeningTime }}
+            </p>
+          }
+        </div>
+      </div>
+
+      <!-- Cards C & D side by side on large screens -->
+      <div class="vendor-details__grid-2">
+        <!-- Card C: Marketing & Financials -->
+        <div class="vendor-details__card">
+          <div class="vendor-details__card-head">
+            <h2 class="vendor-details__card-title">
+              <i class="pi pi-tag"></i>
+              Marketing & Financials
+            </h2>
+          </div>
+
+          <div class="vendor-details__field">
+            <label class="vendor-details__label" for="discountPercent">Discount Badge</label>
+            <p class="vendor-details__hint">
+              Global discount shown on the shop card. Set to 0 to hide the badge.
+            </p>
+            <div class="vendor-details__discount-wrap">
+              <p-inputnumber
+                inputId="discountPercent"
+                formControlName="discountPercent"
+                [min]="0"
+                [max]="100"
+                suffix="%"
+                styleClass="vendor-details__number"
+              />
+              @if ((vendorForm.get('discountPercent')?.value ?? 0) > 0) {
+                <span class="vendor-details__discount-preview">
+                  -{{ vendorForm.get('discountPercent')?.value }}%
+                </span>
+              } @else {
+                <span class="vendor-details__discount-hidden">Badge hidden</span>
+              }
+            </div>
+          </div>
+
+          <div class="vendor-details__field">
+            <label class="vendor-details__label" for="commissionRate">Commission Rate</label>
+            <p class="vendor-details__hint">Percentage Combo takes from this vendor (admin-only).</p>
+            <div class="vendor-details__commission-wrap">
+              <p-inputnumber
+                inputId="commissionRate"
+                formControlName="commissionRate"
+                [min]="0"
+                [max]="100"
+                suffix="%"
+                styleClass="vendor-details__number vendor-details__number--readonly"
+              />
+              <i class="pi pi-lock vendor-details__lock-icon"></i>
+            </div>
+          </div>
+
+          <div class="vendor-details__wallet">
+            <span class="vendor-details__wallet-label">Wallet Balance</span>
+            <span class="vendor-details__wallet-value">
+              {{ v.walletBalance | number:'1.2-2' }}
+              <span class="vendor-details__wallet-unit">SAR</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Card D: Performance Stats -->
+        <div class="vendor-details__card">
+          <div class="vendor-details__card-head">
+            <h2 class="vendor-details__card-title">
+              <i class="pi pi-chart-bar"></i>
+              Performance Stats
+            </h2>
+          </div>
+
+          <div class="vendor-details__stats-grid">
+            <ctrl-stat-card
+              label="Rating"
+              [value]="v.stats.rating"
+              icon="pi-star-fill"
+              variant="warning"
+            />
+            <ctrl-stat-card
+              label="Total Reviews"
+              [value]="v.stats.totalReviews"
+              icon="pi-comments"
+              variant="info"
+            />
+            <ctrl-stat-card
+              label="Completed Orders"
+              [value]="v.stats.totalCompletedOrders"
+              icon="pi-check-circle"
+              variant="success"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="vendor-details__actions">
+        <button type="button" class="vendor-details__btn vendor-details__btn--ghost" (click)="goBack()">
+          Cancel
+        </button>
+        <button type="submit" class="vendor-details__btn vendor-details__btn--primary">
+          <i class="pi pi-check"></i>
+          Save Changes
+        </button>
+      </div>
+    </form>
+  }
+
+</div>

@@ -1,0 +1,49 @@
+$sidebar-width: 260px;
+$sidebar-collapsed-width: 68px;
+$topbar-height: 64px;
+$transition: 0.22s ease;
+
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+
+  &__sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: $sidebar-width;
+    z-index: 200;
+    transition: width $transition;
+    overflow: hidden;
+  }
+
+  &__body {
+    flex: 1;
+    margin-left: $sidebar-width;
+    transition: margin-left $transition;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  &__topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    height: $topbar-height;
+  }
+
+  &__content {
+    flex: 1;
+    padding: 24px;
+    background-color: var(--Combo-bg-background-body);
+    overflow-y: auto;
+  }
+
+  // ── Collapsed state ──────────────────────────────
+  &--collapsed {
+    .admin-layout__sidebar  { width: $sidebar-collapsed-width; }
+    .admin-layout__body     { margin-left: $sidebar-collapsed-width; }
+  }
+}
