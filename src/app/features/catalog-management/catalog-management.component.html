@@ -1,0 +1,269 @@
+<div class="catalog">
+
+  <div class="catalog__header">
+    <div class="catalog__header-text">
+      <h1 class="catalog__title">إدارة المنتجات</h1>
+      <p class="catalog__subtitle">
+        اختر متجراً لعرض وإدارة قائمة منتجاته وتوفّرها في التطبيق.
+      </p>
+    </div>
+
+    <div class="catalog__header-actions">
+      <div class="catalog__vendor-select-wrap">
+        <label class="catalog__vendor-label" for="vendorSelect">اختر المتجر</label>
+        <p-select
+          inputId="vendorSelect"
+          [options]="vendorOptions"
+          optionLabel="label"
+          optionValue="value"
+          [ngModel]="selectedShopId()"
+          (ngModelChange)="onVendorChange($event)"
+          placeholder="اختر المتجر لعرض القائمة..."
+          [showClear]="true"
+          styleClass="catalog__vendor-select"
+        />
+      </div>
+
+      <button
+        type="button"
+        class="catalog__add-btn"
+        [disabled]="!selectedShopId()"
+        (click)="openAddModal()"
+      >
+        <i class="pi pi-plus"></i>
+        إضافة منتج جديد
+      </button>
+    </div>
+  </div>
+
+  @if (selectedVendor(); as vendor) {
+    <div class="catalog__context">
+      <div class="catalog__context-vendor">
+        <span class="catalog__context-name">{{ vendor.name }}</span>
+        <code class="catalog__context-id">{{ vendor.id }}</code>
+      </div>
+      <span class="catalog__context-meta">
+        {{ products().length }} منتج · {{ availableCount() }} متوفر
+      </span>
+    </div>
+
+    @if (products().length) {
+      <div class="catalog__grid">
+        @for (product of products(); track product.id) {
+          <article
+            class="catalog__card"
+            [class.catalog__card--unavailable]="!product.isAvailable"
+          >
+            <div class="catalog__card-media">
+              <img
+                [src]="product.imageUrl"
+                [alt]="product.name"
+                class="catalog__card-img"
+                loading="lazy"
+              />
+              <span
+                class="catalog__avail-badge"
+                [class.catalog__avail-badge--on]="product.isAvailable"
+                [class.catalog__avail-badge--off]="!product.isAvailable"
+              >
+                {{ product.isAvailable ? 'متوفر' : 'غير متوفر' }}
+              </span>
+
+              <div class="catalog__card-actions">
+                <button
+                  type="button"
+                  class="catalog__card-action catalog__card-action--edit"
+                  title="تعديل"
+                  aria-label="تعديل المنتج"
+                  (click)="openEditModal(product)"
+                >
+                  <i class="pi pi-pencil"></i>
+                  <span>تعديل</span>
+                </button>
+                <button
+                  type="button"
+                  class="catalog__card-action catalog__card-action--delete"
+                  title="حذف"
+                  aria-label="حذف المنتج"
+                  (click)="onDeleteProduct(product)"
+                >
+                  <i class="pi pi-trash"></i>
+                  <span>حذف</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="catalog__card-body">
+              <div class="catalog__card-top">
+                <h2 class="catalog__card-name">{{ product.name }}</h2>
+                <span class="catalog__card-category">{{ product.category }}</span>
+              </div>
+
+              <p class="catalog__card-desc">{{ product.description }}</p>
+
+              <div class="catalog__card-footer">
+                <span class="catalog__card-price">
+                  {{ product.price | number: '1.0-2' }}
+                  <span class="catalog__card-currency">{{ currency }}</span>
+                </span>
+
+                <div class="catalog__card-toggle">
+                  <span class="catalog__toggle-label">
+                    {{ product.isAvailable ? 'متوفر' : 'غير متوفر' }}
+                  </span>
+                  <p-toggleswitch
+                    [ngModel]="product.isAvailable"
+                    (ngModelChange)="onAvailabilityToggle(product, $event)"
+                    [inputId]="'avail-' + product.id"
+                  />
+                </div>
+              </div>
+            </div>
+          </article>
+        }
+      </div>
+    } @else {
+      <div class="catalog__empty catalog__empty--selected">
+        <i class="pi pi-inbox"></i>
+        <p>لا توجد منتجات لهذا المتجر بعد.</p>
+        <button type="button" class="catalog__add-btn" (click)="openAddModal()">
+          <i class="pi pi-plus"></i>
+          إضافة منتج جديد
+        </button>
+      </div>
+    }
+  } @else {
+    <div class="catalog__empty">
+      <i class="pi pi-shop"></i>
+      <p class="catalog__empty-title">اختر متجراً للبدء</p>
+      <p class="catalog__empty-hint">
+        يجب اختيار متجر من القائمة أعلاه لعرض وإدارة منتجاته.
+        يمكنك أيضاً الانتقال من صفحة المتاجر عبر «إدارة الكتالوج».
+      </p>
+    </div>
+  }
+
+</div>
+
+@if (modalOpen()) {
+  <div
+    class="catalog__modal-overlay"
+    role="presentation"
+    (click)="closeModal()"
+  >
+    <div
+      class="catalog__modal"
+      dir="rtl"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="product-form-modal-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="catalog__modal-header">
+        <h2 id="product-form-modal-title" class="catalog__modal-title">
+          {{ modalTitle() }}
+        </h2>
+        <button
+          type="button"
+          class="catalog__modal-close"
+          aria-label="إغلاق"
+          (click)="closeModal()"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <form
+        class="catalog__modal-body"
+        [formGroup]="form"
+        (ngSubmit)="saveProduct()"
+      >
+        <div class="catalog__field">
+          <label class="catalog__label" for="productName">
+            اسم المنتج <span class="catalog__required">*</span>
+          </label>
+          <input
+            id="productName"
+            type="text"
+            pInputText
+            formControlName="name"
+            class="catalog__input"
+            placeholder="مثال: كبسة دجاج"
+            dir="rtl"
+          />
+          @if (form.controls.name.touched && form.controls.name.invalid) {
+            <span class="catalog__field-error">اسم المنتج مطلوب</span>
+          }
+        </div>
+
+        <div class="catalog__field">
+          <label class="catalog__label" for="productCategory">
+            الفئة <span class="catalog__required">*</span>
+          </label>
+          <input
+            id="productCategory"
+            type="text"
+            pInputText
+            formControlName="category"
+            class="catalog__input"
+            placeholder="مثال: أطباق رئيسية"
+            dir="rtl"
+          />
+          @if (form.controls.category.touched && form.controls.category.invalid) {
+            <span class="catalog__field-error">الفئة مطلوبة</span>
+          }
+        </div>
+
+        <div class="catalog__field">
+          <label class="catalog__label" for="productPrice">
+            السعر (ج.م) <span class="catalog__required">*</span>
+          </label>
+          <input
+            id="productPrice"
+            type="number"
+            pInputText
+            formControlName="price"
+            class="catalog__input"
+            placeholder="0"
+            min="0"
+            step="0.5"
+            dir="ltr"
+          />
+          @if (form.controls.price.touched && form.controls.price.invalid) {
+            <span class="catalog__field-error">أدخل سعراً صالحاً</span>
+          }
+        </div>
+
+        <div class="catalog__field">
+          <label class="catalog__label" for="productDescription">الوصف</label>
+          <input
+            id="productDescription"
+            type="text"
+            pInputText
+            formControlName="description"
+            class="catalog__input"
+            placeholder="وصف مختصر للمنتج..."
+            dir="rtl"
+          />
+        </div>
+
+        <div class="catalog__modal-footer">
+          <button
+            type="submit"
+            class="catalog__btn catalog__btn--primary"
+          >
+            <i class="pi pi-check"></i>
+            حفظ
+          </button>
+          <button
+            type="button"
+            class="catalog__btn catalog__btn--ghost"
+            (click)="closeModal()"
+          >
+            إلغاء
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

@@ -105,7 +105,7 @@
           <th class="vendors-list__th vendors-list__th--center" style="width: 110px">
             مفعّل
           </th>
-          <th class="vendors-list__th vendors-list__th--center" style="width: 180px">
+          <th class="vendors-list__th vendors-list__th--center" style="width: 190px">
             الإجراءات
           </th>
         </tr>
@@ -125,7 +125,9 @@
           </td>
           <td>
             <div class="vendors-list__name-cell">
-              <span class="vendors-list__shop-name">{{ vendor.name }}</span>
+              <a [routerLink]="['/vendors', vendor.id]" class="vendors-list__shop-name">
+                {{ vendor.name }}
+              </a>
               <code class="vendors-list__id-pill">{{ vendor.id }}</code>
             </div>
           </td>
@@ -158,9 +160,13 @@
             />
           </td>
           <td class="vendors-list__td--center">
-            <a [routerLink]="['/vendors', vendor.id]" class="vendors-list__manage-btn">
-              <i class="pi pi-sliders-h"></i>
-              إدارة المتجر
+            <a
+              [routerLink]="['/catalog']"
+              [queryParams]="{ shopId: vendor.id }"
+              class="vendors-list__manage-btn"
+            >
+              <i class="pi pi-tags"></i>
+              إدارة الكتالوج
             </a>
           </td>
         </tr>

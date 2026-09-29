@@ -176,6 +176,12 @@
     font-weight: 600;
     font-size: 14px;
     color: var(--Combo-text-text-default);
+    text-decoration: none;
+    transition: color 0.15s ease;
+
+    &:hover {
+      color: var(--Combo-text-text-primary);
+    }
   }
 
   &__id-pill {
