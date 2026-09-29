@@ -4,14 +4,15 @@ import { filter, map } from 'rxjs/operators';
 import { toSignal } from '@angular/core/rxjs-interop';
 
 const PAGE_TITLES: Record<string, string> = {
-  analytics:  'Analytics Dashboard',
-  zones:      'Zones Management',
-  vendors:    'Vendors Management',
-  catalog:    'Catalog Management',
-  orders:     'Orders Management',
-  fleet:      'Fleet Management',
-  financials: 'Financials',
-  customers:  'Customers',
+  analytics:  'لوحة التحليلات',
+  zones:      'إدارة المناطق',
+  geofencing: 'النطاقات الجغرافية',
+  vendors:    'إدارة المتاجر',
+  catalog:    'إدارة المنتجات',
+  orders:     'إدارة الطلبات',
+  drivers:    'إدارة السائقين',
+  financials: 'الماليات',
+  customers:  'العملاء',
 };
 
 @Component({
@@ -31,9 +32,9 @@ export class TopbarComponent {
       filter(e => e instanceof NavigationEnd),
       map((e: NavigationEnd) => {
         const segment = e.urlAfterRedirects.split('/').filter(Boolean).pop() ?? '';
-        return PAGE_TITLES[segment] ?? 'Combo Control';
+        return PAGE_TITLES[segment] ?? 'كومبو كنترول';
       }),
     ),
-    { initialValue: 'Analytics Dashboard' },
+    { initialValue: 'لوحة التحليلات' },
   );
 }

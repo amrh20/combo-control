@@ -7,7 +7,7 @@
       <input
         type="text"
         class="zone-map__search-input"
-        placeholder="Search for an area… e.g. Nasr City, Zamalek"
+        placeholder="ابحث عن منطقة… مثال: مدينة نصر، الزمالك"
         [value]="searchQuery()"
         (input)="onSearchInput($event)"
         (focus)="onSearchFocus()"
@@ -22,7 +22,7 @@
           class="zone-map__search-clear"
           (mousedown)="$event.preventDefault()"
           (click)="clearSearch()"
-          aria-label="Clear search"
+          aria-label="مسح البحث"
         >
           <i class="pi pi-times"></i>
         </button>
@@ -55,7 +55,7 @@
   @if (hasPolygon() && areaSqKm() !== null) {
     <div class="zone-map__badge">
       <i class="pi pi-chart-pie"></i>
-      <span>Area: {{ areaSqKm() | number: '1.0-2' }} km²</span>
+      <span>المساحة: {{ areaSqKm() | number: '1.0-2' }} كم²</span>
     </div>
   }
 
@@ -63,7 +63,7 @@
   @if (!hasPolygon()) {
     <div class="zone-map__hint">
       <i class="pi pi-pencil"></i>
-      Use the polygon tool (top-left) to draw the delivery zone.
+      استخدم أداة المضلع لرسم منطقة التوصيل.
     </div>
   }
 

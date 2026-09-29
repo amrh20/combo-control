@@ -3,9 +3,9 @@
   @if (!vendor()) {
     <div class="vendor-details__not-found">
       <i class="pi pi-exclamation-circle"></i>
-      <p>Shop not found.</p>
+      <p>المتجر غير موجود.</p>
       <button type="button" class="vendor-details__btn vendor-details__btn--ghost" (click)="goBack()">
-        Back to Vendors
+        العودة إلى المتاجر
       </button>
     </div>
   }
@@ -13,8 +13,8 @@
   @if (vendor(); as v) {
     <div class="vendor-details__header">
       <button type="button" class="vendor-details__back" (click)="goBack()">
-        <i class="pi pi-arrow-left"></i>
-        All Vendors
+        <i class="pi pi-arrow-right"></i>
+        كل المتاجر
       </button>
 
       <div class="vendor-details__header-main">
@@ -41,10 +41,10 @@
             {{ liveStatusConfig[liveStatus()].labelAr }}
           </span>
           @if (v.systemStatus === 'inactive') {
-            <span class="vendor-details__system-badge">Hidden from app</span>
+            <span class="vendor-details__system-badge">مخفي من التطبيق</span>
           }
           <div class="vendor-details__system-toggle">
-            <span class="vendor-details__system-label">Active</span>
+            <span class="vendor-details__system-label">مفعّل</span>
             <p-toggleswitch
               [ngModel]="isSystemActive()"
               (ngModelChange)="onSystemToggle($event)"
@@ -62,7 +62,7 @@
         <div class="vendor-details__card-head">
           <h2 class="vendor-details__card-title">
             <i class="pi pi-shop"></i>
-            Basic Information
+            المعلومات الأساسية
           </h2>
         </div>
 
@@ -71,7 +71,7 @@
             <div class="row g-4">
               <div class="col-md-6">
                 <div class="vendor-details__field">
-                  <label class="vendor-details__label" for="shopName">Shop Name</label>
+                  <label class="vendor-details__label" for="shopName">اسم المتجر</label>
                   <input
                     id="shopName"
                     type="text"
@@ -84,19 +84,20 @@
               </div>
               <div class="col-md-6">
                 <div class="vendor-details__field">
-                  <label class="vendor-details__label" for="phone">Phone Number</label>
+                  <label class="vendor-details__label" for="phone">رقم الهاتف</label>
                   <input
                     id="phone"
                     type="text"
                     pInputText
                     formControlName="phone"
                     class="vendor-details__input"
+                    dir="ltr"
                   />
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="vendor-details__field">
-                  <label class="vendor-details__label" for="contactPerson">Contact Person</label>
+                  <label class="vendor-details__label" for="contactPerson">جهة الاتصال</label>
                   <input
                     id="contactPerson"
                     type="text"
@@ -109,7 +110,7 @@
               </div>
               <div class="col-md-6">
                 <div class="vendor-details__field">
-                  <label class="vendor-details__label" for="zoneSelect">Assigned Zone</label>
+                  <label class="vendor-details__label" for="zoneSelect">المنطقة المعيّنة</label>
                   <p-select
                     inputId="zoneSelect"
                     [options]="zoneOptions"
@@ -122,7 +123,7 @@
               </div>
               <div class="col-md-6">
                 <div class="vendor-details__field">
-                  <label class="vendor-details__label" for="categorySelect">Category</label>
+                  <label class="vendor-details__label" for="categorySelect">الفئة</label>
                   <p-select
                     inputId="categorySelect"
                     [options]="categoryOptions"
@@ -138,16 +139,16 @@
 
           <div class="col-lg-4">
             <div class="vendor-details__field">
-              <label class="vendor-details__label">Shop Logo</label>
+              <label class="vendor-details__label">شعار المتجر</label>
               <div class="vendor-details__logo-upload">
                 <div class="vendor-details__logo-preview">
                   <span>{{ getInitials(v.name) }}</span>
                 </div>
                 <div class="vendor-details__logo-body">
-                  <p class="vendor-details__logo-hint">Upload a square logo (PNG/JPG, max 2 MB)</p>
+                  <p class="vendor-details__logo-hint">ارفع شعاراً مربعاً (PNG/JPG، بحد أقصى 2 ميجا)</p>
                   <button type="button" class="vendor-details__logo-btn" disabled>
                     <i class="pi pi-upload"></i>
-                    Choose Image
+                    اختر صورة
                   </button>
                 </div>
               </div>
@@ -161,14 +162,14 @@
         <div class="vendor-details__card-head">
           <h2 class="vendor-details__card-title">
             <i class="pi pi-sliders-h"></i>
-            Operational & Live Status
+            التشغيل والحالة المباشرة
           </h2>
         </div>
 
         <div class="row g-4">
           <div class="col-md-6">
             <div class="vendor-details__field">
-              <label class="vendor-details__label" for="openingTime">Opening Time</label>
+              <label class="vendor-details__label" for="openingTime">وقت الفتح</label>
               <p-datepicker
                 inputId="openingTime"
                 formControlName="openingTime"
@@ -181,7 +182,7 @@
           </div>
           <div class="col-md-6">
             <div class="vendor-details__field">
-              <label class="vendor-details__label" for="closingTime">Closing Time</label>
+              <label class="vendor-details__label" for="closingTime">وقت الإغلاق</label>
               <p-datepicker
                 inputId="closingTime"
                 formControlName="closingTime"
@@ -197,11 +198,11 @@
         <div class="vendor-details__divider"></div>
 
         <div class="vendor-details__field">
-          <label class="vendor-details__label">Live Status Override</label>
+          <label class="vendor-details__label">تجاوز الحالة المباشرة</label>
           <p class="vendor-details__hint">
-            Manually override the shop's live state. When set to Auto, status follows working hours.
+            تجاوز يدوي لحالة المتجر المباشرة. عند التلقائي تتبع الحالة ساعات العمل.
           </p>
-          <div class="vendor-details__segmented" role="radiogroup" aria-label="Live status override">
+          <div class="vendor-details__segmented" role="radiogroup" aria-label="تجاوز الحالة المباشرة">
             @for (opt of overrideOptions; track opt.value) {
               <label
                 class="vendor-details__segment"
@@ -223,7 +224,7 @@
           @if (v.nextOpeningTime && liveStatus() === 'closed' && vendorForm.get('liveStatusOverride')?.value === 'auto') {
             <p class="vendor-details__next-open">
               <i class="pi pi-clock"></i>
-              Opens today at {{ v.nextOpeningTime }}
+              يفتح اليوم الساعة {{ v.nextOpeningTime }}
             </p>
           }
         </div>
@@ -236,14 +237,14 @@
           <div class="vendor-details__card-head">
             <h2 class="vendor-details__card-title">
               <i class="pi pi-tag"></i>
-              Marketing & Financials
+              التسويق والماليات
             </h2>
           </div>
 
           <div class="vendor-details__field">
-            <label class="vendor-details__label" for="discountPercent">Discount Badge</label>
+            <label class="vendor-details__label" for="discountPercent">شارة الخصم</label>
             <p class="vendor-details__hint">
-              Global discount shown on the shop card. Set to 0 to hide the badge.
+              خصم عام يظهر على بطاقة المتجر. ضع 0 لإخفاء الشارة.
             </p>
             <div class="vendor-details__discount-wrap">
               <p-inputnumber
@@ -259,14 +260,14 @@
                   -{{ vendorForm.get('discountPercent')?.value }}%
                 </span>
               } @else {
-                <span class="vendor-details__discount-hidden">Badge hidden</span>
+                <span class="vendor-details__discount-hidden">الشارة مخفية</span>
               }
             </div>
           </div>
 
           <div class="vendor-details__field">
-            <label class="vendor-details__label" for="commissionRate">Commission Rate</label>
-            <p class="vendor-details__hint">Percentage Combo takes from this vendor (admin-only).</p>
+            <label class="vendor-details__label" for="commissionRate">نسبة العمولة</label>
+            <p class="vendor-details__hint">نسبة عمولة كومبو من هذا المتجر (للإدارة فقط).</p>
             <div class="vendor-details__commission-wrap">
               <p-inputnumber
                 inputId="commissionRate"
@@ -281,7 +282,7 @@
           </div>
 
           <div class="vendor-details__wallet">
-            <span class="vendor-details__wallet-label">Wallet Balance</span>
+            <span class="vendor-details__wallet-label">رصيد المحفظة</span>
             <span class="vendor-details__wallet-value">
               {{ v.walletBalance | number:'1.2-2' }}
               <span class="vendor-details__wallet-unit">SAR</span>
@@ -294,25 +295,25 @@
           <div class="vendor-details__card-head">
             <h2 class="vendor-details__card-title">
               <i class="pi pi-chart-bar"></i>
-              Performance Stats
+              إحصائيات الأداء
             </h2>
           </div>
 
           <div class="vendor-details__stats-grid">
             <ctrl-stat-card
-              label="Rating"
+              label="التقييم"
               [value]="v.stats.rating"
               icon="pi-star-fill"
               variant="warning"
             />
             <ctrl-stat-card
-              label="Total Reviews"
+              label="إجمالي التقييمات"
               [value]="v.stats.totalReviews"
               icon="pi-comments"
               variant="info"
             />
             <ctrl-stat-card
-              label="Completed Orders"
+              label="الطلبات المكتملة"
               [value]="v.stats.totalCompletedOrders"
               icon="pi-check-circle"
               variant="success"
@@ -323,11 +324,11 @@
 
       <div class="vendor-details__actions">
         <button type="button" class="vendor-details__btn vendor-details__btn--ghost" (click)="goBack()">
-          Cancel
+          إلغاء
         </button>
         <button type="submit" class="vendor-details__btn vendor-details__btn--primary">
           <i class="pi pi-check"></i>
-          Save Changes
+          حفظ التغييرات
         </button>
       </div>
     </form>

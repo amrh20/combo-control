@@ -20,14 +20,14 @@ export class SidebarComponent {
   toggleCollapse = output<void>();
 
   readonly navItems: NavItem[] = [
-    { label: 'Analytics',  icon: 'pi-chart-line',  route: '/analytics' },
-    { label: 'Zones',      icon: 'pi-map-marker',  route: '/zones' },
-    { label: 'Geofencing', icon: 'pi-map',         route: '/geofencing' },
-    { label: 'Vendors',    icon: 'pi-shop',        route: '/vendors' },
-    { label: 'Catalog',    icon: 'pi-tag',         route: '/catalog' },
-    { label: 'Orders',     icon: 'pi-list',        route: '/orders' },
-    { label: 'Fleet',      icon: 'pi-car',         route: '/drivers' },
-    { label: 'Financials', icon: 'pi-wallet',      route: '/financials' },
-    { label: 'Customers',  icon: 'pi-users',       route: '/customers' },
+    { label: 'التحليلات',          icon: 'pi-chart-line',  route: '/analytics' },
+    { label: 'المناطق',            icon: 'pi-map-marker',  route: '/zones' },
+    { label: 'النطاقات الجغرافية', icon: 'pi-map',         route: '/geofencing' },
+    { label: 'المتاجر',            icon: 'pi-shop',        route: '/vendors' },
+    { label: 'المنتجات',           icon: 'pi-tag',         route: '/catalog' },
+    { label: 'الطلبات',            icon: 'pi-list',        route: '/orders' },
+    { label: 'السائقين',           icon: 'pi-car',         route: '/drivers' },
+    { label: 'الماليات',           icon: 'pi-wallet',      route: '/financials' },
+    { label: 'العملاء',            icon: 'pi-users',       route: '/customers' },
   ];
 }

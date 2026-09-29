@@ -2,13 +2,9 @@
   position: relative;
   width: 100%;
 
-  &--with-icon .combo-input__field {
-    padding-left: 36px !important;
-  }
-
   &__icon {
     position: absolute;
-    left: 12px;
+    inset-inline-start: 12px;
     top: 50%;
     transform: translateY(-50%);
     font-size: 14px;
@@ -45,5 +41,10 @@
       background-color: var(--Combo-bg-background-neutral-100) !important;
       cursor: not-allowed;
     }
+  }
+
+  .combo-input--with-icon .combo-input__field.p-inputtext,
+  .combo-input--with-icon .combo-input__field {
+    padding-inline-start: 36px !important;
   }
 }

@@ -62,18 +62,18 @@ export const LIVE_STATUS_CONFIG: Record<LiveStatus, { label: string; labelAr: st
   closed: { label: 'Closed', labelAr: 'مغلق الآن'     },
 };
 
-export const SYSTEM_STATUS_CONFIG: Record<SystemStatus, { label: string }> = {
-  active:   { label: 'Active'   },
-  inactive: { label: 'Inactive' },
+export const SYSTEM_STATUS_CONFIG: Record<SystemStatus, { label: string; labelAr: string }> = {
+  active:   { label: 'Active',   labelAr: 'نشط' },
+  inactive: { label: 'Inactive', labelAr: 'غير نشط' },
 };
 
 export const LIVE_OVERRIDE_CONFIG: Record<
   LiveStatusOverride,
   { label: string; description: string }
 > = {
-  auto:         { label: 'Auto',                          description: 'Follows working hours' },
-  force_busy:   { label: 'Force "مشغول حالياً"',          description: 'Pauses new orders temporarily due to high volume' },
-  force_closed: { label: 'Force "مغلق الآن"',             description: 'Pauses orders for the rest of the day' },
+  auto:         { label: 'تلقائي',        description: 'يتبع ساعات العمل' },
+  force_busy:   { label: 'فرض مشغول',     description: 'إيقاف الطلبات مؤقتاً بسبب الضغط' },
+  force_closed: { label: 'فرض مغلق',      description: 'إيقاف الطلبات لبقية اليوم' },
 };
 
 export const ZONE_OPTIONS = [

@@ -3,9 +3,9 @@
   <div class="zone-form__header">
     <h2 class="zone-form__title">
       <i class="pi pi-map-marker"></i>
-      Zone Details
+      تفاصيل المنطقة
     </h2>
-    <p class="zone-form__subtitle">Fill in the details, then draw the coverage area on the map.</p>
+    <p class="zone-form__subtitle">أدخل البيانات، ثم ارسم منطقة التغطية على الخريطة.</p>
   </div>
 
   <form [formGroup]="form" (ngSubmit)="submit()" class="zone-form__body">
@@ -13,26 +13,26 @@
     <!-- Zone Name -->
     <div class="zone-form__field">
       <label class="zone-form__label" for="zoneName">
-        Zone Name <span class="zone-form__required">*</span>
+        اسم المنطقة <span class="zone-form__required">*</span>
       </label>
       <input
         id="zoneName"
         type="text"
         pInputText
         formControlName="name"
-        placeholder="e.g. Nasr City — Sector 7"
+        placeholder="مثال: مدينة نصر — القطاع 7"
         class="zone-form__input"
         [ngClass]="{ 'zone-form__input--invalid': invalid('name') }"
       />
       @if (invalid('name')) {
-        <small class="zone-form__error">A zone name (min 2 chars) is required.</small>
+        <small class="zone-form__error">اسم المنطقة مطلوب (حرفان على الأقل).</small>
       }
     </div>
 
     <!-- City -->
     <div class="zone-form__field">
       <label class="zone-form__label" for="citySelect">
-        City <span class="zone-form__required">*</span>
+        المدينة <span class="zone-form__required">*</span>
       </label>
       <p-select
         inputId="citySelect"
@@ -40,11 +40,11 @@
         optionLabel="label"
         optionValue="value"
         formControlName="city"
-        placeholder="Select a city..."
+        placeholder="اختر مدينة..."
         styleClass="zone-form__select"
       />
       @if (invalid('city')) {
-        <small class="zone-form__error">Please select a city.</small>
+        <small class="zone-form__error">يرجى اختيار مدينة.</small>
       }
     </div>
 
@@ -53,7 +53,7 @@
       <div class="col-6">
         <div class="zone-form__field">
           <label class="zone-form__label" for="deliveryFee">
-            Delivery Fee <span class="zone-form__required">*</span>
+            رسوم التوصيل <span class="zone-form__required">*</span>
           </label>
           <p-inputnumber
             inputId="deliveryFee"
@@ -61,7 +61,7 @@
             [min]="0"
             mode="currency"
             currency="EGP"
-            locale="en-EG"
+            locale="ar-EG"
             styleClass="zone-form__number"
           />
         </div>
@@ -71,7 +71,7 @@
       <div class="col-6">
         <div class="zone-form__field">
           <label class="zone-form__label" for="minimumOrder">
-            Minimum Order <span class="zone-form__required">*</span>
+            الحد الأدنى للطلب <span class="zone-form__required">*</span>
           </label>
           <p-inputnumber
             inputId="minimumOrder"
@@ -79,7 +79,7 @@
             [min]="0"
             mode="currency"
             currency="EGP"
-            locale="en-EG"
+            locale="ar-EG"
             styleClass="zone-form__number"
           />
         </div>
@@ -88,7 +88,7 @@
 
     <!-- Active / Inactive -->
     <div class="zone-form__field">
-      <label class="zone-form__label">Status</label>
+      <label class="zone-form__label">الحالة</label>
       <div class="zone-form__toggle-row">
         <p-toggleswitch formControlName="isActive" inputId="isActive" />
         <span
@@ -97,7 +97,7 @@
             ? 'zone-form__toggle-state--on'
             : 'zone-form__toggle-state--off'"
         >
-          {{ form.controls.isActive.value ? 'Active' : 'Inactive' }}
+          {{ form.controls.isActive.value ? 'نشط' : 'غير نشط' }}
         </span>
       </div>
     </div>
@@ -106,7 +106,7 @@
     @if (!geometryReady()) {
       <div class="zone-form__notice">
         <i class="pi pi-info-circle"></i>
-        Draw a polygon on the map to enable saving.
+        ارسم مضلعاً على الخريطة لتفعيل الحفظ.
       </div>
     }
 
@@ -117,7 +117,7 @@
       [disabled]="!geometryReady()"
     >
       <i class="pi pi-check"></i>
-      Save Zone
+      حفظ المنطقة
     </button>
 
   </form>

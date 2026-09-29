@@ -3,25 +3,25 @@
   <!-- ── Page Header ─────────────────────────────────────── -->
   <div class="zone-form__header">
     <button type="button" class="zone-form__back-btn" (click)="cancel()">
-      <i class="pi pi-arrow-left"></i>
-      Back to Zones
+      <i class="pi pi-arrow-right"></i>
+      العودة إلى المناطق
     </button>
-    <h1 class="zone-form__title">{{ isEditMode ? 'Edit Zone' : 'Create New Zone' }}</h1>
+    <h1 class="zone-form__title">{{ isEditMode ? 'تعديل المنطقة' : 'إنشاء منطقة جديدة' }}</h1>
     <p class="zone-form__subtitle">
-      {{ isEditMode ? 'Update the details for zone ' + zoneId : 'Define a new delivery hub or coverage area.' }}
+      {{ isEditMode ? 'تحديث بيانات المنطقة ' + zoneId : 'عرّف مركزاً جديداً للتوصيل أو منطقة تغطية.' }}
     </p>
   </div>
 
   <!-- ── Form Card ────────────────────────────────────────── -->
   <div class="zone-form__card">
-    <h2 class="zone-form__section-title">Zone Information</h2>
+    <h2 class="zone-form__section-title">معلومات المنطقة</h2>
 
     <div class="row g-4">
 
       <!-- Zone Name -->
       <div class="col-md-6">
         <div class="zone-form__field">
-          <label class="zone-form__label" for="zoneName">Zone Name <span class="zone-form__required">*</span></label>
+          <label class="zone-form__label" for="zoneName">اسم المنطقة <span class="zone-form__required">*</span></label>
           <input
             id="zoneName"
             type="text"
@@ -37,14 +37,14 @@
       <!-- Status Toggle -->
       <div class="col-md-6">
         <div class="zone-form__field">
-          <label class="zone-form__label">Status</label>
+          <label class="zone-form__label">الحالة</label>
           <div class="zone-form__toggle-row">
             <p-toggleswitch [(ngModel)]="form.isActive" name="status" inputId="statusToggle" />
             <span
               class="zone-form__toggle-label"
               [ngClass]="form.isActive ? 'zone-form__toggle-label--active' : 'zone-form__toggle-label--inactive'"
             >
-              {{ form.isActive ? 'Active' : 'Inactive' }}
+              {{ form.isActive ? 'نشط' : 'غير نشط' }}
             </span>
           </div>
         </div>
@@ -53,7 +53,7 @@
       <!-- Coverage Area (full width) -->
       <div class="col-12">
         <div class="zone-form__field">
-          <label class="zone-form__label" for="coverage">Description / Coverage Area</label>
+          <label class="zone-form__label" for="coverage">الوصف / منطقة التغطية</label>
           <textarea
             id="coverage"
             pTextarea
@@ -71,11 +71,11 @@
     <!-- ── Action Buttons ──────────────────────────────────── -->
     <div class="zone-form__actions">
       <button type="button" class="zone-form__btn zone-form__btn--ghost" (click)="cancel()">
-        Cancel
+        إلغاء
       </button>
       <button type="button" class="zone-form__btn zone-form__btn--primary" (click)="save()">
         <i class="pi pi-check"></i>
-        {{ isEditMode ? 'Save Changes' : 'Create Zone' }}
+        {{ isEditMode ? 'حفظ التغييرات' : 'إنشاء المنطقة' }}
       </button>
     </div>
 

@@ -2,11 +2,19 @@
 
   <div class="drivers-list__header">
     <div class="drivers-list__header-text">
-      <h1 class="drivers-list__title">Drivers & Fleet Management</h1>
+      <h1 class="drivers-list__title">إدارة السائقين والأسطول</h1>
       <p class="drivers-list__subtitle">
-        Monitor driver availability, account status, and delivery performance across zones.
+        متابعة توفّر السائقين وحالة الحساب وأداء التوصيل عبر المناطق.
       </p>
     </div>
+    <button
+      type="button"
+      class="drivers-list__add-btn"
+      (click)="openAddModal()"
+    >
+      <i class="pi pi-plus"></i>
+      إضافة سائق جديد
+    </button>
   </div>
 
   <div class="drivers-list__toolbar">
@@ -15,7 +23,7 @@
         inputId="driverSearch"
         type="search"
         icon="pi-search"
-        placeholder="Search by name, phone, or zone..."
+        placeholder="ابحث بالاسم أو الهاتف أو المنطقة..."
         [value]="searchQuery()"
         (valueChange)="onSearchChange($event)"
       />
@@ -23,7 +31,7 @@
         <button
           type="button"
           class="drivers-list__search-clear"
-          title="Clear search"
+          title="مسح البحث"
           (click)="clearSearch()"
         >
           <i class="pi pi-times"></i>
@@ -31,7 +39,7 @@
       }
     </div>
     <span class="drivers-list__result-count">
-      {{ filteredDrivers().length }} driver{{ filteredDrivers().length === 1 ? '' : 's' }}
+      {{ filteredDrivers().length }} سائق
     </span>
   </div>
 
@@ -47,26 +55,26 @@
       <ng-template pTemplate="header">
         <tr>
           <th pSortableColumn="id" class="drivers-list__th" style="width: 100px">
-            Driver ID <p-sortIcon field="id" />
+            رقم السائق <p-sortIcon field="id" />
           </th>
           <th pSortableColumn="name" class="drivers-list__th">
-            Name <p-sortIcon field="name" />
+            الاسم <p-sortIcon field="name" />
           </th>
-          <th class="drivers-list__th" style="width: 150px">Phone</th>
+          <th class="drivers-list__th" style="width: 150px">الهاتف</th>
           <th pSortableColumn="zoneName" class="drivers-list__th">
-            Assigned Zone <p-sortIcon field="zoneName" />
+            المنطقة المعيّنة <p-sortIcon field="zoneName" />
           </th>
           <th pSortableColumn="availability" class="drivers-list__th" style="width: 130px">
-            Availability <p-sortIcon field="availability" />
+            التوفّر <p-sortIcon field="availability" />
           </th>
           <th pSortableColumn="accountStatus" class="drivers-list__th" style="width: 120px">
-            Account <p-sortIcon field="accountStatus" />
+            الحساب <p-sortIcon field="accountStatus" />
           </th>
           <th class="drivers-list__th drivers-list__th--center" style="width: 140px">
-            Active
+            مفعّل
           </th>
-          <th class="drivers-list__th drivers-list__th--center" style="width: 200px">
-            Actions
+          <th class="drivers-list__th drivers-list__th--center" style="width: 240px">
+            الإجراءات
           </th>
         </tr>
       </ng-template>
@@ -77,15 +85,15 @@
             <code class="drivers-list__id-pill">{{ driver.id }}</code>
           </td>
           <td>
-            <span class="drivers-list__name" dir="rtl">{{ driver.name }}</span>
+            <span class="drivers-list__name">{{ driver.name }}</span>
           </td>
           <td>
-            <span class="drivers-list__phone">{{ driver.phone }}</span>
+            <span class="drivers-list__phone" dir="ltr">{{ driver.phone }}</span>
           </td>
           <td>
             <span class="drivers-list__zone">
               <i class="pi pi-map-marker"></i>
-              <span dir="rtl">{{ driver.zoneName }}</span>
+              <span>{{ driver.zoneName }}</span>
             </span>
           </td>
           <td>
@@ -94,7 +102,7 @@
               [class]="'drivers-list__badge--' + driver.availability"
             >
               <span class="drivers-list__badge-dot"></span>
-              {{ availabilityConfig[driver.availability].label }}
+              {{ availabilityConfig[driver.availability].labelAr }}
             </span>
           </td>
           <td>
@@ -102,7 +110,7 @@
               class="drivers-list__badge drivers-list__badge--account"
               [class]="'drivers-list__badge--account-' + driver.accountStatus"
             >
-              {{ accountStatusConfig[driver.accountStatus].label }}
+              {{ accountStatusConfig[driver.accountStatus].labelAr }}
             </span>
           </td>
           <td class="drivers-list__td--center">
@@ -113,13 +121,24 @@
             />
           </td>
           <td class="drivers-list__td--center">
-            <a
-              [routerLink]="['/drivers', driver.id]"
-              class="drivers-list__profile-btn"
-            >
-              <i class="pi pi-user"></i>
-              View Full Profile & Stats
-            </a>
+            <div class="drivers-list__actions">
+              <button
+                type="button"
+                class="drivers-list__edit-btn"
+                title="تعديل"
+                (click)="openEditModal(driver)"
+              >
+                <i class="pi pi-pencil"></i>
+                تعديل
+              </button>
+              <a
+                [routerLink]="['/drivers', driver.id]"
+                class="drivers-list__profile-btn"
+              >
+                <i class="pi pi-user"></i>
+                عرض الملف
+              </a>
+            </div>
           </td>
         </tr>
       </ng-template>
@@ -128,9 +147,9 @@
         <tr>
           <td colspan="8" class="drivers-list__empty">
             @if (searchQuery()) {
-              No drivers match your search.
+              لا يوجد سائقون مطابقون لبحثك.
             } @else {
-              No drivers found.
+              لا يوجد سائقون.
             }
           </td>
         </tr>
@@ -139,3 +158,131 @@
   </div>
 
 </div>
+
+@if (modalOpen()) {
+  <div
+    class="drivers-list__modal-overlay"
+    role="presentation"
+    (click)="closeModal()"
+  >
+    <div
+      class="drivers-list__modal"
+      dir="rtl"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="driver-form-modal-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="drivers-list__modal-header">
+        <h2 id="driver-form-modal-title" class="drivers-list__modal-title">
+          {{ modalTitle() }}
+        </h2>
+        <button
+          type="button"
+          class="drivers-list__modal-close"
+          aria-label="إغلاق"
+          (click)="closeModal()"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <form
+        class="drivers-list__modal-body"
+        [formGroup]="form"
+        (ngSubmit)="saveDriver()"
+      >
+        <div class="drivers-list__field">
+          <label class="drivers-list__label" for="driverName">
+            الاسم <span class="drivers-list__required">*</span>
+          </label>
+          <input
+            id="driverName"
+            type="text"
+            pInputText
+            formControlName="name"
+            class="drivers-list__input"
+            placeholder="مثال: محمد العتيبي"
+            dir="rtl"
+          />
+          @if (form.controls.name.touched && form.controls.name.invalid) {
+            <span class="drivers-list__field-error">الاسم مطلوب</span>
+          }
+        </div>
+
+        <div class="drivers-list__field">
+          <label class="drivers-list__label" for="driverPhone">
+            رقم الهاتف <span class="drivers-list__required">*</span>
+          </label>
+          <input
+            id="driverPhone"
+            type="text"
+            pInputText
+            formControlName="phone"
+            class="drivers-list__input"
+            placeholder="+20 10 0000 0000"
+            dir="ltr"
+          />
+          @if (form.controls.phone.touched && form.controls.phone.invalid) {
+            <span class="drivers-list__field-error">رقم الهاتف مطلوب</span>
+          }
+        </div>
+
+        <div class="drivers-list__field">
+          <label class="drivers-list__label" for="driverZone">
+            المنطقة المعينة <span class="drivers-list__required">*</span>
+          </label>
+          <p-select
+            inputId="driverZone"
+            [options]="zoneOptions"
+            optionLabel="name"
+            optionValue="id"
+            formControlName="zoneId"
+            placeholder="اختر منطقة..."
+            styleClass="drivers-list__select"
+            appendTo="body"
+          />
+          @if (form.controls.zoneId.touched && form.controls.zoneId.invalid) {
+            <span class="drivers-list__field-error">المنطقة مطلوبة</span>
+          }
+        </div>
+
+        <div class="drivers-list__field">
+          <label class="drivers-list__label" for="driverVehicle">
+            المركبة <span class="drivers-list__required">*</span>
+          </label>
+          <p-select
+            inputId="driverVehicle"
+            [options]="vehicleOptions"
+            optionLabel="label"
+            optionValue="value"
+            formControlName="vehicleType"
+            placeholder="اختر نوع المركبة..."
+            styleClass="drivers-list__select"
+            appendTo="body"
+          />
+          @if (form.controls.vehicleType.touched && form.controls.vehicleType.invalid) {
+            <span class="drivers-list__field-error">نوع المركبة مطلوب</span>
+          }
+        </div>
+
+        <div class="drivers-list__modal-footer">
+          <button
+            type="submit"
+            class="drivers-list__btn drivers-list__btn--primary"
+          >
+            <i class="pi pi-check"></i>
+            حفظ
+          </button>
+          <button
+            type="button"
+            class="drivers-list__btn drivers-list__btn--ghost"
+            (click)="closeModal()"
+          >
+            إلغاء
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

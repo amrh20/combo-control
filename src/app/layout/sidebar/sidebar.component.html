@@ -4,7 +4,7 @@
   <div class="sidebar__logo">
     <div class="sidebar__logo-mark">C</div>
     @if (!collapsed()) {
-      <span class="sidebar__logo-text">Combo Control</span>
+      <span class="sidebar__logo-text">كومبو كنترول</span>
     }
   </div>
 
@@ -29,9 +29,9 @@
 
   <!-- Collapse toggle at bottom -->
   <button class="sidebar__toggle" (click)="toggleCollapse.emit()">
-    <i class="pi" [ngClass]="collapsed() ? 'pi-angle-right' : 'pi-angle-left'"></i>
+    <i class="pi" [ngClass]="collapsed() ? 'pi-angle-left' : 'pi-angle-right'"></i>
     @if (!collapsed()) {
-      <span>Collapse</span>
+      <span>طي القائمة</span>
     }
   </button>
 

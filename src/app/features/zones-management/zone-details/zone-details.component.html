@@ -4,9 +4,9 @@
   @if (!zone) {
     <div class="zone-details__not-found">
       <i class="pi pi-exclamation-circle zone-details__not-found-icon"></i>
-      <p>Zone not found.</p>
+      <p>المنطقة غير موجودة.</p>
       <button type="button" class="zone-details__btn zone-details__btn--ghost" (click)="goBack()">
-        Back to Zones
+        العودة إلى المناطق
       </button>
     </div>
   }
@@ -16,8 +16,8 @@
     <!-- ── Page Header ─────────────────────────────────────── -->
     <div class="zone-details__header">
       <button type="button" class="zone-details__back-btn" (click)="goBack()">
-        <i class="pi pi-arrow-left"></i>
-        Back to Zones
+        <i class="pi pi-arrow-right"></i>
+        العودة إلى المناطق
       </button>
       <div class="zone-details__header-meta">
         <div>
@@ -26,7 +26,7 @@
         </div>
         <a [routerLink]="['/zones/edit', zone.id]" class="zone-details__btn zone-details__btn--primary">
           <i class="pi pi-pencil"></i>
-          Edit Zone
+          تعديل المنطقة
         </a>
       </div>
     </div>
@@ -35,23 +35,23 @@
     <div class="zone-details__summary-row">
 
       <div class="zone-details__stat-card">
-        <span class="zone-details__stat-label">Status</span>
+        <span class="zone-details__stat-label">الحالة</span>
         <span
           class="zone-details__badge"
           [ngClass]="'zone-details__badge--' + zone.status"
         >
           <span class="zone-details__badge-dot"></span>
-          {{ zone.status === 'active' ? 'Active' : 'Inactive' }}
+          {{ zone.status === 'active' ? 'نشط' : 'غير نشط' }}
         </span>
       </div>
 
       <div class="zone-details__stat-card">
-        <span class="zone-details__stat-label">Total Shops</span>
+        <span class="zone-details__stat-label">إجمالي المتاجر</span>
         <span class="zone-details__stat-value">{{ zone.shopCount }}</span>
       </div>
 
       <div class="zone-details__stat-card zone-details__stat-card--full">
-        <span class="zone-details__stat-label">Coverage Area</span>
+        <span class="zone-details__stat-label">منطقة التغطية</span>
         <span class="zone-details__stat-text" dir="rtl">{{ zone.coverage }}</span>
       </div>
 
@@ -61,7 +61,7 @@
     <div class="zone-details__card">
       <h2 class="zone-details__section-title">
         <i class="pi pi-shop"></i>
-        Linked Shops
+        المتاجر المرتبطة
         <span class="zone-details__count-badge">{{ linkedShops.length }}</span>
       </h2>
 
@@ -73,11 +73,11 @@
       >
         <ng-template pTemplate="header">
           <tr>
-            <th class="zone-details__th">Shop ID</th>
-            <th class="zone-details__th">Shop Name</th>
-            <th class="zone-details__th">Status</th>
-            <th class="zone-details__th">Wallet Balance</th>
-            <th class="zone-details__th zone-details__th--center">Actions</th>
+            <th class="zone-details__th">رقم المتجر</th>
+            <th class="zone-details__th">اسم المتجر</th>
+            <th class="zone-details__th">الحالة</th>
+            <th class="zone-details__th">رصيد المحفظة</th>
+            <th class="zone-details__th zone-details__th--center">الإجراءات</th>
           </tr>
         </ng-template>
 
@@ -110,7 +110,7 @@
 
         <ng-template pTemplate="emptymessage">
           <tr>
-            <td colspan="5" class="zone-details__empty">No shops linked to this zone yet.</td>
+            <td colspan="5" class="zone-details__empty">لا توجد متاجر مرتبطة بهذه المنطقة بعد.</td>
           </tr>
         </ng-template>
       </p-table>

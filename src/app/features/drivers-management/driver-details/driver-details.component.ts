@@ -6,6 +6,7 @@ import { TableModule } from 'primeng/table';
 import { SelectModule } from 'primeng/select';
 import { InputTextModule } from 'primeng/inputtext';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
+import { DriverService } from '../../../core/services/driver.service';
 import {
   AVAILABILITY_CONFIG,
   ACCOUNT_STATUS_CONFIG,
@@ -14,9 +15,7 @@ import {
   RESOLUTION_CONFIG,
   SEVERITY_CONFIG,
   ZONE_OPTIONS,
-  getDriverById,
   getInitials,
-  updateDriver,
 } from '../data/drivers.mock';
 
 @Component({
@@ -38,6 +37,7 @@ export class DriverDetailsComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly driverService = inject(DriverService);
 
   readonly availabilityConfig = AVAILABILITY_CONFIG;
   readonly accountStatusConfig = ACCOUNT_STATUS_CONFIG;
@@ -46,13 +46,20 @@ export class DriverDetailsComponent implements OnInit {
   readonly currency = DRIVER_CURRENCY;
   readonly zoneOptions = ZONE_OPTIONS;
   readonly vehicleOptions = [
-    { label: 'Motorcycle', value: 'Motorcycle' },
-    { label: 'Car',        value: 'Car'        },
-    { label: 'Bicycle',    value: 'Bicycle'    },
+    { label: 'دراجة نارية', value: 'Motorcycle' },
+    { label: 'سيارة',       value: 'Car'        },
+    { label: 'دراجة',       value: 'Bicycle'    },
   ];
 
-  private readonly driverSignal = signal<DriverProfile | null>(null);
-  readonly driver = this.driverSignal.asReadonly();
+  private readonly driverId = signal<string | null>(null);
+
+  /** Live from DriverService — updates when list/modal edits the same record. */
+  readonly driver = computed(() => {
+    const id = this.driverId();
+    if (!id) return null;
+    return this.driverService.drivers().find((d) => d.id === id) ?? null;
+  });
+
   readonly isEditing = signal(false);
 
   readonly recentOrders = computed(() => {
@@ -74,11 +81,15 @@ export class DriverDetailsComponent implements OnInit {
       this.router.navigate(['/drivers']);
       return;
     }
-    this.loadDriver(id);
+    this.driverId.set(id);
   }
 
   getInitials(name: string): string {
     return getInitials(name);
+  }
+
+  vehicleLabel(type: string): string {
+    return this.vehicleOptions.find(v => v.value === type)?.label ?? type;
   }
 
   startEdit(): void {
@@ -120,21 +131,11 @@ export class DriverDetailsComponent implements OnInit {
       zoneName:      zone?.name ?? d.zoneName,
     };
 
-    updateDriver(d.id, patch);
-    this.driverSignal.set({ ...d, ...patch });
+    this.driverService.updateDriver(d.id, patch);
     this.isEditing.set(false);
   }
 
   goBack(): void {
     this.router.navigate(['/drivers']);
-  }
-
-  private loadDriver(id: string): void {
-    const found = getDriverById(id);
-    if (!found) {
-      this.driverSignal.set(null);
-      return;
-    }
-    this.driverSignal.set(structuredClone(found));
   }
 }

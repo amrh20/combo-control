@@ -2,15 +2,15 @@
 
   <div class="vendor-form__header">
     <button type="button" class="vendor-form__back-btn" (click)="cancel()">
-      <i class="pi pi-arrow-left"></i>
-      Back to Vendors
+      <i class="pi pi-arrow-right"></i>
+      العودة إلى المتاجر
     </button>
-    <h1 class="vendor-form__title">{{ isEditMode ? 'Edit Shop' : 'Add New Shop' }}</h1>
+    <h1 class="vendor-form__title">{{ isEditMode ? 'تعديل المتجر' : 'إضافة متجر جديد' }}</h1>
     <p class="vendor-form__subtitle">
       @if (isEditMode) {
-        Update the details for shop {{ vendorId }}.
+        تحديث بيانات المتجر {{ vendorId }}.
       } @else {
-        Register a new shop and assign it to a delivery zone.
+        سجّل متجراً جديداً وعيّنه لمنطقة توصيل.
       }
     </p>
   </div>
@@ -20,21 +20,21 @@
     <div class="vendor-form__card">
       <h2 class="vendor-form__section-title">
         <i class="pi pi-shop"></i>
-        Shop Details
+        بيانات المتجر
       </h2>
 
       <div class="row g-4">
         <div class="col-md-6">
           <div class="vendor-form__field">
             <label class="vendor-form__label" for="shopName">
-              Shop Name <span class="vendor-form__required">*</span>
+              اسم المتجر <span class="vendor-form__required">*</span>
             </label>
             <input
               id="shopName"
               type="text"
               pInputText
               formControlName="name"
-              placeholder="e.g. مطعم البيت"
+              placeholder="مثال: مطعم البيت"
               class="vendor-form__input"
               dir="rtl"
             />
@@ -44,14 +44,15 @@
         <div class="col-md-6">
           <div class="vendor-form__field">
             <label class="vendor-form__label" for="phone">
-              Phone Number <span class="vendor-form__required">*</span>
+              رقم الهاتف <span class="vendor-form__required">*</span>
             </label>
             <input
               id="phone"
               type="text"
               pInputText
               formControlName="phone"
-              placeholder="+966 50 000 0000"
+              placeholder="+20 10 0000 0000"
+              dir="ltr"
               class="vendor-form__input"
             />
           </div>
@@ -60,7 +61,7 @@
         <div class="col-md-6">
           <div class="vendor-form__field">
             <label class="vendor-form__label" for="contactPerson">
-              Contact Person <span class="vendor-form__required">*</span>
+              جهة الاتصال <span class="vendor-form__required">*</span>
             </label>
             <input
               id="contactPerson"
@@ -76,7 +77,7 @@
         <div class="col-md-6">
           <div class="vendor-form__field">
             <label class="vendor-form__label" for="zoneSelect">
-              Assigned Zone <span class="vendor-form__required">*</span>
+              المنطقة المعيّنة <span class="vendor-form__required">*</span>
             </label>
             <p-select
               inputId="zoneSelect"
@@ -84,7 +85,7 @@
               optionLabel="name"
               optionValue="id"
               formControlName="zoneId"
-              placeholder="Select a zone..."
+              placeholder="اختر منطقة..."
               styleClass="vendor-form__select"
             />
           </div>
@@ -93,7 +94,7 @@
         <div class="col-md-6">
           <div class="vendor-form__field">
             <label class="vendor-form__label" for="categorySelect">
-              Category <span class="vendor-form__required">*</span>
+              الفئة <span class="vendor-form__required">*</span>
             </label>
             <p-select
               inputId="categorySelect"
@@ -101,7 +102,7 @@
               optionLabel="label"
               optionValue="value"
               formControlName="category"
-              placeholder="Select category..."
+              placeholder="اختر فئة..."
               styleClass="vendor-form__select"
             />
           </div>
@@ -109,10 +110,10 @@
 
         <div class="col-md-6">
           <div class="vendor-form__field">
-            <label class="vendor-form__label">Shop Logo</label>
+            <label class="vendor-form__label">شعار المتجر</label>
             <div class="vendor-form__logo-placeholder">
               <i class="pi pi-image"></i>
-              <span>Upload coming soon</span>
+              <span>رفع الصورة قريباً</span>
             </div>
           </div>
         </div>
@@ -122,13 +123,13 @@
     <div class="vendor-form__card">
       <h2 class="vendor-form__section-title">
         <i class="pi pi-sliders-h"></i>
-        Operational Settings
+        الإعدادات التشغيلية
       </h2>
 
       <div class="row g-4">
         <div class="col-md-6">
           <div class="vendor-form__field">
-            <label class="vendor-form__label" for="openingTime">Opening Time</label>
+            <label class="vendor-form__label" for="openingTime">وقت الفتح</label>
             <p-datepicker
               inputId="openingTime"
               formControlName="openingTime"
@@ -142,7 +143,7 @@
 
         <div class="col-md-6">
           <div class="vendor-form__field">
-            <label class="vendor-form__label" for="closingTime">Closing Time</label>
+            <label class="vendor-form__label" for="closingTime">وقت الإغلاق</label>
             <p-datepicker
               inputId="closingTime"
               formControlName="closingTime"
@@ -156,7 +157,7 @@
 
         <div class="col-md-6">
           <div class="vendor-form__field">
-            <label class="vendor-form__label" for="overrideSelect">Live Status Override</label>
+            <label class="vendor-form__label" for="overrideSelect">تجاوز الحالة المباشرة</label>
             <p-select
               inputId="overrideSelect"
               [options]="overrideOptions"
@@ -170,7 +171,7 @@
 
         <div class="col-md-6">
           <div class="vendor-form__field">
-            <label class="vendor-form__label" for="discountPercent">Discount Badge (%)</label>
+            <label class="vendor-form__label" for="discountPercent">شارة الخصم (%)</label>
             <p-inputnumber
               inputId="discountPercent"
               formControlName="discountPercent"
@@ -184,7 +185,7 @@
 
         <div class="col-md-6">
           <div class="vendor-form__field">
-            <label class="vendor-form__label">Auto-Accept Orders</label>
+            <label class="vendor-form__label">قبول الطلبات تلقائياً</label>
             <div class="vendor-form__toggle-row">
               <p-toggleswitch formControlName="autoAccept" inputId="autoAccept" />
               <div class="vendor-form__toggle-body">
@@ -194,7 +195,7 @@
                     ? 'vendor-form__toggle-state--on'
                     : 'vendor-form__toggle-state--off'"
                 >
-                  {{ form.get('autoAccept')?.value ? 'Enabled' : 'Disabled' }}
+                  {{ form.get('autoAccept')?.value ? 'مفعّل' : 'معطّل' }}
                 </span>
               </div>
             </div>
@@ -203,7 +204,7 @@
 
         <div class="col-md-6">
           <div class="vendor-form__field">
-            <label class="vendor-form__label">System Status</label>
+            <label class="vendor-form__label">حالة النظام</label>
             <div class="vendor-form__toggle-row">
               <p-toggleswitch
                 [ngModel]="form.get('systemStatus')?.value === 'active'"
@@ -213,7 +214,7 @@
               />
               <div class="vendor-form__toggle-body">
                 <span class="vendor-form__toggle-hint">
-                  Inactive shops are hidden from the customer app.
+                  المتاجر غير النشطة مخفية من تطبيق العميل.
                 </span>
               </div>
             </div>
@@ -223,11 +224,11 @@
 
       <div class="vendor-form__actions">
         <button type="button" class="vendor-form__btn vendor-form__btn--ghost" (click)="cancel()">
-          Cancel
+          إلغاء
         </button>
         <button type="submit" class="vendor-form__btn vendor-form__btn--primary">
           <i class="pi pi-check"></i>
-          {{ isEditMode ? 'Save Changes' : 'Add Shop' }}
+          {{ isEditMode ? 'حفظ التغييرات' : 'إضافة المتجر' }}
         </button>
       </div>
     </div>

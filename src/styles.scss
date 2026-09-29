@@ -34,6 +34,7 @@ body {
 // ────────────────────────────────────────────────
 .p-datatable {
   font-family: 'Alexandria', sans-serif;
+  direction: rtl;
 
   .p-datatable-thead > tr > th {
     background-color: var(--Combo-bg-background-neutral-100) !important;
@@ -42,6 +43,7 @@ body {
     font-size: 13px;
     border-color: var(--Combo-border-border-neutral-primary) !important;
     padding: 12px 16px !important;
+    text-align: start !important;
   }
 
   .p-datatable-tbody > tr > td {
@@ -50,6 +52,7 @@ body {
     background-color: var(--Combo-bg-background-card) !important;
     border-color: var(--Combo-border-border-neutral-secondary) !important;
     padding: 12px 16px !important;
+    text-align: start !important;
   }
 
   .p-datatable-tbody > tr:hover > td {
@@ -61,9 +64,16 @@ body {
     border-top: 1px solid var(--Combo-border-border-neutral-secondary) !important;
     font-family: 'Alexandria', sans-serif;
     font-size: 13px;
+    direction: rtl;
   }
 
   .p-datatable-sort-icon {
     color: var(--Combo-text-text-secondary-paragraph);
+    margin-inline-start: 4px;
+  }
+
+  .p-datatable-column-header-content {
+    flex-direction: row;
+    justify-content: flex-start;
   }
 }

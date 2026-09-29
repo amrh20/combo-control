@@ -41,14 +41,14 @@ export interface CityOption {
 
 /** Dropdown options for the City field. */
 export const CITY_OPTIONS: CityOption[] = [
-  { label: 'Cairo',        value: 'cairo' },
-  { label: 'Giza',         value: 'giza' },
-  { label: 'Alexandria',   value: 'alexandria' },
-  { label: 'Mansoura',     value: 'mansoura' },
-  { label: 'Tanta',        value: 'tanta' },
-  { label: 'Port Said',    value: 'port_said' },
-  { label: 'Suez',         value: 'suez' },
-  { label: 'Ismailia',     value: 'ismailia' },
+  { label: 'القاهرة',      value: 'cairo' },
+  { label: 'الجيزة',       value: 'giza' },
+  { label: 'الإسكندرية',   value: 'alexandria' },
+  { label: 'المنصورة',     value: 'mansoura' },
+  { label: 'طنطا',         value: 'tanta' },
+  { label: 'بورسعيد',      value: 'port_said' },
+  { label: 'السويس',       value: 'suez' },
+  { label: 'الإسماعيلية',  value: 'ismailia' },
 ];
 
 /** Default map view — Cairo, Egypt. */

@@ -3,9 +3,9 @@
   @if (!driver()) {
     <div class="driver-details__not-found">
       <i class="pi pi-exclamation-circle"></i>
-      <p>Driver not found.</p>
+      <p>السائق غير موجود.</p>
       <button type="button" class="driver-details__btn driver-details__btn--ghost" (click)="goBack()">
-        Back to Drivers
+        العودة إلى السائقين
       </button>
     </div>
   }
@@ -15,14 +15,14 @@
     <!-- ── Profile Header ─────────────────────────────────── -->
     <div class="driver-details__header">
       <button type="button" class="driver-details__back" (click)="goBack()">
-        <i class="pi pi-arrow-left"></i>
-        All Drivers
+        <i class="pi pi-arrow-right"></i>
+        كل السائقين
       </button>
 
       <div class="driver-details__header-main">
         <div class="driver-details__avatar">{{ getInitials(d.name) }}</div>
         <div>
-          <h1 class="driver-details__name" dir="rtl">{{ d.name }}</h1>
+          <h1 class="driver-details__name">{{ d.name }}</h1>
           <div class="driver-details__meta">
             <code class="driver-details__id-pill">{{ d.id }}</code>
             <span
@@ -30,13 +30,13 @@
               [ngClass]="'driver-details__badge--' + d.availability"
             >
               <span class="driver-details__badge-dot"></span>
-              {{ availabilityConfig[d.availability].label }}
+              {{ availabilityConfig[d.availability].labelAr }}
             </span>
             <span
               class="driver-details__badge driver-details__badge--account"
               [ngClass]="'driver-details__badge--account-' + d.accountStatus"
             >
-              {{ accountStatusConfig[d.accountStatus].label }}
+              {{ accountStatusConfig[d.accountStatus].labelAr }}
             </span>
           </div>
         </div>
@@ -48,12 +48,12 @@
       <div class="driver-details__card-head">
         <h2 class="driver-details__card-title">
           <i class="pi pi-id-card"></i>
-          General Information
+          المعلومات العامة
         </h2>
         @if (!isEditing()) {
           <button type="button" class="driver-details__btn driver-details__btn--ghost" (click)="startEdit()">
             <i class="pi pi-pencil"></i>
-            Edit
+            تعديل
           </button>
         }
       </div>
@@ -62,32 +62,32 @@
         <div class="row g-3">
           <div class="col-md-6">
             <div class="driver-details__field">
-              <span class="driver-details__label">Full Name</span>
-              <span class="driver-details__value" dir="rtl">{{ d.name }}</span>
+              <span class="driver-details__label">الاسم الكامل</span>
+              <span class="driver-details__value">{{ d.name }}</span>
             </div>
           </div>
           <div class="col-md-6">
             <div class="driver-details__field">
-              <span class="driver-details__label">Phone Number</span>
-              <span class="driver-details__value">{{ d.phone }}</span>
+              <span class="driver-details__label">رقم الهاتف</span>
+              <span class="driver-details__value" dir="ltr">{{ d.phone }}</span>
             </div>
           </div>
           <div class="col-md-4">
             <div class="driver-details__field">
-              <span class="driver-details__label">Vehicle Type</span>
-              <span class="driver-details__value">{{ d.vehicleType }}</span>
+              <span class="driver-details__label">نوع المركبة</span>
+              <span class="driver-details__value">{{ vehicleLabel(d.vehicleType) }}</span>
             </div>
           </div>
           <div class="col-md-4">
             <div class="driver-details__field">
-              <span class="driver-details__label">License Expiry</span>
-              <span class="driver-details__value">{{ d.licenseExpiry }}</span>
+              <span class="driver-details__label">انتهاء الرخصة</span>
+              <span class="driver-details__value" dir="ltr">{{ d.licenseExpiry }}</span>
             </div>
           </div>
           <div class="col-md-4">
             <div class="driver-details__field">
-              <span class="driver-details__label">Assigned Zone</span>
-              <span class="driver-details__value" dir="rtl">{{ d.zoneName }}</span>
+              <span class="driver-details__label">المنطقة المعيّنة</span>
+              <span class="driver-details__value">{{ d.zoneName }}</span>
             </div>
           </div>
         </div>
@@ -95,15 +95,15 @@
         <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="driver-details__form">
           <div class="row g-3">
             <div class="col-md-6">
-              <label class="driver-details__form-label" for="driverName">Full Name</label>
+              <label class="driver-details__form-label" for="driverName">الاسم الكامل</label>
               <input pInputText id="driverName" formControlName="name" class="driver-details__input" />
             </div>
             <div class="col-md-6">
-              <label class="driver-details__form-label" for="driverPhone">Phone Number</label>
-              <input pInputText id="driverPhone" formControlName="phone" class="driver-details__input" />
+              <label class="driver-details__form-label" for="driverPhone">رقم الهاتف</label>
+              <input pInputText id="driverPhone" formControlName="phone" class="driver-details__input" dir="ltr" />
             </div>
             <div class="col-md-4">
-              <label class="driver-details__form-label" for="vehicleType">Vehicle Type</label>
+              <label class="driver-details__form-label" for="vehicleType">نوع المركبة</label>
               <p-select
                 inputId="vehicleType"
                 formControlName="vehicleType"
@@ -114,11 +114,11 @@
               />
             </div>
             <div class="col-md-4">
-              <label class="driver-details__form-label" for="licenseExpiry">License Expiry</label>
-              <input pInputText id="licenseExpiry" type="date" formControlName="licenseExpiry" class="driver-details__input" />
+              <label class="driver-details__form-label" for="licenseExpiry">انتهاء الرخصة</label>
+              <input pInputText id="licenseExpiry" type="date" formControlName="licenseExpiry" class="driver-details__input" dir="ltr" />
             </div>
             <div class="col-md-4">
-              <label class="driver-details__form-label" for="zoneId">Assigned Zone</label>
+              <label class="driver-details__form-label" for="zoneId">المنطقة المعيّنة</label>
               <p-select
                 inputId="zoneId"
                 formControlName="zoneId"
@@ -131,11 +131,11 @@
           </div>
           <div class="driver-details__form-actions">
             <button type="button" class="driver-details__btn driver-details__btn--ghost" (click)="cancelEdit()">
-              Cancel
+              إلغاء
             </button>
             <button type="submit" class="driver-details__btn driver-details__btn--primary">
               <i class="pi pi-check"></i>
-              Save Changes
+              حفظ التغييرات
             </button>
           </div>
         </form>
@@ -146,7 +146,7 @@
     <div class="driver-details__card">
       <h2 class="driver-details__card-title">
         <i class="pi pi-chart-bar"></i>
-        Performance Analytics
+        تحليلات الأداء
       </h2>
 
       <div class="row g-3">
@@ -168,7 +168,7 @@
         </div>
         <div class="col-md-4">
           <ctrl-stat-card
-            label="Acceptance Rate"
+            label="نسبة القبول"
             [value]="d.stats.acceptanceRate + '%'"
             icon="pi-check-circle"
             variant="success"
@@ -176,7 +176,7 @@
         </div>
         <div class="col-md-4">
           <ctrl-stat-card
-            label="Customer Rating"
+            label="تقييم العملاء"
             [value]="d.stats.customerRating + ' ★'"
             icon="pi-star-fill"
             variant="info"
@@ -184,8 +184,8 @@
         </div>
         <div class="col-md-4">
           <ctrl-stat-card
-            label="Avg. Delivery Time"
-            [value]="d.stats.avgDeliveryTimeMins + ' mins'"
+            label="متوسط وقت التوصيل"
+            [value]="d.stats.avgDeliveryTimeMins + ' دقيقة'"
             icon="pi-clock"
             variant="primary"
           />
@@ -197,8 +197,8 @@
     <div class="driver-details__card driver-details__card--table">
       <h2 class="driver-details__card-title">
         <i class="pi pi-list"></i>
-        Delivered Orders History
-        <span class="driver-details__card-sub">Last 10 completed</span>
+        سجل الطلبات المسلّمة
+        <span class="driver-details__card-sub">آخر 10 طلبات مكتملة</span>
       </h2>
 
       <p-table
@@ -207,27 +207,27 @@
       >
         <ng-template pTemplate="header">
           <tr>
-            <th class="driver-details__th">Order ID</th>
-            <th class="driver-details__th">Date</th>
-            <th class="driver-details__th">Zone</th>
-            <th class="driver-details__th">Delivery Fee Earned</th>
-            <th class="driver-details__th">Status</th>
+            <th class="driver-details__th">رقم الطلب</th>
+            <th class="driver-details__th">التاريخ</th>
+            <th class="driver-details__th">المنطقة</th>
+            <th class="driver-details__th">أرباح التوصيل</th>
+            <th class="driver-details__th">الحالة</th>
           </tr>
         </ng-template>
         <ng-template pTemplate="body" let-order>
           <tr>
             <td><code class="driver-details__id-pill">{{ order.id }}</code></td>
-            <td>{{ order.date }}</td>
-            <td dir="rtl">{{ order.zoneName }}</td>
+            <td dir="ltr">{{ order.date }}</td>
+            <td>{{ order.zoneName }}</td>
             <td>{{ order.deliveryFeeEarned | number:'1.2-2' }} {{ currency }}</td>
             <td>
-              <span class="driver-details__badge driver-details__badge--delivered">Delivered</span>
+              <span class="driver-details__badge driver-details__badge--delivered">تم التسليم</span>
             </td>
           </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">
           <tr>
-            <td colspan="5" class="driver-details__empty">No delivered orders yet.</td>
+            <td colspan="5" class="driver-details__empty">لا توجد طلبات مسلّمة بعد.</td>
           </tr>
         </ng-template>
       </p-table>
@@ -238,13 +238,13 @@
       <h2 class="driver-details__card-title">
         <i class="pi pi-exclamation-triangle"></i>
         مشاكل الطيار
-        <span class="driver-details__card-sub">Operational Issues & Complaints</span>
+        <span class="driver-details__card-sub">الشكاوى والمشاكل التشغيلية</span>
       </h2>
 
       @if (d.complaints.length === 0) {
         <div class="driver-details__no-issues">
           <i class="pi pi-check-circle"></i>
-          <p>No reported issues for this driver.</p>
+          <p>لا توجد مشاكل مسجّلة لهذا السائق.</p>
         </div>
       } @else {
         <p-table
@@ -253,28 +253,28 @@
         >
           <ng-template pTemplate="header">
             <tr>
-              <th class="driver-details__th" style="width: 100px">Issue ID</th>
-              <th class="driver-details__th" style="width: 110px">Date</th>
-              <th class="driver-details__th" style="width: 110px">Order ID</th>
-              <th class="driver-details__th" style="width: 100px">Severity</th>
-              <th class="driver-details__th">Description</th>
-              <th class="driver-details__th" style="width: 120px">Resolution</th>
+              <th class="driver-details__th" style="width: 100px">رقم المشكلة</th>
+              <th class="driver-details__th" style="width: 110px">التاريخ</th>
+              <th class="driver-details__th" style="width: 110px">رقم الطلب</th>
+              <th class="driver-details__th" style="width: 100px">الخطورة</th>
+              <th class="driver-details__th">الوصف</th>
+              <th class="driver-details__th" style="width: 120px">الحل</th>
             </tr>
           </ng-template>
           <ng-template pTemplate="body" let-issue>
             <tr>
               <td><code class="driver-details__id-pill">{{ issue.id }}</code></td>
-              <td>{{ issue.date }}</td>
+              <td dir="ltr">{{ issue.date }}</td>
               <td><code class="driver-details__id-pill driver-details__id-pill--muted">{{ issue.orderId }}</code></td>
               <td>
                 <span
                   class="driver-details__severity"
                   [ngClass]="'driver-details__severity--' + issue.severity"
                 >
-                  {{ severityConfig[issue.severity].label }}
+                  {{ severityConfig[issue.severity].labelAr }}
                 </span>
               </td>
-              <td class="driver-details__desc" dir="rtl">{{ issue.description }}</td>
+              <td class="driver-details__desc">{{ issue.description }}</td>
               <td>
                 <span
                   class="driver-details__resolution"

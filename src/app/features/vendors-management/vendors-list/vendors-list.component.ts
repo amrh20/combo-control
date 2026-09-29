@@ -47,7 +47,7 @@ export class VendorsListComponent {
   readonly liveStatusFilter = signal<LiveStatus | 'all'>('all');
 
   readonly categoryFilterOptions = [
-    { label: 'All Categories', value: 'all' as const },
+    { label: 'كل الفئات', value: 'all' as const },
     ...Object.entries(CATEGORY_CONFIG).map(([value, cfg]) => ({
       label: cfg.labelAr,
       value: value as VendorCategory,
@@ -55,12 +55,12 @@ export class VendorsListComponent {
   ];
 
   readonly zoneFilterOptions = [
-    { label: 'All Zones', value: 'all' as const },
+    { label: 'كل المناطق', value: 'all' as const },
     ...ZONE_OPTIONS.map(z => ({ label: z.name, value: z.id })),
   ];
 
   readonly liveStatusFilterOptions = [
-    { label: 'All Live Status', value: 'all' as const },
+    { label: 'كل الحالات المباشرة', value: 'all' as const },
     ...Object.entries(LIVE_STATUS_CONFIG).map(([value, cfg]) => ({
       label: cfg.labelAr,
       value: value as LiveStatus,

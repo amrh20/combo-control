@@ -100,6 +100,13 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'orders/:id',
+        loadComponent: () =>
+          import('./features/orders/order-details/order-details.component').then(
+            m => m.OrderDetailsComponent,
+          ),
+      },
+      {
         path: 'drivers',
         loadComponent: () =>
           import('./features/drivers-management/drivers-list/drivers-list.component').then(

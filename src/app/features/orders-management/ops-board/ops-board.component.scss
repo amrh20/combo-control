@@ -70,7 +70,7 @@ $list-width: 360px;
 
   &__search-clear {
     position: absolute;
-    right: 20px;
+    inset-inline-end: 20px;
     top: 50%;
     transform: translateY(-50%);
     display: inline-flex;
@@ -129,21 +129,22 @@ $list-width: 360px;
     border-radius: 50%;
     flex-shrink: 0;
 
-    &--new       { background: var(--Combo-bg-background-info); }
-    &--reviewing  { background: var(--Combo-bg-background-warning); }
-    &--ready      { background: var(--Combo-bg-background-success); }
+    &--neutral { background: var(--Combo-bg-background-neutral-400); }
+    &--info    { background: var(--Combo-bg-background-info); }
+    &--warning { background: var(--Combo-bg-background-warning); }
+    &--success { background: var(--Combo-bg-background-success); }
+    &--danger  { background: var(--Combo-bg-background-error); }
+    &--primary { background: var(--Combo-bg-background-primary); }
   }
 
   &__status-group-label {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
     color: var(--Combo-text-text-secondary-paragraph);
   }
 
   &__status-group-count {
-    margin-left: auto;
+    margin-inline-start: auto;
     font-size: 11px;
     font-weight: 600;
     color: var(--Combo-text-text-secondary-paragraph);
@@ -155,7 +156,7 @@ $list-width: 360px;
     flex-direction: column;
     gap: 6px;
     width: 100%;
-    text-align: left;
+    text-align: start;
     padding: 12px 14px;
     margin-bottom: 8px;
     background-color: var(--Combo-bg-background-card);
@@ -258,11 +259,15 @@ $list-width: 360px;
   // ── Right panel ───────────────────────────────────
   &__detail-panel {
     min-width: 0;
+    overflow-x: hidden;
     overflow-y: auto;
     max-height: calc(100vh - 64px - 48px - 80px);
+    padding-inline-end: 2px;
+    -webkit-overflow-scrolling: touch;
 
     @media (max-width: 960px) {
       max-height: none;
+      overflow-y: visible;
     }
   }
 

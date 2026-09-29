@@ -54,9 +54,9 @@ export class OrderActionPanelComponent {
   readonly nextAction = computed(() => {
     switch (this.order().status) {
       case 'new':
-        return { label: 'Confirm Order', nextStatus: 'reviewing' as OrderStatus, icon: 'pi-check-circle' };
+        return { label: 'تأكيد الطلب', nextStatus: 'reviewing' as OrderStatus, icon: 'pi-check-circle' };
       case 'reviewing':
-        return { label: 'Mark Shops as Ready', nextStatus: 'ready' as OrderStatus, icon: 'pi-box' };
+        return { label: 'تعيين المتاجر كجاهزة', nextStatus: 'ready' as OrderStatus, icon: 'pi-box' };
       default:
         return null;
     }
@@ -114,7 +114,7 @@ export class OrderActionPanelComponent {
   }
 
   driverStatusLabel(status: Driver['status']): string {
-    return status === 'available' ? 'Available' : 'Busy';
+    return status === 'available' ? 'متاح' : 'مشغول';
   }
 
   lineTotal(item: OrderItem): number {

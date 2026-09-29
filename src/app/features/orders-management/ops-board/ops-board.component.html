@@ -1,9 +1,9 @@
 <div class="ops-board">
 
-  <!-- ── Left: Active Orders List ─────────────────────────── -->
+  <!-- ── Start (right in RTL): Active Orders List ───────────── -->
   <aside class="ops-board__list-panel">
     <div class="ops-board__list-header">
-      <h2 class="ops-board__list-title">Active Orders</h2>
+      <h2 class="ops-board__list-title">الطلبات الحالية</h2>
       <span class="ops-board__list-count">{{ filteredActiveOrders().length }}</span>
     </div>
 
@@ -12,7 +12,7 @@
         inputId="orderSearch"
         type="search"
         icon="pi-search"
-        placeholder="Order ID, customer name, or phone..."
+        placeholder="رقم الطلب، اسم العميل، أو الهاتف..."
         [value]="searchQuery()"
         (valueChange)="onSearchChange($event)"
       />
@@ -20,7 +20,7 @@
         <button
           type="button"
           class="ops-board__search-clear"
-          title="Clear search"
+          title="مسح البحث"
           (click)="clearSearch()"
         >
           <i class="pi pi-times"></i>
@@ -33,9 +33,9 @@
         <div class="ops-board__empty">
           <i class="pi" [class.pi-search]="searchQuery()" [class.pi-inbox]="!searchQuery()"></i>
           @if (searchQuery()) {
-            <p>No orders match your search.</p>
+            <p>لا توجد طلبات مطابقة لبحثك.</p>
           } @else {
-            <p>No active orders right now.</p>
+            <p>لا توجد طلبات حالية الآن.</p>
           }
         </div>
       }
@@ -45,7 +45,7 @@
           <div class="ops-board__status-group-header">
             <span
               class="ops-board__status-dot"
-              [class]="'ops-board__status-dot--' + group.status"
+              [class]="'ops-board__status-dot--' + statusConfig[group.status].tone"
             ></span>
             <span class="ops-board__status-group-label">{{ group.label }}</span>
             <span class="ops-board__status-group-count">{{ group.orders.length }}</span>
@@ -59,25 +59,32 @@
               (click)="selectOrder(order.id)"
             >
               <div class="ops-board__order-card-top">
-                <code class="ops-board__order-id">{{ order.id }}</code>
-                <span class="ops-board__order-age">{{ formatAge(order.createdAt) }}</span>
+                <code class="ops-board__order-id">{{ order.orderNumber }}</code>
+                <span class="ops-board__order-age">
+                  {{ formatAge(order.timestamps.placedAt) }}
+                </span>
               </div>
 
-              <span class="ops-board__customer-name" dir="rtl">{{ order.customer.name }}</span>
+              <span class="ops-board__customer-name">
+                {{ order.customer.name }}
+              </span>
 
               <div class="ops-board__order-meta">
                 <span class="ops-board__zone">
                   <i class="pi pi-map-marker"></i>
-                  <span dir="rtl">{{ order.zoneName }}</span>
+                  <span>{{ order.zoneName }}</span>
                 </span>
                 <span class="ops-board__total">
-                  {{ calcTotal(order) | number: '1.2-2' }} {{ currency }}
+                  {{ order.financials.customerGrandTotal | number: '1.0-2' }}
+                  {{ currency }}
                 </span>
               </div>
 
               <div class="ops-board__shop-tags">
-                @for (shop of order.shopGroups; track shop.shopId) {
-                  <span class="ops-board__shop-tag" dir="rtl">{{ shop.shopName }}</span>
+                @for (shop of order.subOrders; track shop.id) {
+                  <span class="ops-board__shop-tag">
+                    {{ shop.shopNameAr || shop.shopName }}
+                  </span>
                 }
               </div>
             </button>
@@ -87,23 +94,18 @@
     </div>
   </aside>
 
-  <!-- ── Right: Order Details / Action Panel ──────────────── -->
+  <!-- ── End (left in RTL): Canonical Order Details ─────────── -->
   <section class="ops-board__detail-panel">
     @if (selectedOrder(); as order) {
-      <ctrl-order-action-panel
-        [order]="order"
-        [zoneDrivers]="zoneDrivers()"
-        (itemOutOfStock)="onItemOutOfStock($event)"
-        (itemUpdate)="onItemUpdate($event)"
-        (itemDelete)="onItemDelete($event)"
-        (advanceStatus)="onAdvanceStatus($event)"
-        (dispatch)="onDispatch($event)"
+      <ctrl-order-details
+        [orderId]="order.id"
+        [embedded]="true"
       />
     } @else {
       <div class="ops-board__detail-empty">
         <i class="pi pi-list-check"></i>
-        <h3>Select an order</h3>
-        <p>Choose an active order from the list to review and dispatch.</p>
+        <h3>اختر طلباً</h3>
+        <p>اختر طلباً حالياً من القائمة لعرض تفاصيل العقد الأساسي.</p>
       </div>
     }
   </section>

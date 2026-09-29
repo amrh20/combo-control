@@ -2,14 +2,14 @@
 
   <div class="vendors-list__header">
     <div class="vendors-list__header-text">
-      <h1 class="vendors-list__title">Vendors / Shops Management</h1>
+      <h1 class="vendors-list__title">إدارة المتاجر</h1>
       <p class="vendors-list__subtitle">
-        Manage shop profiles, live operational status, and visibility in the customer app.
+        إدارة ملفات المتاجر والحالة التشغيلية المباشرة والظهور في تطبيق العميل.
       </p>
     </div>
     <a [routerLink]="['/vendors/create']" class="vendors-list__add-btn">
       <i class="pi pi-plus"></i>
-      Add New Shop
+      إضافة متجر جديد
     </a>
   </div>
 
@@ -19,7 +19,7 @@
         inputId="vendorSearch"
         type="search"
         icon="pi-search"
-        placeholder="Search by name, category, zone, or phone..."
+        placeholder="ابحث بالاسم أو الفئة أو المنطقة أو الهاتف..."
         [value]="searchQuery()"
         (valueChange)="onSearchChange($event)"
       />
@@ -27,7 +27,7 @@
         <button
           type="button"
           class="vendors-list__search-clear"
-          title="Clear search"
+          title="مسح البحث"
           (click)="clearSearch()"
         >
           <i class="pi pi-times"></i>
@@ -43,7 +43,7 @@
         optionValue="value"
         [ngModel]="categoryFilter()"
         (ngModelChange)="onCategoryFilterChange($event)"
-        placeholder="Category"
+        placeholder="الفئة"
         styleClass="vendors-list__filter-select"
       />
       <p-select
@@ -53,7 +53,7 @@
         optionValue="value"
         [ngModel]="zoneFilter()"
         (ngModelChange)="onZoneFilterChange($event)"
-        placeholder="Zone"
+        placeholder="المنطقة"
         styleClass="vendors-list__filter-select"
       />
       <p-select
@@ -63,12 +63,12 @@
         optionValue="value"
         [ngModel]="liveStatusFilter()"
         (ngModelChange)="onLiveStatusFilterChange($event)"
-        placeholder="Live Status"
+        placeholder="الحالة المباشرة"
         styleClass="vendors-list__filter-select"
       />
       @if (hasActiveFilters()) {
         <button type="button" class="vendors-list__clear-filters" (click)="clearFilters()">
-          Clear filters
+          مسح الفلاتر
         </button>
       }
     </div>
@@ -76,7 +76,7 @@
 
   <div class="vendors-list__meta">
     <span class="vendors-list__result-count">
-      {{ filteredVendors().length }} shop{{ filteredVendors().length === 1 ? '' : 's' }}
+      {{ filteredVendors().length }} متجر
     </span>
   </div>
 
@@ -91,22 +91,22 @@
     >
       <ng-template pTemplate="header">
         <tr>
-          <th class="vendors-list__th" style="width: 72px">Logo</th>
+          <th class="vendors-list__th" style="width: 72px">الشعار</th>
           <th pSortableColumn="name" class="vendors-list__th">
-            Shop Name <p-sortIcon field="name" />
+            اسم المتجر <p-sortIcon field="name" />
           </th>
           <th pSortableColumn="category" class="vendors-list__th" style="width: 130px">
-            Category <p-sortIcon field="category" />
+            الفئة <p-sortIcon field="category" />
           </th>
           <th pSortableColumn="zoneName" class="vendors-list__th">
-            Assigned Zone <p-sortIcon field="zoneName" />
+            المنطقة المعيّنة <p-sortIcon field="zoneName" />
           </th>
-          <th class="vendors-list__th" style="width: 160px">Live Status</th>
+          <th class="vendors-list__th" style="width: 160px">الحالة المباشرة</th>
           <th class="vendors-list__th vendors-list__th--center" style="width: 110px">
-            Active
+            مفعّل
           </th>
           <th class="vendors-list__th vendors-list__th--center" style="width: 180px">
-            Actions
+            الإجراءات
           </th>
         </tr>
       </ng-template>
@@ -125,7 +125,7 @@
           </td>
           <td>
             <div class="vendors-list__name-cell">
-              <span class="vendors-list__shop-name" dir="rtl">{{ vendor.name }}</span>
+              <span class="vendors-list__shop-name">{{ vendor.name }}</span>
               <code class="vendors-list__id-pill">{{ vendor.id }}</code>
             </div>
           </td>
@@ -135,7 +135,7 @@
           <td>
             <span class="vendors-list__zone">
               <i class="pi pi-map-marker"></i>
-              <span dir="rtl">{{ vendor.zoneName }}</span>
+              <span>{{ vendor.zoneName }}</span>
             </span>
           </td>
           <td>
@@ -160,7 +160,7 @@
           <td class="vendors-list__td--center">
             <a [routerLink]="['/vendors', vendor.id]" class="vendors-list__manage-btn">
               <i class="pi pi-sliders-h"></i>
-              Manage Vendor
+              إدارة المتجر
             </a>
           </td>
         </tr>
@@ -170,9 +170,9 @@
         <tr>
           <td colspan="7" class="vendors-list__empty">
             @if (hasActiveFilters()) {
-              No shops match your filters.
+              لا توجد متاجر مطابقة للفلاتر.
             } @else {
-              No shops found.
+              لا توجد متاجر.
             }
           </td>
         </tr>

@@ -1,74 +1,69 @@
-import { Component, computed, effect, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { ComboInputComponent } from '../../../shared/components/combo-input/combo-input.component';
-import { OrderActionPanelComponent } from '../order-action-panel/order-action-panel.component';
+import { OrderDetailsComponent } from '../../orders/order-details/order-details.component';
 import {
-  ACTIVE_ORDER_STATUSES,
-  calcOrderTotal,
-  formatOrderAge,
-  getDriversForZone,
-  LiveOrder,
-  matchesOrderSearch,
-  ORDER_CURRENCY,
-  ORDER_STATUS_CONFIG,
-  ORDERS_DATA,
-  OrderStatus,
-} from '../data/orders.mock';
+  CanonicalOrder,
+  CanonicalOrderStatus,
+  CANONICAL_ORDER_STATUS_CONFIG,
+} from '../../../core/models/canonical-order.model';
+import { CanonicalOrderService } from '../../../core/services/canonical-order.service';
+import {
+  ACTIVE_CANONICAL_STATUSES,
+  formatCanonicalOrderAge,
+  matchesCanonicalOrderSearch,
+} from '../../../core/mocks/canonical-order.mock';
 
 interface StatusGroup {
-  status: OrderStatus;
+  status: CanonicalOrderStatus;
   label: string;
-  orders: LiveOrder[];
+  orders: CanonicalOrder[];
 }
 
 @Component({
   selector: 'ctrl-ops-board',
   standalone: true,
-  imports: [DecimalPipe, ComboInputComponent, OrderActionPanelComponent],
+  imports: [DecimalPipe, ComboInputComponent, OrderDetailsComponent],
   templateUrl: './ops-board.component.html',
   styleUrl: './ops-board.component.scss',
 })
 export class OpsBoardComponent {
-  readonly statusConfig = ORDER_STATUS_CONFIG;
-  readonly currency = ORDER_CURRENCY;
+  private readonly orderService = inject(CanonicalOrderService);
 
-  private readonly orders = signal<LiveOrder[]>(
-    ORDERS_DATA.map(o => structuredClone(o)),
-  );
+  readonly statusConfig = CANONICAL_ORDER_STATUS_CONFIG;
+  readonly currency = 'EGP';
 
   readonly searchQuery = signal('');
-  readonly selectedOrderId = signal<string | null>(ORDERS_DATA[0]?.id ?? null);
+  readonly selectedOrderId = signal<string | null>(null);
 
   readonly activeOrders = computed(() =>
-    this.orders().filter(o => ACTIVE_ORDER_STATUSES.includes(o.status)),
+    this.orderService
+      .orders()
+      .filter((o) => ACTIVE_CANONICAL_STATUSES.includes(o.status)),
   );
 
   readonly filteredActiveOrders = computed(() => {
     const query = this.searchQuery();
-    return this.activeOrders().filter(o => matchesOrderSearch(o, query));
+    return this.activeOrders().filter((o) =>
+      matchesCanonicalOrderSearch(o, query),
+    );
   });
 
   readonly groupedOrders = computed((): StatusGroup[] => {
     const active = this.filteredActiveOrders();
-    return ACTIVE_ORDER_STATUSES.map(status => ({
+    return ACTIVE_CANONICAL_STATUSES.map((status) => ({
       status,
-      label: ORDER_STATUS_CONFIG[status].listLabel,
-      orders: active.filter(o => o.status === status),
-    })).filter(g => g.orders.length > 0);
+      label: CANONICAL_ORDER_STATUS_CONFIG[status].labelAr,
+      orders: active.filter((o) => o.status === status),
+    })).filter((g) => g.orders.length > 0);
   });
 
   readonly selectedOrder = computed(() => {
     const id = this.selectedOrderId();
-    return id ? this.orders().find(o => o.id === id) ?? null : null;
+    return id ? this.orderService.getById(id) : null;
   });
 
-  readonly zoneDrivers = computed(() => {
-    const order = this.selectedOrder();
-    return order ? getDriversForZone(order.zoneId) : [];
-  });
-
-  readonly formatAge = formatOrderAge;
-  readonly calcTotal = calcOrderTotal;
+  readonly formatAge = formatCanonicalOrderAge;
 
   constructor() {
     effect(() => {
@@ -80,7 +75,7 @@ export class OpsBoardComponent {
         return;
       }
 
-      if (!currentId || !filtered.some(o => o.id === currentId)) {
+      if (!currentId || !filtered.some((o) => o.id === currentId)) {
         this.selectedOrderId.set(filtered[0].id);
       }
     });
@@ -96,87 +91,5 @@ export class OpsBoardComponent {
 
   selectOrder(orderId: string): void {
     this.selectedOrderId.set(orderId);
-  }
-
-  onItemOutOfStock(event: { orderId: string; itemId: string }): void {
-    this.orders.update(list =>
-      list.map(order => {
-        if (order.id !== event.orderId) return order;
-        return {
-          ...order,
-          shopGroups: order.shopGroups.map(group => ({
-            ...group,
-            items: group.items.map(item =>
-              item.id === event.itemId
-                ? { ...item, outOfStock: !item.outOfStock }
-                : item,
-            ),
-          })),
-        };
-      }),
-    );
-  }
-
-  onItemUpdate(event: {
-    orderId: string;
-    itemId: string;
-    quantity: number;
-    price: number;
-  }): void {
-    this.orders.update(list =>
-      list.map(order => {
-        if (order.id !== event.orderId) return order;
-        return {
-          ...order,
-          shopGroups: order.shopGroups.map(group => ({
-            ...group,
-            items: group.items.map(item =>
-              item.id === event.itemId
-                ? {
-                    ...item,
-                    quantity: Math.max(1, Math.round(event.quantity)),
-                    price: Math.max(0, event.price),
-                  }
-                : item,
-            ),
-          })),
-        };
-      }),
-    );
-  }
-
-  onItemDelete(event: { orderId: string; itemId: string }): void {
-    this.orders.update(list =>
-      list.map(order => {
-        if (order.id !== event.orderId) return order;
-        return {
-          ...order,
-          shopGroups: order.shopGroups
-            .map(group => ({
-              ...group,
-              items: group.items.filter(item => item.id !== event.itemId),
-            }))
-            .filter(group => group.items.length > 0),
-        };
-      }),
-    );
-  }
-
-  onAdvanceStatus(event: { orderId: string; nextStatus: OrderStatus }): void {
-    this.orders.update(list =>
-      list.map(order =>
-        order.id === event.orderId ? { ...order, status: event.nextStatus } : order,
-      ),
-    );
-  }
-
-  onDispatch(event: { orderId: string; driverId: string }): void {
-    this.orders.update(list =>
-      list.map(order =>
-        order.id === event.orderId
-          ? { ...order, status: 'dispatched', assignedDriverId: event.driverId }
-          : order,
-      ),
-    );
   }
 }

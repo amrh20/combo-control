@@ -23,21 +23,21 @@
   <div class="order-action-panel__card">
     <h3 class="order-action-panel__card-title">
       <i class="pi pi-user"></i>
-      Customer
+      العميل
     </h3>
     <div class="order-action-panel__customer-grid">
       <div class="order-action-panel__field">
-        <span class="order-action-panel__field-label">Name</span>
+        <span class="order-action-panel__field-label">الاسم</span>
         <span class="order-action-panel__field-value" dir="rtl">{{ order().customer.name }}</span>
       </div>
       <div class="order-action-panel__field">
-        <span class="order-action-panel__field-label">Phone</span>
-        <a class="order-action-panel__field-value order-action-panel__phone" [href]="'tel:' + order().customer.phone">
+        <span class="order-action-panel__field-label">الهاتف</span>
+        <a class="order-action-panel__field-value order-action-panel__phone" dir="ltr" [href]="'tel:' + order().customer.phone">
           {{ order().customer.phone }}
         </a>
       </div>
       <div class="order-action-panel__field order-action-panel__field--full">
-        <span class="order-action-panel__field-label">Address</span>
+        <span class="order-action-panel__field-label">العنوان</span>
         <span class="order-action-panel__field-value" dir="rtl">{{ order().customer.address }}</span>
       </div>
     </div>
@@ -47,13 +47,13 @@
   <div class="order-action-panel__card">
     <h3 class="order-action-panel__card-title">
       <i class="pi pi-shopping-cart"></i>
-      Cart
+      السلة
     </h3>
 
     @if (order().shopGroups.length === 0) {
       <div class="order-action-panel__cart-empty">
         <i class="pi pi-shopping-bag"></i>
-        <p>All items removed from this order.</p>
+        <p>تمت إزالة جميع المنتجات من هذا الطلب.</p>
       </div>
     }
 
@@ -78,7 +78,7 @@
                 @if (isEditing(item.id)) {
                   <div class="order-action-panel__inline-edit">
                     <div class="order-action-panel__inline-field">
-                      <label class="order-action-panel__inline-label">Qty</label>
+                      <label class="order-action-panel__inline-label">الكمية</label>
                       <input
                         type="number"
                         class="order-action-panel__inline-input"
@@ -88,7 +88,7 @@
                       />
                     </div>
                     <div class="order-action-panel__inline-field">
-                      <label class="order-action-panel__inline-label">Price</label>
+                      <label class="order-action-panel__inline-label">السعر</label>
                       <input
                         type="number"
                         class="order-action-panel__inline-input"
@@ -103,14 +103,14 @@
                       (click)="saveEdit(item.id)"
                     >
                       <i class="pi pi-check"></i>
-                      Save
+                      حفظ
                     </button>
                     <button
                       type="button"
                       class="order-action-panel__cancel-btn"
                       (click)="cancelEdit()"
                     >
-                      Cancel
+                      إلغاء
                     </button>
                   </div>
                 } @else {
@@ -118,7 +118,7 @@
                     {{ item.quantity }} × {{ item.price | number: '1.2-2' }} {{ currency }}
                   </span>
                   @if (item.outOfStock) {
-                    <span class="order-action-panel__oos-label">Out of Stock</span>
+                    <span class="order-action-panel__oos-label">غير متوفر</span>
                   }
                 }
               </div>
@@ -133,30 +133,30 @@
                     <button
                       type="button"
                       class="order-action-panel__tool-btn order-action-panel__tool-btn--edit"
-                      title="Edit quantity and price"
+                      title="تعديل الكمية والسعر"
                       (click)="startEdit(item)"
                     >
                       <i class="pi pi-pencil"></i>
-                      Edit
+                      تعديل
                     </button>
                     <button
                       type="button"
                       class="order-action-panel__tool-btn order-action-panel__tool-btn--delete"
-                      title="Remove item"
+                      title="إزالة المنتج"
                       (click)="deleteItem(item.id)"
                     >
                       <i class="pi pi-trash"></i>
-                      Remove
+                      إزالة
                     </button>
                     <button
                       type="button"
                       class="order-action-panel__tool-btn order-action-panel__tool-btn--oos"
                       [class.order-action-panel__tool-btn--oos-active]="item.outOfStock"
                       (click)="toggleOutOfStock(item.id)"
-                      [title]="item.outOfStock ? 'Restore item' : 'Mark out of stock'"
+                      [title]="item.outOfStock ? 'إعادة المنتج' : 'تعيين غير متوفر'"
                     >
                       <i class="pi" [class.pi-undo]="item.outOfStock" [class.pi-ban]="!item.outOfStock"></i>
-                      {{ item.outOfStock ? 'Restore' : 'OOS' }}
+                      {{ item.outOfStock ? 'استعادة' : 'غير متوفر' }}
                     </button>
                   }
                 </div>
@@ -169,15 +169,15 @@
 
     <div class="order-action-panel__totals">
       <div class="order-action-panel__total-row">
-        <span>Subtotal</span>
+        <span>الإجمالي الفرعي</span>
         <span>{{ subtotal() | number: '1.2-2' }} {{ currency }}</span>
       </div>
       <div class="order-action-panel__total-row">
-        <span>Delivery Fee</span>
+        <span>رسوم التوصيل</span>
         <span>{{ order().deliveryFee | number: '1.2-2' }} {{ currency }}</span>
       </div>
       <div class="order-action-panel__total-row order-action-panel__total-row--final">
-        <span>Final Cash Total</span>
+        <span>إجمالي التحصيل</span>
         <span>{{ finalTotal() | number: '1.2-2' }} {{ currency }}</span>
       </div>
     </div>
@@ -188,7 +188,7 @@
     <div class="order-action-panel__card order-action-panel__card--actions">
       <h3 class="order-action-panel__card-title">
         <i class="pi pi-forward"></i>
-        Order Status
+        حالة الطلب
       </h3>
       <p-button
         [label]="action.label"
@@ -204,23 +204,23 @@
     <div class="order-action-panel__card order-action-panel__card--dispatch">
       <h3 class="order-action-panel__card-title">
         <i class="pi pi-car"></i>
-        Dispatch to Driver
+        إسناد لسائق
       </h3>
 
       <p class="order-action-panel__dispatch-hint">
-        Drivers assigned to zone
+        السائقون المعيّنون للمنطقة
         <strong dir="rtl">{{ order().zoneName }}</strong>
       </p>
 
       <div class="order-action-panel__driver-select">
-        <label class="order-action-panel__select-label" for="driverSelect">Select Driver</label>
+        <label class="order-action-panel__select-label" for="driverSelect">اختر سائقاً</label>
         <p-select
           inputId="driverSelect"
           [options]="zoneDrivers()"
           optionLabel="name"
           optionValue="id"
           [(ngModel)]="selectedDriverId"
-          placeholder="Choose a driver..."
+          placeholder="اختر سائقاً..."
           styleClass="order-action-panel__select"
         >
           <ng-template pTemplate="item" let-driver>
@@ -253,7 +253,7 @@
       </div>
 
       <p-button
-        label="Assign & Dispatch"
+        label="تعيين وإرسال"
         icon="pi pi-send"
         styleClass="order-action-panel__dispatch-btn"
         [disabled]="!canDispatch"

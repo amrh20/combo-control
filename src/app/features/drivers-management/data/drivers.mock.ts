@@ -45,15 +45,15 @@ export interface DriverProfile {
   complaints: DriverComplaint[];
 }
 
-export const AVAILABILITY_CONFIG: Record<string, { label: string }> = {
-  available: { label: 'Available' },
-  busy:      { label: 'Busy'      },
-  offline:   { label: 'Offline'   },
+export const AVAILABILITY_CONFIG: Record<string, { label: string; labelAr: string }> = {
+  available: { label: 'Available', labelAr: 'متاح' },
+  busy:      { label: 'Busy',      labelAr: 'مشغول' },
+  offline:   { label: 'Offline',   labelAr: 'غير متصل' },
 };
 
-export const ACCOUNT_STATUS_CONFIG: Record<string, { label: string }> = {
-  active:   { label: 'Active'   },
-  inactive: { label: 'Inactive' },
+export const ACCOUNT_STATUS_CONFIG: Record<string, { label: string; labelAr: string }> = {
+  active:   { label: 'Active',   labelAr: 'نشط' },
+  inactive: { label: 'Inactive', labelAr: 'غير نشط' },
 };
 
 export const SEVERITY_CONFIG: Record<string, { label: string; labelAr: string }> = {
@@ -487,23 +487,6 @@ export const DRIVERS_DATA: DriverProfile[] = [
     ],
   },
 ];
-
-/** Shared in-memory store — list & details read/write the same reference. */
-export let DRIVERS_STATE: DriverProfile[] = structuredClone(DRIVERS_DATA);
-
-export function getDriverById(id: string): DriverProfile | undefined {
-  return DRIVERS_STATE.find(d => d.id === id);
-}
-
-export function updateDriver(id: string, patch: Partial<DriverProfile>): void {
-  const idx = DRIVERS_STATE.findIndex(d => d.id === id);
-  if (idx < 0) return;
-  DRIVERS_STATE[idx] = { ...DRIVERS_STATE[idx], ...patch };
-}
-
-export function syncDriversFromState(): DriverProfile[] {
-  return structuredClone(DRIVERS_STATE);
-}
 
 function normalizePhone(value: string): string {
   return value.replace(/[\s\-()+]/g, '').toLowerCase();

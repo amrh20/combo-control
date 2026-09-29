@@ -68,7 +68,7 @@
 
   &__search-clear {
     position: absolute;
-    right: 10px;
+    inset-inline-end: 10px;
     top: 50%;
     transform: translateY(-50%);
     display: inline-flex;
@@ -126,7 +126,7 @@
     background: var(--Combo-bg-background-card);
     border: 1px solid var(--Combo-border-border-neutral-secondary);
     border-radius: 12px;
-    overflow: hidden;
+    overflow-x: auto;
   }
 
   &__th { white-space: nowrap; }

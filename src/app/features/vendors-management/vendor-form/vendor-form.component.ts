@@ -51,9 +51,9 @@ export class VendorFormComponent implements OnInit {
   }));
 
   readonly overrideOptions = [
-    { label: 'Auto', value: 'auto' as LiveStatusOverride },
-    { label: 'Force Busy', value: 'force_busy' as LiveStatusOverride },
-    { label: 'Force Closed', value: 'force_closed' as LiveStatusOverride },
+    { label: 'تلقائي', value: 'auto' as LiveStatusOverride },
+    { label: 'فرض مشغول', value: 'force_busy' as LiveStatusOverride },
+    { label: 'فرض مغلق', value: 'force_closed' as LiveStatusOverride },
   ];
 
   readonly form = this.fb.group({

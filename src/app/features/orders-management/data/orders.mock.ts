@@ -1,3 +1,10 @@
+/**
+ * @deprecated Phase 0 — Do not extend this disjointed ops-board mock for new work.
+ * Use the Canonical Order contract instead:
+ *   - `src/app/core/models/canonical-order.model.ts`
+ *   - `src/app/core/mocks/canonical-order.mock.ts`
+ * Kept temporarily so the legacy Ops Board continues to render until it is migrated.
+ */
 export const ORDER_CURRENCY = 'ج.م';
 
 export type OrderStatus = 'new' | 'reviewing' | 'ready' | 'dispatched';
@@ -46,10 +53,10 @@ export interface Driver {
 }
 
 export const ORDER_STATUS_CONFIG: Record<OrderStatus, { label: string; listLabel: string }> = {
-  new:         { label: 'New',       listLabel: 'New'       },
-  reviewing:   { label: 'Reviewing', listLabel: 'Reviewing' },
-  ready:       { label: 'Ready',     listLabel: 'Ready'     },
-  dispatched:  { label: 'Dispatched', listLabel: 'Dispatched' },
+  new:         { label: 'جديد',      listLabel: 'جديد' },
+  reviewing:   { label: 'قيد المراجعة', listLabel: 'قيد المراجعة' },
+  ready:       { label: 'جاهز',      listLabel: 'جاهز' },
+  dispatched:  { label: 'تم الإسناد', listLabel: 'تم الإسناد' },
 };
 
 export const ACTIVE_ORDER_STATUSES: OrderStatus[] = ['new', 'reviewing', 'ready'];
