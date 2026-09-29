@@ -2,19 +2,35 @@ $sidebar-width: 260px;
 $sidebar-collapsed-width: 68px;
 $topbar-height: 64px;
 $transition: 0.22s ease;
+$mobile-bp: 991px;
 
 .admin-layout {
   display: flex;
   min-height: 100vh;
+  min-height: 100dvh;
+
+  &__overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 250;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    animation: admin-overlay-in 0.2s ease;
+  }
 
   &__sidebar {
     position: fixed;
     top: 0;
     inset-inline-start: 0;
     height: 100vh;
+    height: 100dvh;
     width: $sidebar-width;
-    z-index: 200;
-    transition: width $transition;
+    z-index: 300;
+    transition:
+      width $transition,
+      inset-inline-start $transition,
+      box-shadow $transition;
     overflow: hidden;
   }
 
@@ -26,6 +42,7 @@ $transition: 0.22s ease;
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    min-height: 100dvh;
   }
 
   &__topbar {
@@ -38,15 +55,65 @@ $transition: 0.22s ease;
   &__content {
     flex: 1;
     min-width: 0;
+    width: 100%;
     padding: 24px;
     background-color: var(--Combo-bg-background-body);
     overflow-x: hidden;
     overflow-y: auto;
   }
 
-  // ── Collapsed state ──────────────────────────────
+  // ── Desktop collapsed (icon rail) ────────────────
   &--collapsed {
-    .admin-layout__sidebar  { width: $sidebar-collapsed-width; }
-    .admin-layout__body     { margin-inline-start: $sidebar-collapsed-width; }
+    .admin-layout__sidebar { width: $sidebar-collapsed-width; }
+    .admin-layout__body    { margin-inline-start: $sidebar-collapsed-width; }
   }
+
+  // ── Mobile: off-canvas drawer (CSS-first) ────────
+  @media (max-width: $mobile-bp) {
+    .admin-layout__sidebar {
+      width: min(#{$sidebar-width}, 86vw);
+      inset-inline-start: calc(-1 * min(#{$sidebar-width}, 86vw));
+      box-shadow: none;
+      pointer-events: none;
+    }
+
+    .admin-layout__body {
+      margin-inline-start: 0 !important;
+      width: 100%;
+    }
+
+    .admin-layout__content {
+      padding: 16px;
+    }
+
+    // Ignore desktop icon-rail widths on small screens
+    &.admin-layout--collapsed {
+      .admin-layout__sidebar {
+        width: min(#{$sidebar-width}, 86vw);
+      }
+
+      .admin-layout__body {
+        margin-inline-start: 0 !important;
+      }
+    }
+
+    &.admin-layout--nav-open {
+      .admin-layout__sidebar {
+        inset-inline-start: 0;
+        pointer-events: auto;
+        box-shadow: 0 0 32px rgba(0, 0, 0, 0.2);
+      }
+    }
+  }
+
+  @media (max-width: 575px) {
+    .admin-layout__content {
+      padding: 12px;
+    }
+  }
+}
+
+@keyframes admin-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }

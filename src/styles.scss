@@ -77,3 +77,33 @@ body {
     justify-content: flex-start;
   }
 }
+
+// ────────────────────────────────────────────────
+// Global responsive helpers (all admin pages)
+// ────────────────────────────────────────────────
+@media (max-width: 991px) {
+  .p-datatable {
+    .p-datatable-thead > tr > th,
+    .p-datatable-tbody > tr > td {
+      padding: 10px 12px !important;
+      font-size: 13px;
+    }
+
+    .p-paginator {
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 12px !important;
+    }
+  }
+}
+
+@media (max-width: 575px) {
+  .p-datatable {
+    .p-datatable-thead > tr > th,
+    .p-datatable-tbody > tr > td {
+      padding: 8px 10px !important;
+      font-size: 12px;
+    }
+  }
+}

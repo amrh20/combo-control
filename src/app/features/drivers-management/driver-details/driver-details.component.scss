@@ -53,6 +53,12 @@
     background: var(--Combo-bg-background-card);
     border: 1px solid var(--Combo-border-border-neutral-secondary);
     border-radius: 12px;
+
+    @media (max-width: 575px) {
+      flex-wrap: wrap;
+      padding: 16px;
+      gap: 14px;
+    }
   }
 
   &__avatar {

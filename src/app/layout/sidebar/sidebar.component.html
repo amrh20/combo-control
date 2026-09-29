@@ -1,14 +1,26 @@
-<nav class="sidebar" [class.sidebar--collapsed]="collapsed()">
+<nav
+  class="sidebar"
+  [class.sidebar--collapsed]="collapsed()"
+  [class.sidebar--mobile]="mobile()"
+>
 
-  <!-- Logo -->
   <div class="sidebar__logo">
     <div class="sidebar__logo-mark">C</div>
     @if (!collapsed()) {
       <span class="sidebar__logo-text">كومبو كنترول</span>
     }
+    @if (mobile()) {
+      <button
+        type="button"
+        class="sidebar__close"
+        aria-label="إغلاق القائمة"
+        (click)="toggleCollapse.emit()"
+      >
+        <i class="pi pi-times"></i>
+      </button>
+    }
   </div>
 
-  <!-- Nav items -->
   <ul class="sidebar__nav">
     @for (item of navItems; track item.route) {
       <li>
@@ -17,6 +29,7 @@
           routerLinkActive="sidebar__link--active"
           class="sidebar__link"
           [title]="collapsed() ? item.label : ''"
+          (click)="onNavClick()"
         >
           <i class="pi sidebar__icon" [ngClass]="item.icon"></i>
           @if (!collapsed()) {
@@ -27,12 +40,13 @@
     }
   </ul>
 
-  <!-- Collapse toggle at bottom -->
-  <button class="sidebar__toggle" (click)="toggleCollapse.emit()">
-    <i class="pi" [ngClass]="collapsed() ? 'pi-angle-left' : 'pi-angle-right'"></i>
-    @if (!collapsed()) {
-      <span>طي القائمة</span>
-    }
-  </button>
+  @if (!mobile()) {
+    <button type="button" class="sidebar__toggle" (click)="toggleCollapse.emit()">
+      <i class="pi" [ngClass]="collapsed() ? 'pi-angle-left' : 'pi-angle-right'"></i>
+      @if (!collapsed()) {
+        <span>طي القائمة</span>
+      }
+    </button>
+  }
 
 </nav>

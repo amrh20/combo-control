@@ -1,8 +1,25 @@
-<div class="admin-layout" [class.admin-layout--collapsed]="sidebarCollapsed()">
-  <aside class="admin-layout__sidebar">
+<div
+  class="admin-layout"
+  [class.admin-layout--collapsed]="!isMobile() && sidebarCollapsed()"
+  [class.admin-layout--nav-open]="isMobile() && mobileNavOpen()"
+>
+  @if (isMobile() && mobileNavOpen()) {
+    <div
+      class="admin-layout__overlay"
+      role="presentation"
+      (click)="closeMobileNav()"
+    ></div>
+  }
+
+  <aside
+    class="admin-layout__sidebar"
+    [attr.aria-hidden]="isMobile() && !mobileNavOpen() ? 'true' : null"
+  >
     <ctrl-sidebar
-      [collapsed]="sidebarCollapsed()"
+      [collapsed]="!isMobile() && sidebarCollapsed()"
+      [mobile]="isMobile()"
       (toggleCollapse)="toggleSidebar()"
+      (navigate)="closeMobileNav()"
     />
   </aside>
 

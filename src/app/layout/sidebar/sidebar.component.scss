@@ -17,6 +17,27 @@
     flex-shrink: 0;
   }
 
+  &__close {
+    margin-inline-start: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--Combo-text-text-secondary-paragraph);
+    cursor: pointer;
+    flex-shrink: 0;
+
+    &:hover {
+      background-color: var(--Combo-bg-background-neutral-100);
+      color: var(--Combo-text-text-display);
+    }
+  }
+
   &__logo-mark {
     width: 36px;
     height: 36px;

@@ -17,7 +17,10 @@ interface NavItem {
 })
 export class SidebarComponent {
   collapsed = input(false);
+  mobile = input(false);
   toggleCollapse = output<void>();
+  /** Fired when a nav link is activated (used to close the mobile drawer). */
+  navigate = output<void>();
 
   readonly navItems: NavItem[] = [
     { label: 'التحليلات',          icon: 'pi-chart-line',  route: '/analytics' },
@@ -30,4 +33,8 @@ export class SidebarComponent {
     { label: 'الماليات',           icon: 'pi-wallet',      route: '/financials' },
     { label: 'العملاء',            icon: 'pi-users',       route: '/customers' },
   ];
+
+  onNavClick(): void {
+    this.navigate.emit();
+  }
 }

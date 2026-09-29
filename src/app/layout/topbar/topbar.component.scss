@@ -6,12 +6,18 @@
   padding: 0 24px;
   background-color: var(--Combo-bg-background-white);
   border-bottom: 1px solid var(--Combo-border-border-neutral-secondary);
+  gap: 12px;
 
   &__start,
   &__end {
     display: flex;
     align-items: center;
     gap: 12px;
+    min-width: 0;
+  }
+
+  &__start {
+    flex: 1;
   }
 
   &__title {
@@ -20,6 +26,9 @@
     font-weight: 700;
     color: var(--Combo-text-text-display);
     margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   // ── Shared icon button ────────────────────────────
@@ -30,6 +39,7 @@
     justify-content: center;
     width: 36px;
     height: 36px;
+    flex-shrink: 0;
     background: none;
     border: none;
     border-radius: 8px;
@@ -71,6 +81,7 @@
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.15s;
+    flex-shrink: 0;
 
     &:hover { background-color: var(--Combo-bg-background-neutral-100); }
   }
@@ -86,11 +97,39 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
   }
 
   &__username {
     font-size: 14px;
     font-weight: 500;
     color: var(--Combo-text-text-display);
+  }
+}
+
+@media (max-width: 991px) {
+  .topbar {
+    padding: 0 12px;
+
+    &__title {
+      font-size: 15px;
+    }
+  }
+}
+
+@media (max-width: 575px) {
+  .topbar {
+    &__username,
+    &__user .pi-chevron-down {
+      display: none;
+    }
+
+    &__user {
+      padding: 4px;
+    }
+
+    &__end {
+      gap: 8px;
+    }
   }
 }

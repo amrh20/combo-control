@@ -50,6 +50,11 @@
   // Make the map column stretch to a usable height.
   .col-md-8 {
     min-height: 540px;
+
+    @media (max-width: 767px) {
+      min-height: 320px;
+      margin-bottom: 16px;
+    }
   }
 
   // ── Payload preview ───────────────────────────────

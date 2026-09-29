@@ -14,6 +14,7 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 16px;
+    flex-wrap: wrap;
   }
 
   &__title {
@@ -36,7 +37,7 @@
     background-color: var(--Combo-bg-background-card);
     border: 1px solid var(--Combo-border-border-neutral-secondary);
     border-radius: 12px;
-    overflow: hidden;
+    overflow-x: auto;
   }
 
   // ── Column header helper classes ──────────────────

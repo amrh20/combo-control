@@ -63,7 +63,7 @@
   &__search-wrap {
     position: relative;
     flex: 1;
-    min-width: 260px;
+    min-width: 200px;
     max-width: 420px;
   }
 
@@ -100,7 +100,7 @@
     background: var(--Combo-bg-background-card);
     border: 1px solid var(--Combo-border-border-neutral-secondary);
     border-radius: 12px;
-    overflow: hidden;
+    overflow-x: auto;
   }
 
   &__th { white-space: nowrap; }

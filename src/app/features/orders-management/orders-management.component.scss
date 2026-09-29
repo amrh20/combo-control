@@ -8,6 +8,7 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 16px;
+    flex-wrap: wrap;
   }
 
   &__title {
@@ -51,6 +52,13 @@
   }
 }
 
+@media (max-width: 575px) {
+  .orders-management {
+    &__title {
+      font-size: 18px;
+    }
+  }
+}
 @keyframes orders-live-pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
   50%       { opacity: 0.5; transform: scale(0.85); }
