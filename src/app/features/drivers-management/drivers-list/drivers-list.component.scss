@@ -275,8 +275,9 @@
     flex-direction: column;
     width: 100%;
     max-width: 28rem;
-    max-height: min(90vh, 640px);
+    max-height: min(90vh, 720px);
     padding: 24px;
+    overflow: visible;
     background: var(--Combo-bg-background-card);
     border: 1px solid var(--Combo-border-border-neutral-secondary);
     border-radius: 12px;
@@ -326,6 +327,7 @@
     flex-direction: column;
     gap: 16px;
     min-height: 0;
+    overflow: visible;
   }
 
   &__field {
@@ -347,6 +349,12 @@
   &__field-error {
     font-size: 12px;
     color: var(--Combo-text-text-error);
+  }
+
+  &__field-hint {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--Combo-text-text-secondary-paragraph);
   }
 
   &__input {
@@ -432,6 +440,50 @@
 
   .drivers-list__select {
     width: 100%;
+
+    &.p-select {
+      background: var(--Combo-bg-background-card) !important;
+      border: 1px solid var(--Combo-form-field-border-default) !important;
+      border-radius: 8px !important;
+      box-shadow: none !important;
+    }
+
+    .p-select-label {
+      font-family: 'Alexandria', sans-serif;
+      font-size: 14px;
+      color: var(--Combo-text-text-default) !important;
+    }
+  }
+
+  .drivers-list__select-panel.p-select-overlay,
+  .p-overlay:has(.drivers-list__select-panel) {
+    z-index: 20;
+  }
+
+  .drivers-list__select-panel.p-select-overlay {
+    background: var(--Combo-bg-background-card) !important;
+    border: 1px solid var(--Combo-border-border-neutral-primary) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+    direction: rtl;
+
+    .p-select-list-container {
+      max-height: 220px;
+    }
+
+    .p-select-option {
+      font-family: 'Alexandria', sans-serif;
+      font-size: 14px;
+      color: var(--Combo-text-text-default);
+      padding: 10px 14px !important;
+
+      &:hover,
+      &.p-select-option-selected,
+      &.p-focus {
+        background: var(--Combo-bg-background-primary-50) !important;
+        color: var(--Combo-text-text-primary) !important;
+      }
+    }
   }
 
   .drivers-list__input.p-inputtext {

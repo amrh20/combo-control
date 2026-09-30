@@ -34,6 +34,8 @@ export interface DriverProfile {
   id: string;
   name: string;
   phone: string;
+  /** Login credential for the driver app. Never rendered in the admin UI. */
+  password?: string;
   zoneId: string;
   zoneName: string;
   availability: DriverAvailability;

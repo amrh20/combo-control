@@ -229,6 +229,35 @@
         </div>
 
         <div class="drivers-list__field">
+          <label class="drivers-list__label" for="driverPassword">
+            كلمة المرور
+            @if (modalMode() === 'add') {
+              <span class="drivers-list__required">*</span>
+            }
+          </label>
+          <input
+            id="driverPassword"
+            type="password"
+            pInputText
+            formControlName="password"
+            class="drivers-list__input"
+            autocomplete="new-password"
+            placeholder="••••••••"
+            dir="ltr"
+          />
+          <span class="drivers-list__field-hint">
+            @if (modalMode() === 'add') {
+              كلمة المرور المبدئية لدخول السائق
+            } @else {
+              اتركه فارغاً إذا لم ترد تغيير كلمة المرور
+            }
+          </span>
+          @if (form.controls.password.touched && form.controls.password.invalid) {
+            <span class="drivers-list__field-error">كلمة المرور مطلوبة</span>
+          }
+        </div>
+
+        <div class="drivers-list__field">
           <label class="drivers-list__label" for="driverZone">
             المنطقة المعينة <span class="drivers-list__required">*</span>
           </label>
@@ -240,7 +269,8 @@
             formControlName="zoneId"
             placeholder="اختر منطقة..."
             styleClass="drivers-list__select"
-            appendTo="body"
+            panelStyleClass="drivers-list__select-panel"
+            appendTo="self"
           />
           @if (form.controls.zoneId.touched && form.controls.zoneId.invalid) {
             <span class="drivers-list__field-error">المنطقة مطلوبة</span>
@@ -259,7 +289,8 @@
             formControlName="vehicleType"
             placeholder="اختر نوع المركبة..."
             styleClass="drivers-list__select"
-            appendTo="body"
+            panelStyleClass="drivers-list__select-panel"
+            appendTo="self"
           />
           @if (form.controls.vehicleType.touched && form.controls.vehicleType.invalid) {
             <span class="drivers-list__field-error">نوع المركبة مطلوب</span>

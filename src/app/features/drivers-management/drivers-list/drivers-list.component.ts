@@ -7,7 +7,7 @@ import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { SelectModule } from 'primeng/select';
 import { InputTextModule } from 'primeng/inputtext';
 import { ComboInputComponent } from '../../../shared/components/combo-input/combo-input.component';
-import { DriverService } from '../../../core/services/driver.service';
+import { DriverFormData, DriverService } from '../../../core/services/driver.service';
 import {
   ACCOUNT_STATUS_CONFIG,
   AVAILABILITY_CONFIG,
@@ -63,6 +63,7 @@ export class DriversListComponent {
   readonly form = this.fb.nonNullable.group({
     name: ['', Validators.required],
     phone: ['', Validators.required],
+    password: [''],
     zoneId: ['', Validators.required],
     vehicleType: ['Motorcycle', Validators.required],
   });
@@ -87,9 +88,11 @@ export class DriversListComponent {
   openAddModal(): void {
     this.modalMode.set('add');
     this.editingId.set(null);
+    this.applyPasswordValidators('add');
     this.form.reset({
       name: '',
       phone: '',
+      password: '',
       zoneId: ZONE_OPTIONS[0]?.id ?? '',
       vehicleType: 'Motorcycle',
     });
@@ -99,9 +102,11 @@ export class DriversListComponent {
   openEditModal(driver: DriverProfile): void {
     this.modalMode.set('edit');
     this.editingId.set(driver.id);
+    this.applyPasswordValidators('edit');
     this.form.reset({
       name: driver.name,
       phone: driver.phone,
+      password: '',
       zoneId: driver.zoneId,
       vehicleType: driver.vehicleType,
     });
@@ -122,14 +127,19 @@ export class DriversListComponent {
 
     const value = this.form.getRawValue();
     const zone = ZONE_OPTIONS.find((z) => z.id === value.zoneId);
+    const password = value.password.trim();
 
-    const payload: Partial<DriverProfile> = {
+    const payload: DriverFormData = {
       name: value.name.trim(),
       phone: value.phone.trim(),
       zoneId: value.zoneId,
       zoneName: zone?.name ?? value.zoneId,
       vehicleType: value.vehicleType,
     };
+
+    if (password) {
+      payload.password = password;
+    }
 
     if (this.modalMode() === 'edit') {
       const id = this.editingId();
@@ -141,5 +151,15 @@ export class DriversListComponent {
     }
 
     this.closeModal();
+  }
+
+  private applyPasswordValidators(mode: ModalMode): void {
+    const password = this.form.controls.password;
+    if (mode === 'add') {
+      password.setValidators(Validators.required);
+    } else {
+      password.clearValidators();
+    }
+    password.updateValueAndValidity();
   }
 }

@@ -9,7 +9,10 @@ import {
 export type DriverFormData = Pick<
   DriverProfile,
   'name' | 'phone' | 'zoneId' | 'zoneName' | 'vehicleType'
->;
+> & {
+  /** Set on create; omitted on update when the admin leaves the field blank. */
+  password?: string;
+};
 
 @Injectable({ providedIn: 'root' })
 export class DriverService {
@@ -30,12 +33,14 @@ export class DriverService {
    * Create a new driver from form data.
    * Defaults: available, active account, empty stats/history.
    */
-  addDriver(driverData: Partial<DriverProfile>): DriverProfile {
+  addDriver(driverData: Partial<DriverProfile> & { password?: string }): DriverProfile {
     const zone = this.resolveZone(driverData.zoneId, driverData.zoneName);
+    const password = driverData.password?.trim();
     const next: DriverProfile = {
       id: this.nextDriverId(),
       name: (driverData.name ?? '').trim(),
       phone: (driverData.phone ?? '').trim(),
+      ...(password ? { password } : {}),
       zoneId: zone.id,
       zoneName: zone.name,
       availability: driverData.availability ?? 'offline',
