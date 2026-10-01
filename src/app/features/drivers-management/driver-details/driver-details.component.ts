@@ -7,6 +7,10 @@ import { TableModule } from 'primeng/table';
 import { SelectModule } from 'primeng/select';
 import { InputTextModule } from 'primeng/inputtext';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
+import {
+  slicePage,
+  TablePagerComponent,
+} from '../../../shared/components/table-pager/table-pager.component';
 import { DriverService } from '../../../core/services/driver.service';
 import { HubService } from '../../../core/services/hub.service';
 import {
@@ -35,6 +39,7 @@ import {
     SelectModule,
     InputTextModule,
     StatCardComponent,
+    TablePagerComponent,
   ],
   templateUrl: './driver-details.component.html',
   styleUrl: './driver-details.component.scss',
@@ -68,10 +73,19 @@ export class DriverDetailsComponent implements OnInit {
 
   readonly isEditing = signal(false);
 
-  readonly recentOrders = computed(() => {
-    const d = this.driver();
-    return d ? d.deliveredOrders.slice(0, 10) : [];
-  });
+  readonly ordersPage = signal(0);
+  readonly ordersPageSize = signal(10);
+  readonly complaintsPage = signal(0);
+  readonly complaintsPageSize = signal(10);
+
+  readonly deliveredOrders = computed(() => this.driver()?.deliveredOrders ?? []);
+  readonly complaints = computed(() => this.driver()?.complaints ?? []);
+  readonly pagedOrders = computed(() =>
+    slicePage(this.deliveredOrders(), this.ordersPage(), this.ordersPageSize()),
+  );
+  readonly pagedComplaints = computed(() =>
+    slicePage(this.complaints(), this.complaintsPage(), this.complaintsPageSize()),
+  );
 
   readonly profileForm = this.fb.nonNullable.group({
     name:          ['', Validators.required],

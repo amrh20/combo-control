@@ -1,0 +1,180 @@
+<div class="flex flex-col">
+
+  <div class="mb-6">
+    <h1 class="analytics-title">لوحة التحليلات</h1>
+    <p class="analytics-lead">
+      نظرة على أداء المنصة وتقارير المتاجر الجاهزة للعرض على الشركاء.
+    </p>
+  </div>
+
+  <div class="mb-8 grid grid-cols-1 gap-4 md:grid-cols-4">
+    <article class="flex flex-col rounded-xl border border-gray-100 bg-white p-5 shadow-none">
+      <div class="mb-3 flex items-center gap-2">
+        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600" aria-hidden="true">
+          <i class="pi pi-shopping-bag text-sm"></i>
+        </span>
+        <h2 class="kpi-label">إجمالي الطلبات</h2>
+      </div>
+      <p class="kpi-value text-gray-900">{{ totalOrders | number:'1.0-0' }}</p>
+      <p class="kpi-hint">كل الطلبات المسجّلة على المنصة</p>
+    </article>
+
+    <article class="flex flex-col rounded-xl border border-gray-100 bg-white p-5 shadow-none">
+      <div class="mb-3 flex items-center gap-2">
+        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-green-50 text-green-600" aria-hidden="true">
+          <i class="pi pi-chart-line text-sm"></i>
+        </span>
+        <h2 class="kpi-label">إجمالي المبيعات</h2>
+      </div>
+      <p class="kpi-value text-green-700">
+        <span dir="ltr" class="inline-block">{{ grossMerchandiseValue | number:'1.0-0' }}</span>
+        ج.م
+      </p>
+      <p class="kpi-hint">قيمة البضائع الإجمالية</p>
+    </article>
+
+    <article class="flex flex-col rounded-xl border border-gray-100 bg-white p-5 shadow-none">
+      <div class="mb-3 flex items-center gap-2">
+        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600" aria-hidden="true">
+          <i class="pi pi-shop text-sm"></i>
+        </span>
+        <h2 class="kpi-label">المتاجر النشطة</h2>
+      </div>
+      <p class="kpi-value text-gray-900">{{ activeVendors | number:'1.0-0' }}</p>
+      <p class="kpi-hint">متاجر تستقبل طلبات حالياً</p>
+    </article>
+
+    <article class="flex flex-col rounded-xl border border-gray-100 bg-white p-5 shadow-none">
+      <div class="mb-3 flex items-center gap-2">
+        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50 text-violet-600" aria-hidden="true">
+          <i class="pi pi-clock text-sm"></i>
+        </span>
+        <h2 class="kpi-label">متوسط وقت التوصيل</h2>
+      </div>
+      <p class="kpi-value text-gray-900">{{ avgDeliveryMinutes }} دقيقة</p>
+      <p class="kpi-hint">من تأكيد الطلب حتى التسليم</p>
+    </article>
+  </div>
+
+  <section class="rounded-xl border border-gray-100 bg-white p-6 shadow-none">
+    <div class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <h2 class="report-title">تقارير أداء المتاجر</h2>
+        <p class="report-lead">
+          فلترة المبيعات وحجم الطلبات حسب المتجر والفترة، ثم تصدير التقرير للعرض.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <label class="flex items-center gap-2">
+          <span class="text-xs font-semibold whitespace-nowrap text-gray-500">المتجر</span>
+          <select
+            class="h-10 min-w-[10rem] rounded-lg border border-gray-200 bg-white px-3 text-[13px] text-gray-800 outline-none focus:border-gray-400"
+            aria-label="اختيار المتجر"
+            [value]="vendorId()"
+            (change)="onVendorChange($event)"
+          >
+            @for (vendor of vendors; track vendor.id) {
+              <option [value]="vendor.id">{{ vendor.name }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="flex items-center gap-2">
+          <span class="text-xs font-semibold whitespace-nowrap text-gray-500">الفترة</span>
+          <select
+            class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-[13px] text-gray-800 outline-none focus:border-gray-400"
+            aria-label="اختيار الفترة"
+            [value]="period()"
+            (change)="onPeriodChange($event)"
+          >
+            @for (option of periods; track option.id) {
+              <option [value]="option.id">{{ option.label }}</option>
+            }
+          </select>
+        </label>
+
+        <button
+          type="button"
+          class="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--Combo-button-button-background-primary-default)] px-4 text-[13px] font-semibold text-[var(--Combo-text-text-oncolor-primary)] shadow-none hover:bg-[var(--Combo-button-button-background-primary-hovered)]"
+          (click)="exportReport()"
+        >
+          <i class="pi pi-download text-sm" aria-hidden="true"></i>
+          تصدير التقرير (PDF/Excel)
+        </button>
+      </div>
+    </div>
+
+    <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+      <article class="rounded-xl border border-gray-100 bg-gray-50 p-4 shadow-none">
+        <h3 class="metric-label">إجمالي مبيعات المتجر</h3>
+        <p class="metric-value mt-2 text-green-700">
+          <span dir="ltr" class="inline-block">{{ vendorSales() | number:'1.0-0' }}</span>
+          ج.م
+        </p>
+        <p class="metric-hint">{{ selectedVendor().name }} · {{ periodLabel() }}</p>
+      </article>
+
+      <article class="rounded-xl border border-gray-100 bg-gray-50 p-4 shadow-none">
+        <h3 class="metric-label">عدد الطلبات الناجحة</h3>
+        <p class="metric-value mt-2 text-gray-900">{{ completedOrders() | number:'1.0-0' }}</p>
+        <p class="metric-hint">طلبات مكتملة خلال الفترة</p>
+      </article>
+
+      <article class="rounded-xl border border-gray-100 bg-gray-50 p-4 shadow-none">
+        <h3 class="metric-label">متوسط قيمة الطلب</h3>
+        <p class="metric-value mt-2 text-gray-900">
+          <span dir="ltr" class="inline-block">{{ averageOrderValue() | number:'1.2-2' }}</span>
+          ج.م
+        </p>
+        <p class="metric-hint">المبيعات مقسومة على الطلبات الناجحة</p>
+      </article>
+    </div>
+
+    <div class="mb-6">
+      <div class="mb-2 flex items-center justify-between gap-3">
+        <h3 class="chart-title">{{ breakdownTitle() }}</h3>
+        <p class="chart-meta">{{ selectedVendor().name }}</p>
+      </div>
+      <div
+        class="flex h-28 items-end gap-1 rounded-lg border border-gray-100 bg-gray-50 px-3 py-3"
+        role="img"
+        [attr.aria-label]="'مخطط مبيعات ' + selectedVendor().name + ' — ' + periodLabel()"
+      >
+        @for (row of breakdown(); track row.label) {
+          <div class="flex h-full min-w-0 flex-1 items-end" [title]="row.label">
+            <div
+              class="w-full rounded-t bg-[var(--Combo-button-button-background-primary-default)]"
+              [style.height.%]="barHeight(row)"
+            ></div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="overflow-x-auto rounded-xl border border-gray-100">
+      <table class="report-table w-full min-w-[32rem] border-collapse text-start">
+        <thead>
+          <tr class="border-b border-gray-100 text-[13px] font-semibold text-gray-500">
+            <th class="px-4 py-3 font-semibold">التاريخ</th>
+            <th class="px-4 py-3 font-semibold">عدد الطلبات</th>
+            <th class="px-4 py-3 font-semibold">المبيعات</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of breakdown(); track row.label) {
+            <tr class="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
+              <td class="px-4 py-3 font-medium text-gray-900">{{ row.label }}</td>
+              <td class="px-4 py-3 text-gray-800">{{ row.orders | number:'1.0-0' }}</td>
+              <td class="px-4 py-3 whitespace-nowrap font-semibold text-gray-800">
+                <span dir="ltr" class="inline-block">{{ row.sales | number:'1.0-0' }}</span>
+                ج.م
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>

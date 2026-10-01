@@ -1,0 +1,58 @@
+<nav class="table-pager" aria-label="ترقيم الصفحات">
+  <p class="table-pager__summary">
+    @if (total() === 0) {
+      لا توجد نتائج
+    } @else {
+      عرض {{ rangeStart() }}–{{ rangeEnd() }} من {{ total() }}
+    }
+  </p>
+
+  <div class="table-pager__controls">
+    <label class="table-pager__size">
+      <span>الصفوف</span>
+      <select
+        class="table-pager__select"
+        [value]="pageSize()"
+        (change)="onPageSize($event)"
+        aria-label="عدد الصفوف في الصفحة"
+      >
+        @for (size of pageSizeOptions(); track size) {
+          <option [value]="size">{{ size }}</option>
+        }
+      </select>
+    </label>
+
+    <button
+      type="button"
+      class="table-pager__btn"
+      [disabled]="safePage() === 0"
+      aria-label="الصفحة السابقة"
+      (click)="goTo(safePage() - 1)"
+    >
+      <i class="pi pi-chevron-right" aria-hidden="true"></i>
+    </button>
+
+    @for (index of pages(); track index) {
+      <button
+        type="button"
+        class="table-pager__btn"
+        [class.table-pager__btn--current]="index === safePage()"
+        [attr.aria-current]="index === safePage() ? 'page' : null"
+        [attr.aria-label]="'صفحة ' + (index + 1)"
+        (click)="goTo(index)"
+      >
+        {{ index + 1 }}
+      </button>
+    }
+
+    <button
+      type="button"
+      class="table-pager__btn"
+      [disabled]="safePage() >= pageCount() - 1"
+      aria-label="الصفحة التالية"
+      (click)="goTo(safePage() + 1)"
+    >
+      <i class="pi pi-chevron-left" aria-hidden="true"></i>
+    </button>
+  </div>
+</nav>

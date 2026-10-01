@@ -185,7 +185,9 @@ export const routes: Routes = [
       {
         path: 'customers',
         loadComponent: () =>
-          import('./features/customers/customers.component').then(m => m.CustomersComponent),
+          import('./features/customers/customer-list/customer-list.component').then(
+            m => m.CustomerListComponent,
+          ),
       },
     ],
   },

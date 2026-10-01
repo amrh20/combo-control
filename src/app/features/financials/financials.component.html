@@ -1,0 +1,241 @@
+<div class="flex flex-col">
+
+  <div class="mb-6">
+    <h1 class="page-title">الماليات</h1>
+    <p class="page-lead">
+      متابعة العُهد النقدية ومستحقات المتاجر والكباتن وأرباح المنصة.
+    </p>
+  </div>
+
+  <div class="mb-8 grid grid-cols-1 gap-4 md:grid-cols-4">
+    <article class="flex flex-col rounded-xl border border-gray-100 bg-white p-5 shadow-none">
+      <div class="mb-3 flex items-center gap-2">
+        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600" aria-hidden="true">
+          <i class="pi pi-wallet text-sm"></i>
+        </span>
+        <h2 class="kpi-label">إجمالي العُهد</h2>
+      </div>
+      <p class="kpi-value text-amber-700">
+        <span dir="ltr" class="inline-block">{{ cashInTransit() | currency:'EGP':'symbol' }}</span>
+      </p>
+      <p class="kpi-hint">كاش محتفظ به مع الكباتن</p>
+    </article>
+
+    <article class="flex flex-col rounded-xl border border-gray-100 bg-white p-5 shadow-none">
+      <div class="mb-3 flex items-center gap-2">
+        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-red-50 text-red-600" aria-hidden="true">
+          <i class="pi pi-shop text-sm"></i>
+        </span>
+        <h2 class="kpi-label">مستحقات المتاجر</h2>
+      </div>
+      <p class="kpi-value text-red-700">
+        <span dir="ltr" class="inline-block">{{ vendorPayouts() | currency:'EGP':'symbol' }}</span>
+      </p>
+      <p class="kpi-hint">مبالغ لم تُسدَّد للمتاجر بعد</p>
+    </article>
+
+    <article class="flex flex-col rounded-xl border border-gray-100 bg-white p-5 shadow-none">
+      <div class="mb-3 flex items-center gap-2">
+        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600" aria-hidden="true">
+          <i class="pi pi-users text-sm"></i>
+        </span>
+        <h2 class="kpi-label">مستحقات الكباتن</h2>
+      </div>
+      <p class="kpi-value text-blue-700">
+        <span dir="ltr" class="inline-block">{{ captainPayouts() | currency:'EGP':'symbol' }}</span>
+      </p>
+      <p class="kpi-hint">مكافآت توصيل وتجميع معلّقة</p>
+    </article>
+
+    <article class="flex flex-col rounded-xl border border-gray-100 bg-white p-5 shadow-none">
+      <div class="mb-3 flex items-center gap-2">
+        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-green-50 text-green-600" aria-hidden="true">
+          <i class="pi pi-chart-line text-sm"></i>
+        </span>
+        <h2 class="kpi-label">أرباح المنصة</h2>
+      </div>
+      <p class="kpi-value text-green-700">
+        <span dir="ltr" class="inline-block">{{ netRevenue() | currency:'EGP':'symbol' }}</span>
+      </p>
+      <p class="kpi-hint">عمولات ورسوم توصيل محتجزة</p>
+    </article>
+  </div>
+
+  <div class="settlement-tabs" role="tablist" aria-label="أنواع التسويات">
+    @for (tab of settlementTabs; track tab.id) {
+      <button
+        type="button"
+        role="tab"
+        class="settlement-tabs__btn"
+        [class.settlement-tabs__btn--active]="activeTab() === tab.id"
+        [attr.aria-selected]="activeTab() === tab.id"
+        (click)="selectTab(tab.id)"
+      >
+        {{ tab.label }}
+      </button>
+    }
+  </div>
+
+  @switch (activeTab()) {
+    @case ('captains') {
+      <div class="rounded-xl border border-gray-100 bg-white shadow-none">
+        <div class="overflow-x-auto">
+        <table class="w-full min-w-[48rem] border-collapse text-start text-sm">
+          <thead>
+            <tr class="border-b border-gray-100 text-[13px] font-semibold text-gray-500">
+              <th class="px-4 py-3 font-semibold">الكابتن</th>
+              <th class="px-4 py-3 font-semibold">الدور</th>
+              <th class="px-4 py-3 font-semibold">الكاش المُحصّل</th>
+              <th class="px-4 py-3 font-semibold">الأرباح المستحقة</th>
+              <th class="px-4 py-3 text-center font-semibold">الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (captain of pagedCaptains(); track captain.id) {
+              <tr class="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
+                <td class="px-4 py-3">
+                  <div class="font-semibold text-gray-900">{{ captain.name }}</div>
+                  <div class="mt-0.5 text-xs text-gray-400">{{ captain.id }}</div>
+                </td>
+                <td class="px-4 py-3">
+                  <span
+                    class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
+                    [class]="captain.role === 'DELIVERY'
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'bg-gray-100 text-gray-600'"
+                  >
+                    {{ roleLabel(captain.role) }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap font-semibold text-amber-700">
+                  <span dir="ltr" class="inline-block">{{ captain.cashCollected | currency:'EGP':'symbol' }}</span>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap font-semibold text-gray-800">
+                  <span dir="ltr" class="inline-block">{{ captain.earningsDue | currency:'EGP':'symbol' }}</span>
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <button
+                    type="button"
+                    class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-800 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    [disabled]="captain.cashCollected <= 0"
+                    (click)="receiveCash(captain.id)"
+                  >
+                    توريد كاش
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        </div>
+        <ctrl-table-pager
+          [total]="captains().length"
+          [page]="captainsPage()"
+          [pageSize]="captainsPageSize()"
+          (pageChange)="captainsPage.set($event)"
+          (pageSizeChange)="captainsPageSize.set($event)"
+        />
+      </div>
+    }
+
+    @case ('vendors') {
+      <div class="rounded-xl border border-gray-100 bg-white shadow-none">
+        <div class="overflow-x-auto">
+        <table class="w-full min-w-[40rem] border-collapse text-start text-sm">
+          <thead>
+            <tr class="border-b border-gray-100 text-[13px] font-semibold text-gray-500">
+              <th class="px-4 py-3 font-semibold">المتجر</th>
+              <th class="px-4 py-3 font-semibold">المركز/الهب</th>
+              <th class="px-4 py-3 font-semibold">إجمالي المبيعات المستحقة</th>
+              <th class="px-4 py-3 text-center font-semibold">الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (vendor of pagedVendors(); track vendor.id) {
+              <tr class="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
+                <td class="px-4 py-3">
+                  <div class="font-semibold text-gray-900">{{ vendor.name }}</div>
+                  <div class="mt-0.5 text-xs text-gray-400">{{ vendor.id }}</div>
+                </td>
+                <td class="px-4 py-3 text-gray-700">{{ vendor.hubName }}</td>
+                <td class="px-4 py-3 whitespace-nowrap font-semibold text-red-700">
+                  <span dir="ltr" class="inline-block">{{ vendor.salesDue | currency:'EGP':'symbol' }}</span>
+                </td>
+                <td class="px-4 py-3 text-center">
+                  <button
+                    type="button"
+                    class="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-800 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    [disabled]="vendor.salesDue <= 0"
+                    (click)="payVendor(vendor.id)"
+                  >
+                    تسديد مستحقات
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        </div>
+        <ctrl-table-pager
+          [total]="vendors().length"
+          [page]="vendorsPage()"
+          [pageSize]="vendorsPageSize()"
+          (pageChange)="vendorsPage.set($event)"
+          (pageSizeChange)="vendorsPageSize.set($event)"
+        />
+      </div>
+    }
+
+    @case ('ledger') {
+      <div class="rounded-xl border border-gray-100 bg-white shadow-none">
+        <div class="overflow-x-auto">
+        <table class="w-full min-w-[40rem] border-collapse text-start text-sm">
+          <thead>
+            <tr class="border-b border-gray-100 text-[13px] font-semibold text-gray-500">
+              <th class="px-4 py-3 font-semibold">رقم الحركة</th>
+              <th class="px-4 py-3 font-semibold">التاريخ</th>
+              <th class="px-4 py-3 font-semibold">النوع</th>
+              <th class="px-4 py-3 font-semibold">المبلغ</th>
+              <th class="px-4 py-3 font-semibold">البيان</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (entry of pagedLedger(); track entry.id) {
+              <tr class="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
+                <td class="px-4 py-3">
+                  <span class="text-xs font-semibold text-gray-500">{{ entry.id }}</span>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-gray-700">
+                  {{ entry.date | date: 'd MMM y, h:mm a' }}
+                </td>
+                <td class="px-4 py-3">
+                  <span
+                    class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
+                    [class]="entry.type === 'COLLECTION'
+                      ? 'bg-amber-50 text-amber-700'
+                      : 'bg-red-50 text-red-700'"
+                  >
+                    {{ ledgerTypeLabel(entry.type) }}
+                  </span>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap font-semibold text-gray-800">
+                  <span dir="ltr" class="inline-block">{{ entry.amount | currency:'EGP':'symbol' }}</span>
+                </td>
+                <td class="px-4 py-3 text-gray-700">{{ entry.description }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        </div>
+        <ctrl-table-pager
+          [total]="ledger().length"
+          [page]="ledgerPage()"
+          [pageSize]="ledgerPageSize()"
+          (pageChange)="ledgerPage.set($event)"
+          (pageSizeChange)="ledgerPageSize.set($event)"
+        />
+      </div>
+    }
+  }
+
+</div>

@@ -220,11 +220,11 @@
       <h2 class="driver-details__card-title">
         <i class="pi pi-list"></i>
         سجل الطلبات المسلّمة
-        <span class="driver-details__card-sub">آخر 10 طلبات مكتملة</span>
+        <span class="driver-details__card-sub">الطلبات المكتملة</span>
       </h2>
 
       <p-table
-        [value]="recentOrders()"
+        [value]="pagedOrders()"
         [tableStyle]="{ 'min-width': '48rem' }"
       >
         <ng-template pTemplate="header">
@@ -253,6 +253,13 @@
           </tr>
         </ng-template>
       </p-table>
+      <ctrl-table-pager
+        [total]="deliveredOrders().length"
+        [page]="ordersPage()"
+        [pageSize]="ordersPageSize()"
+        (pageChange)="ordersPage.set($event)"
+        (pageSizeChange)="ordersPageSize.set($event)"
+      />
     </div>
 
     <!-- ═══ Card D: Complaints Log ═════════════════════════════ -->
@@ -270,7 +277,7 @@
         </div>
       } @else {
         <p-table
-          [value]="d.complaints"
+          [value]="pagedComplaints()"
           [tableStyle]="{ 'min-width': '64rem' }"
         >
           <ng-template pTemplate="header">
@@ -308,6 +315,13 @@
             </tr>
           </ng-template>
         </p-table>
+        <ctrl-table-pager
+          [total]="complaints().length"
+          [page]="complaintsPage()"
+          [pageSize]="complaintsPageSize()"
+          (pageChange)="complaintsPage.set($event)"
+          (pageSizeChange)="complaintsPageSize.set($event)"
+        />
       }
     </div>
 

@@ -1,0 +1,134 @@
+<div class="flex flex-col gap-6">
+
+  <div>
+    <h1 class="m-0 mb-1 text-[22px] font-bold leading-snug text-[var(--Combo-text-text-display)]">
+      العملاء
+    </h1>
+    <p class="m-0 text-[13px] text-[var(--Combo-text-text-secondary-paragraph)]">
+      عرض بيانات العملاء وحجم الطلبات وإدارة حالة الحساب.
+    </p>
+  </div>
+
+  <div class="bg-white p-4 rounded-xl border border-gray-100 flex gap-4 flex-wrap items-center shadow-none">
+    <label class="relative min-w-[220px] flex-1">
+      <i
+        class="pi pi-search pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-gray-400"
+        aria-hidden="true"
+      ></i>
+      <input
+        type="search"
+        class="h-10 w-full rounded-lg border border-gray-200 bg-white ps-9 pe-3 text-start text-[13px] text-gray-800 outline-none placeholder:text-gray-400 focus:border-gray-400"
+        placeholder="بحث بالاسم أو رقم الهاتف..."
+        aria-label="بحث بالاسم أو رقم الهاتف"
+        [value]="searchQuery()"
+        (input)="onSearch($event)"
+      />
+    </label>
+
+    <label class="flex items-center gap-2">
+      <span class="text-xs font-semibold whitespace-nowrap text-gray-500">الحالة</span>
+      <select
+        class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-[13px] text-gray-800 outline-none focus:border-gray-400"
+        aria-label="تصفية حسب الحالة"
+        [value]="statusFilter()"
+        (change)="onStatusChange($event)"
+      >
+        @for (option of statusFilters; track option.value) {
+          <option [value]="option.value">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
+  <p class="m-0 text-[13px] text-gray-500">
+    {{ filteredCustomers().length }} عميل
+  </p>
+
+  <div class="rounded-xl border border-gray-100 bg-white shadow-none">
+    <div class="overflow-x-auto">
+    <table class="w-full min-w-[56rem] border-collapse text-start text-sm">
+      <thead>
+        <tr class="border-b border-gray-100 text-[13px] font-semibold text-gray-500">
+          <th class="px-4 py-3 font-semibold">العميل</th>
+          <th class="px-4 py-3 font-semibold">رقم الهاتف</th>
+          <th class="px-4 py-3 text-center font-semibold">إجمالي الطلبات</th>
+          <th class="px-4 py-3 font-semibold">إجمالي المدفوعات</th>
+          <th class="px-4 py-3 font-semibold">الحالة</th>
+          <th class="px-4 py-3 text-center font-semibold">الإجراءات</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (customer of pagedCustomers(); track customer.id) {
+          <tr class="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
+            <td class="px-4 py-3">
+              <div class="font-semibold text-gray-900">{{ customer.fullName }}</div>
+              <div class="mt-0.5 text-xs text-gray-400">{{ customer.id }}</div>
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap">
+              <span dir="ltr" class="inline-block text-gray-800">{{ formatPhone(customer.phone) }}</span>
+            </td>
+            <td class="px-4 py-3 text-center font-medium text-gray-800">
+              {{ customer.totalOrders }}
+            </td>
+            <td class="px-4 py-3 whitespace-nowrap font-semibold text-gray-800">
+              <span dir="ltr" class="inline-block">{{ customer.totalSpent | number: '1.2-2' }}</span>
+              ج.م
+            </td>
+            <td class="px-4 py-3">
+              <span
+                class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold"
+                [class]="customer.status === 'ACTIVE'
+                  ? 'bg-green-50 text-green-700'
+                  : 'bg-gray-100 text-red-700'"
+              >
+                {{ statusLabel(customer) }}
+              </span>
+            </td>
+            <td class="px-4 py-3">
+              <div class="flex items-center justify-center gap-1.5">
+                <button
+                  type="button"
+                  class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-transparent text-gray-600 hover:bg-gray-50"
+                  [attr.aria-label]="'عرض ملف ' + customer.fullName"
+                  title="عرض الملف"
+                >
+                  <i class="pi pi-eye text-sm" aria-hidden="true"></i>
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-transparent hover:bg-gray-50"
+                  [class]="customer.status === 'ACTIVE' ? 'text-red-600' : 'text-green-700'"
+                  [attr.aria-label]="(customer.status === 'ACTIVE' ? 'حظر ' : 'إلغاء حظر ') + customer.fullName"
+                  [title]="customer.status === 'ACTIVE' ? 'حظر' : 'إلغاء الحظر'"
+                  (click)="toggleBlock(customer)"
+                >
+                  <i
+                    class="pi text-sm"
+                    [class.pi-ban]="customer.status === 'ACTIVE'"
+                    [class.pi-lock-open]="customer.status === 'BLOCKED'"
+                    aria-hidden="true"
+                  ></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="px-4 py-10 text-center text-sm text-gray-500">
+              لا يوجد عملاء مطابقون للبحث.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    </div>
+    <ctrl-table-pager
+      [total]="filteredCustomers().length"
+      [page]="page()"
+      [pageSize]="pageSize()"
+      (pageChange)="page.set($event)"
+      (pageSizeChange)="pageSize.set($event)"
+    />
+  </div>
+
+</div>
