@@ -69,7 +69,7 @@
         <div class="order-details__action-bar-copy">
           <span class="order-details__action-bar-label">الخطوة التالية</span>
           <p class="order-details__action-bar-hint">
-            الطلب جاهز في الهب — عيّن سائقاً لبدء التوصيل.
+            الطلب جاهز في الهب — عيّن كابتن لبدء التوصيل.
           </p>
         </div>
 
@@ -80,7 +80,7 @@
             (click)="openDriverModal()"
           >
             <i class="pi pi-user-plus"></i>
-            تعيين سائق
+            تعيين كابتن
           </button>
         </div>
       </div>
@@ -106,7 +106,7 @@
           </div>
           <div class="order-details__field">
             <span class="order-details__label">رقم الهاتف</span>
-            <span class="order-details__value" dir="ltr">
+            <span class="order-details__value" >
               {{ o.dispatch.assignedDriverPhone || '—' }}
             </span>
           </div>
@@ -144,7 +144,7 @@
         </div>
         <div class="order-details__field">
           <span class="order-details__label">رقم الهاتف</span>
-          <span class="order-details__value" dir="ltr">{{ o.customer.phone }}</span>
+          <span class="order-details__value">{{ o.customer.phone }}</span>
         </div>
         <div class="order-details__field">
           <span class="order-details__label">معرّف العميل</span>
@@ -172,7 +172,7 @@
         }
         <div class="order-details__field">
           <span class="order-details__label">الإحداثيات</span>
-          <span class="order-details__value order-details__value--mono" dir="ltr">
+          <span class="order-details__value order-details__value--mono"  >
             {{ o.customer.address.location.lat | number: '1.4-4' }},
             {{ o.customer.address.location.lng | number: '1.4-4' }}
           </span>
@@ -198,7 +198,7 @@
           <span class="order-details__value">
             {{ o.hub.nameAr || o.hub.name }}
             @if (o.hub.nameAr && o.hub.name) {
-              <span class="order-details__value-ar" dir="ltr">{{ o.hub.name }}</span>
+              <span class="order-details__value-ar"  >{{ o.hub.name }}</span>
             }
           </span>
         </div>
@@ -214,7 +214,7 @@
         }
         <div class="order-details__field">
           <span class="order-details__label">إحداثيات الهب</span>
-          <span class="order-details__value order-details__value--mono" dir="ltr">
+          <span class="order-details__value order-details__value--mono"  >
             {{ o.hub.location.lat | number: '1.4-4' }},
             {{ o.hub.location.lng | number: '1.4-4' }}
           </span>
@@ -273,7 +273,7 @@
                   <i class="pi pi-shop"></i>
                   {{ sub.shopNameAr || sub.shopName }}
                   @if (sub.shopNameAr && sub.shopName) {
-                    <span dir="ltr" class="order-details__item-ar">· {{ sub.shopName }}</span>
+                    <span   class="order-details__item-ar">· {{ sub.shopName }}</span>
                   }
                 </h3>
                 <div class="order-details__suborder-meta">
@@ -312,7 +312,7 @@
                       <div class="order-details__item-name">
                         {{ item.nameAr || item.name }}
                         @if (item.nameAr && item.name) {
-                          <span dir="ltr" class="order-details__item-ar">{{ item.name }}</span>
+                          <span   class="order-details__item-ar">{{ item.name }}</span>
                         }
                       </div>
 
@@ -517,7 +517,7 @@
     >
       <div class="order-details__modal-header">
         <h2 id="driver-modal-title" class="order-details__modal-title">
-          اختر سائقاً متاحاً
+          اختر كابتن متاح
         </h2>
         <button
           type="button"
@@ -530,23 +530,77 @@
       </div>
 
       <div class="order-details__modal-body">
-        <ul class="order-details__modal-driver-list" role="listbox" aria-label="السائقون المتاحون">
+        <ul class="order-details__modal-driver-list" role="listbox" aria-label="الكباتن المتاحون">
           @for (driver of availableDrivers; track driver.id) {
             <li>
-              <button
-                type="button"
+              <div
                 class="order-details__modal-driver-card"
-                role="option"
-                (click)="selectDriver(driver)"
+                [class.order-details__modal-driver-card--expanded]="isCaptainSelected(driver.id)"
               >
-                <span class="order-details__modal-driver-icon" aria-hidden="true">
-                  <i class="pi pi-car"></i>
-                </span>
-                <span class="order-details__modal-driver-info">
-                  <span class="order-details__modal-driver-name">{{ driver.name }}</span>
-                  <span class="order-details__modal-driver-phone" dir="ltr">{{ driver.phone }}</span>
-                </span>
-              </button>
+                <button
+                  type="button"
+                  class="order-details__modal-driver-select"
+                  role="option"
+                  [attr.aria-selected]="isCaptainSelected(driver.id)"
+                  [attr.aria-expanded]="isCaptainSelected(driver.id)"
+                  (click)="selectCaptain(driver)"
+                >
+                  <span class="order-details__modal-driver-icon" aria-hidden="true">
+                    <i class="pi pi-user"></i>
+                  </span>
+                  <span class="order-details__modal-driver-info">
+                    <span class="flex min-w-0 flex-wrap items-center gap-2">
+                      <span class="order-details__modal-driver-name">{{ driver.name }}</span>
+                      @switch (driver.role) {
+                        @case ('COLLECTOR') {
+                          <span class="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold leading-none text-blue-700">
+                            مُجمّع طلبات
+                          </span>
+                        }
+                        @case ('DELIVERY') {
+                          <span class="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold leading-none text-emerald-700">
+                            طيار توصيل
+                          </span>
+                        }
+                        @case ('BOTH') {
+                          <span class="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold leading-none text-blue-700">
+                            مُجمّع طلبات
+                          </span>
+                          <span class="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold leading-none text-emerald-700">
+                            طيار توصيل
+                          </span>
+                        }
+                      }
+                    </span>
+                    <span class="order-details__modal-driver-phone"  >{{ driver.phone }}</span>
+                  </span>
+                </button>
+
+                @if (isCaptainSelected(driver.id)) {
+                  <div class="order-details__captain-panel">
+                    @if (driver.role === 'COLLECTOR') {
+                      <label class="order-details__captain-override">
+                        <input type="checkbox" [(ngModel)]="assignAsBoth" />
+                        <span>تفويض الكابتن بتوصيل الطلب للعميل (الرحلة كاملة)</span>
+                      </label>
+                    }
+                    @if (driver.role === 'DELIVERY') {
+                      <label class="order-details__captain-override">
+                        <input type="checkbox" [(ngModel)]="assignAsBoth" />
+                        <span>تفويض الكابتن بتجميع الطلب من المتاجر (الرحلة كاملة)</span>
+                      </label>
+                    }
+                    <button
+                      type="button"
+                      class="order-details__primary-btn order-details__captain-confirm"
+                      (click)="confirmAssignment(driver)"
+                    >
+                      <i class="pi pi-check"></i>
+                      تأكيد التعيين
+                    </button>
+                  </div>
+                }
+              </div>
             </li>
           }
         </ul>

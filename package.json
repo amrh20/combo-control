@@ -34,7 +34,10 @@
     "@angular/build": "^21.0.3",
     "@angular/cli": "^21.0.3",
     "@angular/compiler-cli": "^21.0.0",
+    "@tailwindcss/postcss": "^4.3.3",
     "@types/leaflet": "^1.9.21",
+    "postcss": "^8.5.28",
+    "tailwindcss": "^4.3.3",
     "typescript": "~5.9.2"
   }
 }

@@ -159,7 +159,7 @@
     display: flex;
     flex-direction: column;
     width: 100%;
-    max-width: 28rem;
+    max-width: 32rem;
     max-height: calc(100dvh - 48px);
     padding: 24px;
     overflow: hidden;
@@ -229,20 +229,34 @@
   &__modal-driver-card {
     width: 100%;
     display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    background: var(--Combo-bg-background-card);
+    border: 1px solid var(--Combo-border-border-neutral-secondary);
+    border-radius: 10px;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+
+    &--expanded {
+      border-color: var(--Combo-border-border-primary);
+      background: var(--Combo-bg-background-neutral-50);
+    }
+  }
+
+  &__modal-driver-select {
+    width: 100%;
+    display: flex;
     align-items: center;
     gap: 14px;
     padding: 14px 16px;
     font-family: 'Alexandria', sans-serif;
     text-align: start;
-    background: var(--Combo-bg-background-card);
-    border: 1px solid var(--Combo-border-border-neutral-secondary);
+    background: transparent;
+    border: none;
     border-radius: 10px;
     cursor: pointer;
-    transition: background-color 0.15s ease, border-color 0.15s ease;
 
     &:hover {
       background: var(--Combo-bg-background-neutral-50);
-      border-color: var(--Combo-border-border-primary-light);
     }
   }
 
@@ -274,10 +288,59 @@
   }
 
   &__modal-driver-phone {
+    align-self: flex-start;
+    width: max-content;
     font-size: 12px;
     font-weight: 500;
     color: var(--Combo-text-text-secondary-paragraph);
     font-feature-settings: 'tnum';
+  }
+
+  &__captain-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    direction: rtl;
+    padding: 14px 16px 16px;
+    border-top: 1px solid var(--Combo-border-border-neutral-secondary);
+  }
+
+  &__captain-override {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
+    margin: 0;
+    cursor: pointer;
+    font-family: 'Alexandria', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.7;
+    color: var(--Combo-text-text-display);
+    text-align: start;
+
+    input {
+      width: 16px;
+      height: 16px;
+      margin: 4px 0 0;
+      flex: 0 0 auto;
+      accent-color: var(--Combo-button-button-background-primary-default);
+      cursor: pointer;
+    }
+
+    span {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+  }
+
+  &__captain-confirm {
+    appearance: none;
+    -webkit-appearance: none;
+    margin: 0;
+    border: none;
+    box-shadow: none;
   }
 
   &__modal-footer {

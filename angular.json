@@ -30,7 +30,8 @@
               "node_modules/bootstrap/dist/css/bootstrap.min.css",
               "node_modules/leaflet/dist/leaflet.css",
               "node_modules/@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css",
-              "src/styles.scss"
+              "src/styles.scss",
+              "src/tailwind.css"
             ],
             "scripts": []
           },

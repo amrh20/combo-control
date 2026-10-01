@@ -1,6 +1,7 @@
 import { Injectable, computed, signal } from '@angular/core';
 import {
   AssignableDriver,
+  CaptainAssignmentRequest,
   CanonicalOrder,
   FinancialBreakdown,
   OrderLineItem,
@@ -95,20 +96,30 @@ export class CanonicalOrderService {
   }
 
   /**
-   * Dispatch: assign a driver to a READY_AT_HUB order.
-   * Moves aggregate status to ASSIGNED and records driver on dispatch state.
+   * Dispatch: assign a captain to a READY_AT_HUB order.
+   * Moves aggregate status to ASSIGNED and records the captain plus any
+   * per-order role override on dispatch state.
    */
-  assignDriver(orderId: string, driver: AssignableDriver): void {
+  assignDriver(
+    orderId: string,
+    driver: AssignableDriver,
+    assignment: CaptainAssignmentRequest,
+  ): void {
     const now = new Date().toISOString();
+    const payload: CaptainAssignmentRequest = {
+      captainId: assignment.captainId,
+      overrideRole: assignment.overrideRole,
+    };
 
     this.patchOrder(orderId, (order) => ({
       ...order,
       status: 'ASSIGNED',
       dispatch: {
         ...order.dispatch,
-        assignedDriverId: driver.id,
+        assignedDriverId: payload.captainId,
         assignedDriverName: driver.name,
         assignedDriverPhone: driver.phone,
+        overrideRole: payload.overrideRole,
         offerStatus: 'ACCEPTED',
         offeredAt: order.dispatch.offeredAt ?? now,
         acceptedAt: now,

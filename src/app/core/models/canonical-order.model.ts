@@ -174,13 +174,31 @@ export interface DispatchState {
   pickedUpAt?: string | null;
   /** Offer TTL / expiry (ISO). */
   offerExpiresAt?: string | null;
+  /**
+   * Per-order role override. `'BOTH'` authorizes the full trip for this order.
+   * `null` keeps the captain's default role.
+   */
+  overrideRole?: 'BOTH' | null;
 }
 
-/** Driver payload used when Ops assigns a courier to a ready-at-hub order. */
+/** Native captain duty, including captains permanently assigned both roles. */
+export type CaptainAssignmentRole = 'COLLECTOR' | 'DELIVERY' | 'BOTH';
+
+/**
+ * Assignment request sent when a dispatcher assigns a captain.
+ * `overrideRole: 'BOTH'` pushes the full-trip flow for this order only.
+ */
+export interface CaptainAssignmentRequest {
+  captainId: string;
+  overrideRole: 'BOTH' | null;
+}
+
+/** Captain shown in the dispatch picker for a ready-at-hub order. */
 export interface AssignableDriver {
   id: string;
   name: string;
   phone: string;
+  role: CaptainAssignmentRole;
 }
 
 export interface CanonicalOrderTimestamps {

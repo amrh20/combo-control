@@ -7,6 +7,7 @@ import { map } from 'rxjs';
 import {
   AssignableDriver,
   CANONICAL_ORDER_STATUS_CONFIG,
+  CaptainAssignmentRequest,
   DISPATCH_OFFER_STATUS_CONFIG,
   OrderLineItem,
   SHOP_SUB_ORDER_STATUS_CONFIG,
@@ -20,11 +21,19 @@ const MOCK_AVAILABLE_DRIVERS: AssignableDriver[] = [
     id: 'drv_sayed_ali',
     name: 'كابتن/ سيد علي',
     phone: '+20 100 111 2233',
+    role: 'COLLECTOR',
   },
   {
     id: 'drv_mahmoud_hassan',
     name: 'كابتن/ محمود حسن',
     phone: '+20 122 444 5566',
+    role: 'DELIVERY',
+  },
+  {
+    id: 'drv_ahmed_kamal',
+    name: 'كابتن/ أحمد كمال',
+    phone: '+20 155 777 8899',
+    role: 'BOTH',
   },
 ];
 
@@ -70,8 +79,14 @@ export class OrderDetailsComponent {
   readonly editingItemId = signal<string | null>(null);
   editQuantity = 1;
 
-  /** Whether the assign-driver modal is open. */
+  /** Whether the assign-captain modal is open. */
   readonly isDriverModalOpen = signal(false);
+
+  /** Captain card currently expanded for confirmation. */
+  readonly selectedCaptainId = signal<string | null>(null);
+
+  /** When true, this order overrides the captain's default role to BOTH. */
+  assignAsBoth = false;
 
   readonly resolvedOrderId = computed(() => {
     const inputId = this.orderId();
@@ -216,21 +231,46 @@ export class OrderDetailsComponent {
   }
 
   openDriverModal(): void {
+    this.selectedCaptainId.set(null);
+    this.assignAsBoth = false;
     this.isDriverModalOpen.set(true);
   }
 
   closeDriverModal(): void {
     this.isDriverModalOpen.set(false);
+    this.selectedCaptainId.set(null);
+    this.assignAsBoth = false;
   }
 
-  selectDriver(driver: AssignableDriver): void {
+  isCaptainSelected(captainId: string): boolean {
+    return this.selectedCaptainId() === captainId;
+  }
+
+  /** Expand a captain card so the dispatcher can confirm and optionally override. */
+  selectCaptain(driver: AssignableDriver): void {
+    if (this.selectedCaptainId() === driver.id) {
+      this.selectedCaptainId.set(null);
+      this.assignAsBoth = false;
+      return;
+    }
+
+    this.selectedCaptainId.set(driver.id);
+    this.assignAsBoth = false;
+  }
+
+  confirmAssignment(driver: AssignableDriver): void {
     const order = this.order();
     if (!order || order.status !== 'READY_AT_HUB') {
       return;
     }
 
-    this.orderService.assignDriver(order.id, driver);
-    this.isDriverModalOpen.set(false);
+    const payload: CaptainAssignmentRequest = {
+      captainId: driver.id,
+      overrideRole: this.assignAsBoth ? 'BOTH' : null,
+    };
+
+    this.orderService.assignDriver(order.id, driver, payload);
+    this.closeDriverModal();
   }
 
   paymentMethodLabel(method: 'COD' | 'CARD' | 'WALLET'): string {
