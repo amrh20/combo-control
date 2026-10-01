@@ -1,0 +1,108 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.hub-pin-map {
+  position: relative;
+  height: 100%;
+  min-height: 420px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--Combo-controls-control-border);
+
+  &__canvas {
+    position: absolute;
+    inset: 0;
+    background: var(--Combo-bg-background-neutral-100);
+    /* Leaflet positions controls with physical left/right. */
+    direction: ltr;
+  }
+
+  &__hint {
+    position: absolute;
+    bottom: 14px;
+    left: 14px;
+    right: 14px;
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--Combo-text-text-primary-paragraph);
+    font-size: 12.5px;
+    pointer-events: none;
+  }
+}
+
+:host ::ng-deep {
+  .leaflet-top.leaflet-left .leaflet-control-zoom {
+    margin-top: 12px;
+    margin-left: 12px;
+    border: none;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  }
+
+  .leaflet-top.leaflet-right {
+    max-width: calc(100% - 64px);
+  }
+
+  .leaflet-control-geocoder {
+    margin-top: 12px;
+    margin-right: 12px;
+    border: 1px solid var(--Combo-controls-control-border);
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    direction: rtl;
+    font-family: 'Alexandria', sans-serif;
+    clear: none;
+  }
+
+  .leaflet-control-geocoder-form input {
+    width: min(240px, calc(100vw - 180px));
+    height: 36px;
+    font-family: 'Alexandria', sans-serif;
+    font-size: 13.5px;
+    direction: rtl;
+    text-align: right;
+    color: var(--Combo-text-text-default);
+
+    &::placeholder {
+      color: var(--Combo-text-text-secondary-paragraph);
+    }
+  }
+
+  .leaflet-control-geocoder-alternatives,
+  .leaflet-control-geocoder-error {
+    direction: rtl;
+    text-align: right;
+    font-family: 'Alexandria', sans-serif;
+    width: 100%;
+  }
+
+  .leaflet-control-geocoder-alternatives li a,
+  .leaflet-control-geocoder-alternatives li a:hover {
+    text-align: right;
+    white-space: normal;
+  }
+
+  .leaflet-control-geocoder-error {
+    margin: 8px 10px;
+    font-size: 12px;
+  }
+
+  .leaflet-pm-toolbar {
+    border: none;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  }
+
+  .leaflet-pm-toolbar .button-container a {
+    cursor: pointer;
+  }
+
+  .leaflet-pm-toolbar .leaflet-buttons-control-button.pm-disabled {
+    cursor: not-allowed;
+  }
+}

@@ -1,0 +1,280 @@
+<div class="vendor-categories">
+
+  <div class="vendor-categories__header">
+    <div class="vendor-categories__header-text">
+      <h1 class="vendor-categories__title">فئات المتاجر</h1>
+      <p class="vendor-categories__subtitle">
+        إدارة الفئات التي ينتمي إليها المتجر، مع الأيقونة ولون الخلفية وحالة الظهور في تطبيق العميل.
+      </p>
+    </div>
+    <button
+      type="button"
+      class="vendor-categories__add-btn"
+      (click)="openAddModal()"
+    >
+      <i class="pi pi-plus"></i>
+      إضافة فئة جديدة
+    </button>
+  </div>
+
+  <div class="vendor-categories__meta">
+    <span class="vendor-categories__result-count">
+      {{ categories().length }} فئة · {{ activeCount() }} نشطة
+    </span>
+  </div>
+
+  @if (categories().length === 0) {
+    <div class="vendor-categories__empty">لا توجد فئات.</div>
+  } @else {
+    <div class="vendor-categories__grid">
+      @for (category of categories(); track category.id) {
+        <article
+          class="vendor-categories__card"
+          [class.vendor-categories__card--inactive]="!category.isActive"
+        >
+          <div
+            class="vendor-categories__tile"
+            [style.background-color]="safeColor(category.backgroundColor)"
+          >
+            @if (isImageIcon(category.iconUrl)) {
+              <img
+                class="vendor-categories__tile-image"
+                [src]="category.iconUrl"
+                [alt]="category.name"
+              />
+            } @else {
+              <span class="vendor-categories__tile-emoji">{{ category.iconUrl }}</span>
+            }
+          </div>
+
+          <div class="vendor-categories__body">
+            <div class="vendor-categories__name-row">
+              <h2 class="vendor-categories__name">{{ category.name }}</h2>
+              <code class="vendor-categories__id">{{ category.id }}</code>
+            </div>
+            <span class="vendor-categories__hex" dir="ltr">{{ category.backgroundColor }}</span>
+
+            <div class="vendor-categories__status">
+              <span
+                class="vendor-categories__status-label"
+                [class.vendor-categories__status-label--on]="category.isActive"
+              >
+                {{ category.isActive ? 'نشطة' : 'غير نشطة' }}
+              </span>
+              <p-toggleswitch
+                [ngModel]="category.isActive"
+                (ngModelChange)="onStatusToggle(category.id, $event)"
+                [inputId]="'cat-' + category.id"
+              />
+            </div>
+
+            <button
+              type="button"
+              class="vendor-categories__edit-btn"
+              (click)="openEditModal(category)"
+            >
+              <i class="pi pi-pencil"></i>
+              تعديل
+            </button>
+          </div>
+        </article>
+      }
+    </div>
+  }
+
+</div>
+
+@if (modalOpen()) {
+  <div
+    class="vendor-categories__modal-overlay"
+    role="presentation"
+    (click)="closeModal()"
+  >
+    <div
+      class="vendor-categories__modal"
+      dir="rtl"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="vendor-category-modal-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="vendor-categories__modal-header">
+        <h2 id="vendor-category-modal-title" class="vendor-categories__modal-title">
+          {{ modalTitle() }}
+        </h2>
+        <button
+          type="button"
+          class="vendor-categories__modal-close"
+          aria-label="إغلاق"
+          (click)="closeModal()"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <form
+        class="vendor-categories__modal-body"
+        [formGroup]="form"
+        (ngSubmit)="saveCategory()"
+      >
+        <div
+          class="vendor-categories__preview"
+          [style.background-color]="safeColor(form.controls.backgroundColor.value)"
+        >
+          @if (isImageIcon(form.controls.iconUrl.value)) {
+            <img
+              class="vendor-categories__preview-image"
+              [src]="form.controls.iconUrl.value"
+              alt=""
+            />
+          } @else {
+            <span class="vendor-categories__preview-emoji">
+              {{ form.controls.iconUrl.value || '🏷️' }}
+            </span>
+          }
+          <span
+            class="vendor-categories__preview-name"
+            [style.color]="textColor(form.controls.backgroundColor.value)"
+          >
+            {{ form.controls.name.value.trim() || 'اسم الفئة' }}
+          </span>
+        </div>
+
+        <div class="vendor-categories__field">
+          <label class="vendor-categories__label" for="categoryName">
+            اسم الفئة <span class="vendor-categories__required">*</span>
+          </label>
+          <input
+            id="categoryName"
+            type="text"
+            pInputText
+            formControlName="name"
+            class="vendor-categories__input"
+            placeholder="مثال: بقالة وسوبرماركت"
+            dir="rtl"
+          />
+          @if (form.controls.name.touched && form.controls.name.invalid) {
+            <span class="vendor-categories__field-error">اسم الفئة مطلوب</span>
+          }
+        </div>
+
+        <div class="vendor-categories__field">
+          <span class="vendor-categories__label" id="categoryIconLabel">
+            الأيقونة / الصورة <span class="vendor-categories__required">*</span>
+          </span>
+          <div class="vendor-categories__upload">
+            <input
+              #iconInput
+              id="categoryIcon"
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml"
+              class="vendor-categories__file-input"
+              aria-labelledby="categoryIconLabel"
+              (change)="onIconSelected($event)"
+            />
+            <div
+              class="vendor-categories__upload-preview"
+              [style.background-color]="safeColor(form.controls.backgroundColor.value)"
+            >
+              @if (isImageIcon(form.controls.iconUrl.value)) {
+                <img [src]="form.controls.iconUrl.value" alt="" />
+              } @else if (form.controls.iconUrl.value) {
+                <span class="vendor-categories__upload-emoji">{{ form.controls.iconUrl.value }}</span>
+              } @else {
+                <i class="pi pi-image"></i>
+              }
+            </div>
+            <div class="vendor-categories__upload-body">
+              <p class="vendor-categories__upload-hint">
+                ارفع صورة مربعة (PNG أو JPG أو WEBP، بحد أقصى 2 ميجا)
+              </p>
+              <div class="vendor-categories__upload-actions">
+                <button
+                  type="button"
+                  class="vendor-categories__upload-btn"
+                  (click)="iconInput.click()"
+                >
+                  <i class="pi pi-upload"></i>
+                  {{ form.controls.iconUrl.value ? 'تغيير الصورة' : 'اختر صورة' }}
+                </button>
+                @if (form.controls.iconUrl.value) {
+                  <button
+                    type="button"
+                    class="vendor-categories__upload-clear"
+                    (click)="clearIcon(iconInput)"
+                  >
+                    إزالة
+                  </button>
+                }
+              </div>
+            </div>
+          </div>
+          @if (iconError()) {
+            <span class="vendor-categories__field-error">{{ iconError() }}</span>
+          } @else if (form.controls.iconUrl.touched && form.controls.iconUrl.invalid) {
+            <span class="vendor-categories__field-error">الصورة مطلوبة</span>
+          }
+        </div>
+
+        <div class="vendor-categories__field">
+          <label class="vendor-categories__label" for="categoryColor">
+            لون الخلفية <span class="vendor-categories__required">*</span>
+          </label>
+          <div class="vendor-categories__swatches" role="listbox" aria-label="ألوان جاهزة">
+            @for (hex of swatches; track hex) {
+              <button
+                type="button"
+                class="vendor-categories__swatch"
+                [class.vendor-categories__swatch--selected]="isSelectedSwatch(hex)"
+                [style.background-color]="hex"
+                [attr.aria-label]="hex"
+                [attr.aria-selected]="isSelectedSwatch(hex)"
+                role="option"
+                (click)="selectSwatch(hex)"
+              ></button>
+            }
+          </div>
+          <div class="vendor-categories__color-row">
+            <input
+              id="categoryColor"
+              type="text"
+              pInputText
+              formControlName="backgroundColor"
+              class="vendor-categories__input vendor-categories__input--hex"
+              placeholder="#E7F6EE"
+              dir="ltr"
+              maxlength="7"
+              spellcheck="false"
+            />
+            <label class="vendor-categories__color-picker">
+              <span class="vendor-categories__sr">اختيار لون</span>
+              <input
+                type="color"
+                [value]="safeColor(form.controls.backgroundColor.value)"
+                (input)="onColorPicker($event)"
+                aria-label="اختيار لون الخلفية"
+              />
+            </label>
+          </div>
+          @if (form.controls.backgroundColor.touched && form.controls.backgroundColor.invalid) {
+            <span class="vendor-categories__field-error">أدخل لوناً بصيغة #RRGGBB</span>
+          }
+        </div>
+
+        <div class="vendor-categories__modal-footer">
+          <button type="submit" class="vendor-categories__btn vendor-categories__btn--primary">
+            <i class="pi pi-check"></i>
+            حفظ
+          </button>
+          <button
+            type="button"
+            class="vendor-categories__btn vendor-categories__btn--ghost"
+            (click)="closeModal()"
+          >
+            إلغاء
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

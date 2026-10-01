@@ -3,9 +3,9 @@
   @if (!driver()) {
     <div class="driver-details__not-found">
       <i class="pi pi-exclamation-circle"></i>
-      <p>السائق غير موجود.</p>
+      <p>الكابتن غير موجود.</p>
       <button type="button" class="driver-details__btn driver-details__btn--ghost" (click)="goBack()">
-        العودة إلى السائقين
+        العودة إلى الكباتن
       </button>
     </div>
   }
@@ -16,7 +16,7 @@
     <div class="driver-details__header">
       <button type="button" class="driver-details__back" (click)="goBack()">
         <i class="pi pi-arrow-right"></i>
-        كل السائقين
+        كل الكباتن
       </button>
 
       <div class="driver-details__header-main">
@@ -74,20 +74,28 @@
           </div>
           <div class="col-md-4">
             <div class="driver-details__field">
-              <span class="driver-details__label">نوع المركبة</span>
-              <span class="driver-details__value">{{ vehicleLabel(d.vehicleType) }}</span>
+              <span class="driver-details__label">دور الكابتن</span>
+              <span class="driver-details__value">{{ roleConfig[d.role].labelAr }}</span>
             </div>
           </div>
+          <div class="col-md-4">
+            <div class="driver-details__field">
+              <span class="driver-details__label">مركز الانطلاق</span>
+              <span class="driver-details__value">{{ d.hubName }}</span>
+            </div>
+          </div>
+          @if (d.role === 'DELIVERY') {
+            <div class="col-md-4">
+              <div class="driver-details__field">
+                <span class="driver-details__label">نوع المركبة</span>
+                <span class="driver-details__value">{{ vehicleLabel(d.vehicleType) }}</span>
+              </div>
+            </div>
+          }
           <div class="col-md-4">
             <div class="driver-details__field">
               <span class="driver-details__label">انتهاء الرخصة</span>
               <span class="driver-details__value" dir="ltr">{{ d.licenseExpiry }}</span>
-            </div>
-          </div>
-          <div class="col-md-4">
-            <div class="driver-details__field">
-              <span class="driver-details__label">المنطقة المعيّنة</span>
-              <span class="driver-details__value">{{ d.zoneName }}</span>
             </div>
           </div>
         </div>
@@ -103,37 +111,51 @@
               <input pInputText id="driverPhone" formControlName="phone" class="driver-details__input" dir="ltr" />
             </div>
             <div class="col-md-4">
-              <label class="driver-details__form-label" for="vehicleType">نوع المركبة</label>
+              <label class="driver-details__form-label" for="captainRole">دور الكابتن</label>
               <p-select
-                inputId="vehicleType"
-                formControlName="vehicleType"
-                [options]="vehicleOptions"
+                inputId="captainRole"
+                formControlName="role"
+                [options]="roleOptions"
                 optionLabel="label"
                 optionValue="value"
                 styleClass="driver-details__select"
               />
             </div>
             <div class="col-md-4">
-              <label class="driver-details__form-label" for="licenseExpiry">انتهاء الرخصة</label>
-              <input pInputText id="licenseExpiry" type="date" formControlName="licenseExpiry" class="driver-details__input" dir="ltr" />
-            </div>
-            <div class="col-md-4">
-              <label class="driver-details__form-label" for="zoneId">المنطقة المعيّنة</label>
+              <label class="driver-details__form-label" for="hubId">مركز الانطلاق</label>
               <p-select
-                inputId="zoneId"
-                formControlName="zoneId"
-                [options]="zoneOptions"
+                inputId="hubId"
+                formControlName="hubId"
+                [options]="activeHubs()"
                 optionLabel="name"
                 optionValue="id"
                 styleClass="driver-details__select"
               />
+            </div>
+            @if (showVehicle()) {
+              <div class="col-md-4">
+                <label class="driver-details__form-label" for="vehicleType">نوع المركبة</label>
+                <p-select
+                  inputId="vehicleType"
+                  formControlName="vehicleType"
+                  [options]="vehicleOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="اختر نوع المركبة..."
+                  styleClass="driver-details__select"
+                />
+              </div>
+            }
+            <div class="col-md-4">
+              <label class="driver-details__form-label" for="licenseExpiry">انتهاء الرخصة</label>
+              <input pInputText id="licenseExpiry" type="date" formControlName="licenseExpiry" class="driver-details__input" dir="ltr" />
             </div>
           </div>
           <div class="driver-details__form-actions">
             <button type="button" class="driver-details__btn driver-details__btn--ghost" (click)="cancelEdit()">
               إلغاء
             </button>
-            <button type="submit" class="driver-details__btn driver-details__btn--primary">
+            <button type="submit" class="driver-details__btn driver-details__btn--primary" [disabled]="profileForm.invalid">
               <i class="pi pi-check"></i>
               حفظ التغييرات
             </button>
@@ -244,7 +266,7 @@
       @if (d.complaints.length === 0) {
         <div class="driver-details__no-issues">
           <i class="pi pi-check-circle"></i>
-          <p>لا توجد مشاكل مسجّلة لهذا السائق.</p>
+          <p>لا توجد مشاكل مسجّلة لهذا الكابتن.</p>
         </div>
       } @else {
         <p-table

@@ -25,10 +25,10 @@
             <code class="vendor-details__id-pill">{{ v.id }}</code>
             <span class="vendor-details__meta-item">
               <i class="pi pi-map-marker"></i>
-              <span dir="rtl">{{ v.zoneName }}</span>
+              <span dir="rtl">{{ hubName(v.hubId) }}</span>
             </span>
             <span class="vendor-details__meta-item">
-              {{ categoryConfig[v.category].labelAr }}
+              {{ categoryName(v.category) }}
             </span>
           </div>
         </div>
@@ -110,13 +110,14 @@
               </div>
               <div class="col-md-6">
                 <div class="vendor-details__field">
-                  <label class="vendor-details__label" for="zoneSelect">المنطقة المعيّنة</label>
+                  <label class="vendor-details__label" for="hubSelect">نقطة التجميع / الشارع التابع له</label>
                   <p-select
-                    inputId="zoneSelect"
-                    [options]="zoneOptions"
-                    optionLabel="name"
-                    optionValue="id"
-                    formControlName="zoneId"
+                    inputId="hubSelect"
+                    [options]="hubOptions()"
+                    optionLabel="label"
+                    optionValue="value"
+                    formControlName="hubId"
+                    placeholder="اختر نقطة التجميع..."
                     styleClass="vendor-details__select"
                   />
                 </div>
@@ -126,7 +127,7 @@
                   <label class="vendor-details__label" for="categorySelect">الفئة</label>
                   <p-select
                     inputId="categorySelect"
-                    [options]="categoryOptions"
+                    [options]="categoryOptions()"
                     optionLabel="label"
                     optionValue="value"
                     formControlName="category"

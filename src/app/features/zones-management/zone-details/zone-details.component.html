@@ -1,7 +1,6 @@
 <div class="zone-details">
 
-  <!-- ── Not Found ─────────────────────────────────────────── -->
-  @if (!zone) {
+  @if (!zone()) {
     <div class="zone-details__not-found">
       <i class="pi pi-exclamation-circle zone-details__not-found-icon"></i>
       <p>المنطقة غير موجودة.</p>
@@ -11,9 +10,8 @@
     </div>
   }
 
-  @if (zone) {
+  @if (zone(); as zone) {
 
-    <!-- ── Page Header ─────────────────────────────────────── -->
     <div class="zone-details__header">
       <button type="button" class="zone-details__back-btn" (click)="goBack()">
         <i class="pi pi-arrow-right"></i>
@@ -22,7 +20,7 @@
       <div class="zone-details__header-meta">
         <div>
           <h1 class="zone-details__title">{{ zone.name }}</h1>
-          <p class="zone-details__subtitle">{{ zone.id }} · {{ zone.coverage }}</p>
+          <p class="zone-details__subtitle">{{ zone.id }} · منطقة سكن العملاء</p>
         </div>
         <a [routerLink]="['/zones/edit', zone.id]" class="zone-details__btn zone-details__btn--primary">
           <i class="pi pi-pencil"></i>
@@ -31,90 +29,60 @@
       </div>
     </div>
 
-    <!-- ── Summary Card ────────────────────────────────────── -->
     <div class="zone-details__summary-row">
-
       <div class="zone-details__stat-card">
         <span class="zone-details__stat-label">الحالة</span>
         <span
           class="zone-details__badge"
-          [ngClass]="'zone-details__badge--' + zone.status"
+          [ngClass]="zone.isActive ? 'zone-details__badge--active' : 'zone-details__badge--inactive'"
         >
           <span class="zone-details__badge-dot"></span>
-          {{ zone.status === 'active' ? 'نشط' : 'غير نشط' }}
+          {{ zone.isActive ? 'نشط' : 'غير نشط' }}
         </span>
       </div>
 
       <div class="zone-details__stat-card">
-        <span class="zone-details__stat-label">إجمالي المتاجر</span>
-        <span class="zone-details__stat-value">{{ zone.shopCount }}</span>
+        <span class="zone-details__stat-label">الحد الأدنى للطلب</span>
+        <span class="zone-details__stat-value zone-details__stat-value--money">
+          {{ zone.minOrder | number: '1.0-2' }}
+          <span class="zone-details__currency">ج.م</span>
+        </span>
       </div>
-
-      <div class="zone-details__stat-card zone-details__stat-card--full">
-        <span class="zone-details__stat-label">منطقة التغطية</span>
-        <span class="zone-details__stat-text" dir="rtl">{{ zone.coverage }}</span>
-      </div>
-
     </div>
 
-    <!-- ── Linked Shops Table ──────────────────────────────── -->
     <div class="zone-details__card">
       <h2 class="zone-details__section-title">
-        <i class="pi pi-shop"></i>
-        المتاجر المرتبطة
-        <span class="zone-details__count-badge">{{ linkedShops.length }}</span>
+        <i class="pi pi-sitemap"></i>
+        نقاط التجميع التي تخدم هذه المنطقة
       </h2>
+      <div class="zone-details__hubs">
+        @if (servingHubs().length === 0) {
+          <p class="zone-details__hubs-empty">
+            لا توجد نقاط تجميع تخدم هذه المنطقة بعد. أنشئ نقطة تجميع واربطها من قائمة نقاط التجميع.
+          </p>
+        } @else {
+          <ul class="zone-details__hub-list">
+            @for (hub of servingHubs(); track hub.id) {
+              <li>
+                <a [routerLink]="['/hubs/edit', hub.id]" class="zone-details__hub-link">
+                  <code class="zone-details__id-pill">{{ hub.id }}</code>
+                  <span>{{ hub.name }}</span>
+                </a>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </div>
 
-      <p-table
-        [value]="linkedShops"
-        [paginator]="linkedShops.length > 5"
-        [rows]="5"
-        [tableStyle]="{ 'min-width': '40rem' }"
-      >
-        <ng-template pTemplate="header">
-          <tr>
-            <th class="zone-details__th">رقم المتجر</th>
-            <th class="zone-details__th">اسم المتجر</th>
-            <th class="zone-details__th">الحالة</th>
-            <th class="zone-details__th">رصيد المحفظة</th>
-            <th class="zone-details__th zone-details__th--center">الإجراءات</th>
-          </tr>
-        </ng-template>
-
-        <ng-template pTemplate="body" let-shop>
-          <tr>
-            <td><code class="zone-details__id-pill">{{ shop.id }}</code></td>
-            <td class="zone-details__shop-name" dir="rtl">{{ shop.name }}</td>
-            <td>
-              <span
-                class="zone-details__status-badge"
-                [ngClass]="'zone-details__status-badge--' + getLiveStatus(shop)"
-              >
-                <span class="zone-details__status-dot"></span>
-                {{ liveStatusConfig[getLiveStatus(shop)].labelAr }}
-              </span>
-            </td>
-            <td>
-              <span class="zone-details__balance">
-                {{ shop.walletBalance | number: '1.2-2' }}
-                <span class="zone-details__currency">SAR</span>
-              </span>
-            </td>
-            <td class="zone-details__td--center">
-              <a [routerLink]="['/vendors', shop.id]" class="zone-details__action-btn">
-                <i class="pi pi-eye"></i>
-              </a>
-            </td>
-          </tr>
-        </ng-template>
-
-        <ng-template pTemplate="emptymessage">
-          <tr>
-            <td colspan="5" class="zone-details__empty">لا توجد متاجر مرتبطة بهذه المنطقة بعد.</td>
-          </tr>
-        </ng-template>
-      </p-table>
-
+    <div class="zone-details__card zone-details__card--map">
+      <h2 class="zone-details__section-title">
+        <i class="pi pi-map"></i>
+        مضلع التوصيل
+      </h2>
+      <div class="zone-details__map">
+        <ctrl-zone-map [initialGeometry]="zone.polygon" [readOnly]="true" />
+      </div>
     </div>
 
   }

@@ -6,11 +6,13 @@ import { toSignal } from '@angular/core/rxjs-interop';
 const PAGE_TITLES: Record<string, string> = {
   analytics:  'لوحة التحليلات',
   zones:      'إدارة المناطق',
-  geofencing: 'النطاقات الجغرافية',
+  'sub-zones': 'المناطق الفرعية',
+  hubs:       'الشوارع ومراكز الانطلاق',
+  'vendor-categories': 'فئات المتاجر',
   vendors:    'إدارة المتاجر',
   catalog:    'إدارة المنتجات',
   orders:     'إدارة الطلبات',
-  drivers:    'إدارة السائقين',
+  drivers:    'إدارة الكباتن',
   financials: 'الماليات',
   customers:  'العملاء',
 };
@@ -31,8 +33,9 @@ export class TopbarComponent {
     this.router.events.pipe(
       filter(e => e instanceof NavigationEnd),
       map((e: NavigationEnd) => {
-        const segment = e.urlAfterRedirects.split('/').filter(Boolean).pop() ?? '';
-        return PAGE_TITLES[segment] ?? 'كومبو كنترول';
+        const segments = e.urlAfterRedirects.split('?')[0].split('/').filter(Boolean);
+        const match = segments.find((segment) => segment in PAGE_TITLES);
+        return match ? PAGE_TITLES[match] : 'كومبو كنترول';
       }),
     ),
     { initialValue: 'لوحة التحليلات' },

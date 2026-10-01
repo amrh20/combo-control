@@ -10,12 +10,14 @@
       @if (isEditMode) {
         تحديث بيانات المتجر {{ vendorId }}.
       } @else {
-        سجّل متجراً جديداً وعيّنه لمنطقة توصيل.
+        سجّل متجراً جديداً وعيّنه لنقطة التجميع التي يقع فيها.
       }
     </p>
   </div>
 
-  <form [formGroup]="form" (ngSubmit)="save()">
+  <p-toast position="top-center" />
+
+  <form [formGroup]="vendorForm" (ngSubmit)="save()">
 
     <div class="vendor-form__card">
       <h2 class="vendor-form__section-title">
@@ -76,16 +78,16 @@
 
         <div class="col-md-6">
           <div class="vendor-form__field">
-            <label class="vendor-form__label" for="zoneSelect">
-              المنطقة المعيّنة <span class="vendor-form__required">*</span>
+            <label class="vendor-form__label" for="hubSelect">
+              نقطة التجميع / الشارع التابع له <span class="vendor-form__required">*</span>
             </label>
             <p-select
-              inputId="zoneSelect"
-              [options]="zoneOptions"
-              optionLabel="name"
-              optionValue="id"
-              formControlName="zoneId"
-              placeholder="اختر منطقة..."
+              inputId="hubSelect"
+              [options]="hubOptions()"
+              optionLabel="label"
+              optionValue="value"
+              formControlName="hubId"
+              placeholder="اختر نقطة التجميع..."
               styleClass="vendor-form__select"
             />
           </div>
@@ -96,28 +98,70 @@
             <label class="vendor-form__label" for="categorySelect">
               الفئة <span class="vendor-form__required">*</span>
             </label>
-            <p-select
-              inputId="categorySelect"
-              [options]="categoryOptions"
-              optionLabel="label"
-              optionValue="value"
+            <select
+              id="categorySelect"
               formControlName="category"
-              placeholder="اختر فئة..."
-              styleClass="vendor-form__select"
-            />
+              class="vendor-form__input vendor-form__native-select"
+            >
+              <option value="" disabled>اختر فئة...</option>
+              @for (cat of categories(); track cat.id) {
+                <option [value]="cat.id">{{ cat.name }}</option>
+              }
+            </select>
           </div>
         </div>
 
         <div class="col-md-6">
           <div class="vendor-form__field">
-            <label class="vendor-form__label">شعار المتجر</label>
-            <div class="vendor-form__logo-placeholder">
-              <i class="pi pi-image"></i>
-              <span>رفع الصورة قريباً</span>
-            </div>
+            <label class="vendor-form__label" for="logoFile">شعار المتجر</label>
+            <button
+              type="button"
+              class="vendor-form__logo-placeholder"
+              [class.vendor-form__logo-placeholder--filled]="!!logoPreview()"
+              (click)="fileInput.click()"
+            >
+              @if (logoPreview(); as preview) {
+                <img [src]="preview" alt="شعار المتجر" class="vendor-form__logo-preview" />
+              } @else {
+                <i class="pi pi-image"></i>
+                <span>اضغط لرفع الشعار</span>
+              }
+            </button>
+            <input
+              #fileInput
+              id="logoFile"
+              type="file"
+              accept="image/*"
+              class="hidden"
+              (change)="onFileSelected($event)"
+            />
           </div>
         </div>
       </div>
+    </div>
+
+    <div class="vendor-form__card">
+      <h2 class="vendor-form__section-title">
+        <i class="pi pi-map-marker"></i>
+        موقع المتجر
+        <span class="vendor-form__required">*</span>
+      </h2>
+      <p class="vendor-form__map-lead">
+        اختر نقطة التجميع ثم انقر داخل المساحة الخضراء لإسقاط دبوس المتجر. الدبوس يُقبل فقط داخل حدود الشارع.
+      </p>
+
+      <div class="vendor-form__map" [class.vendor-form__map--ready]="!!vendorForm.controls.hubId.value">
+        <div #mapContainer class="vendor-form__map-canvas"></div>
+        @if (!vendorForm.controls.hubId.value) {
+          <div class="vendor-form__map-mask">اختر نقطة التجميع لعرض حدود الشارع.</div>
+        }
+      </div>
+
+      @if (mapWarning(); as warning) {
+        <p class="vendor-form__map-error" role="alert">{{ warning }}</p>
+      } @else if (vendorForm.controls.location.valid && vendorForm.get('location')?.value) {
+        <p class="vendor-form__map-ok">تم تثبيت الموقع داخل حدود نقطة التجميع.</p>
+      }
     </div>
 
     <div class="vendor-form__card">
@@ -130,13 +174,13 @@
         <div class="col-md-6">
           <div class="vendor-form__field">
             <label class="vendor-form__label" for="openingTime">وقت الفتح</label>
-            <p-datepicker
-              inputId="openingTime"
+            <input
+              id="openingTime"
+              type="time"
+              pInputText
               formControlName="openingTime"
-              [timeOnly]="true"
-              [showSeconds]="false"
-              hourFormat="12"
-              styleClass="vendor-form__timepicker"
+              class="vendor-form__input"
+              dir="ltr"
             />
           </div>
         </div>
@@ -144,13 +188,13 @@
         <div class="col-md-6">
           <div class="vendor-form__field">
             <label class="vendor-form__label" for="closingTime">وقت الإغلاق</label>
-            <p-datepicker
-              inputId="closingTime"
+            <input
+              id="closingTime"
+              type="time"
+              pInputText
               formControlName="closingTime"
-              [timeOnly]="true"
-              [showSeconds]="false"
-              hourFormat="12"
-              styleClass="vendor-form__timepicker"
+              class="vendor-form__input"
+              dir="ltr"
             />
           </div>
         </div>
@@ -171,13 +215,14 @@
 
         <div class="col-md-6">
           <div class="vendor-form__field">
-            <label class="vendor-form__label" for="discountPercent">شارة الخصم (%)</label>
+            <label class="vendor-form__label" for="minOrder">الحد الأدنى للطلب (ج.م)</label>
             <p-inputnumber
-              inputId="discountPercent"
-              formControlName="discountPercent"
+              inputId="minOrder"
+              formControlName="minOrder"
               [min]="0"
-              [max]="100"
-              suffix="%"
+              mode="currency"
+              currency="EGP"
+              locale="ar-EG"
               styleClass="vendor-form__number-input"
             />
           </div>
@@ -191,11 +236,11 @@
               <div class="vendor-form__toggle-body">
                 <span
                   class="vendor-form__toggle-state"
-                  [ngClass]="form.get('autoAccept')?.value
+                  [ngClass]="vendorForm.get('autoAccept')?.value
                     ? 'vendor-form__toggle-state--on'
                     : 'vendor-form__toggle-state--off'"
                 >
-                  {{ form.get('autoAccept')?.value ? 'مفعّل' : 'معطّل' }}
+                  {{ vendorForm.get('autoAccept')?.value ? 'مفعّل' : 'معطّل' }}
                 </span>
               </div>
             </div>
@@ -207,8 +252,8 @@
             <label class="vendor-form__label">حالة النظام</label>
             <div class="vendor-form__toggle-row">
               <p-toggleswitch
-                [ngModel]="form.get('systemStatus')?.value === 'active'"
-                (ngModelChange)="form.patchValue({ systemStatus: $event ? 'active' : 'inactive' })"
+                [ngModel]="vendorForm.get('systemStatus')?.value === 'active'"
+                (ngModelChange)="vendorForm.patchValue({ systemStatus: $event ? 'active' : 'inactive' })"
                 [ngModelOptions]="{ standalone: true }"
                 inputId="systemStatus"
               />
@@ -226,7 +271,11 @@
         <button type="button" class="vendor-form__btn vendor-form__btn--ghost" (click)="cancel()">
           إلغاء
         </button>
-        <button type="submit" class="vendor-form__btn vendor-form__btn--primary">
+        <button
+          type="submit"
+          class="vendor-form__btn vendor-form__btn--primary"
+          [disabled]="vendorForm.invalid || vendorForm.get('location')?.value == null"
+        >
           <i class="pi pi-check"></i>
           {{ isEditMode ? 'حفظ التغييرات' : 'إضافة المتجر' }}
         </button>

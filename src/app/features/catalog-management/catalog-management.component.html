@@ -13,7 +13,7 @@
         <label class="catalog__vendor-label" for="vendorSelect">اختر المتجر</label>
         <p-select
           inputId="vendorSelect"
-          [options]="vendorOptions"
+          [options]="vendorOptions()"
           optionLabel="label"
           optionValue="value"
           [ngModel]="selectedShopId()"

@@ -19,7 +19,7 @@
         inputId="vendorSearch"
         type="search"
         icon="pi-search"
-        placeholder="ابحث بالاسم أو الفئة أو المنطقة أو الهاتف..."
+        placeholder="ابحث بالاسم أو الفئة أو نقطة التجميع أو الهاتف..."
         [value]="searchQuery()"
         (valueChange)="onSearchChange($event)"
       />
@@ -38,7 +38,7 @@
     <div class="vendors-list__filters">
       <p-select
         inputId="categoryFilter"
-        [options]="categoryFilterOptions"
+        [options]="categoryFilterOptions()"
         optionLabel="label"
         optionValue="value"
         [ngModel]="categoryFilter()"
@@ -47,13 +47,13 @@
         styleClass="vendors-list__filter-select"
       />
       <p-select
-        inputId="zoneFilter"
-        [options]="zoneFilterOptions"
+        inputId="hubFilter"
+        [options]="hubFilterOptions()"
         optionLabel="label"
         optionValue="value"
-        [ngModel]="zoneFilter()"
-        (ngModelChange)="onZoneFilterChange($event)"
-        placeholder="المنطقة"
+        [ngModel]="hubFilter()"
+        (ngModelChange)="onHubFilterChange($event)"
+        placeholder="نقطة التجميع"
         styleClass="vendors-list__filter-select"
       />
       <p-select
@@ -95,11 +95,11 @@
           <th pSortableColumn="name" class="vendors-list__th">
             اسم المتجر <p-sortIcon field="name" />
           </th>
-          <th pSortableColumn="category" class="vendors-list__th" style="width: 130px">
+          <th pSortableColumn="category" class="vendors-list__th" style="width: 210px">
             الفئة <p-sortIcon field="category" />
           </th>
-          <th pSortableColumn="zoneName" class="vendors-list__th">
-            المنطقة المعيّنة <p-sortIcon field="zoneName" />
+          <th pSortableColumn="hubName" class="vendors-list__th">
+            نقطة التجميع <p-sortIcon field="hubName" />
           </th>
           <th class="vendors-list__th" style="width: 160px">الحالة المباشرة</th>
           <th class="vendors-list__th vendors-list__th--center" style="width: 110px">
@@ -132,12 +132,31 @@
             </div>
           </td>
           <td>
-            <span class="vendors-list__category">{{ getCategoryLabel(vendor) }}</span>
+            @if (categoryOf(vendor); as category) {
+              <span
+                class="vendors-list__category"
+                [style.background-color]="category.backgroundColor"
+                [style.color]="categoryText(category.backgroundColor)"
+              >
+                @if (isImageIcon(category.iconUrl)) {
+                  <img
+                    class="vendors-list__category-icon"
+                    [src]="category.iconUrl"
+                    alt=""
+                  />
+                } @else {
+                  <span class="vendors-list__category-emoji">{{ category.iconUrl }}</span>
+                }
+                <span>{{ category.name }}</span>
+              </span>
+            } @else {
+              <span class="vendors-list__category vendors-list__category--missing">—</span>
+            }
           </td>
           <td>
             <span class="vendors-list__zone">
               <i class="pi pi-map-marker"></i>
-              <span>{{ vendor.zoneName }}</span>
+              <span>{{ vendor.hubName }}</span>
             </span>
           </td>
           <td>

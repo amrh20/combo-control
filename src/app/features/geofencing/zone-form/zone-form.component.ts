@@ -37,11 +37,10 @@ export class GeofenceZoneFormComponent {
   readonly cityOptions = CITY_OPTIONS;
 
   readonly form = this.fb.nonNullable.group({
-    name:         ['', [Validators.required, Validators.minLength(2)]],
-    city:         ['', Validators.required],
-    deliveryFee:  [0, [Validators.required, Validators.min(0)]],
-    minimumOrder: [0, [Validators.required, Validators.min(0)]],
-    isActive:     [true],
+    name:     ['', [Validators.required, Validators.minLength(2)]],
+    city:     ['', Validators.required],
+    minOrder: [0, [Validators.required, Validators.min(0)]],
+    isActive: [true],
   });
 
   submit(): void {

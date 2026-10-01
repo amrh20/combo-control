@@ -1,0 +1,11 @@
+<div class="hub-pin-map">
+  <div #mapContainer class="hub-pin-map__canvas"></div>
+  <div class="hub-pin-map__hint">
+    <i class="pi" [class.pi-pencil]="hasPolygon()" [class.pi-stop]="!hasPolygon()" aria-hidden="true"></i>
+    @if (hasPolygon()) {
+      اسحب الزوايا لتعديل حدود الشارع. لحذف الحدود استخدم أداة الحذف ثم ارسم من جديد.
+    } @else {
+      ابحث عن الشارع، ثم ارسم مضلعاً حول حدود الشارع التجاري. البحث لا يضع علامة.
+    }
+  </div>
+</div>

@@ -48,42 +48,19 @@
       }
     </div>
 
-    <div class="row g-3">
-      <!-- Delivery Fee -->
-      <div class="col-6">
-        <div class="zone-form__field">
-          <label class="zone-form__label" for="deliveryFee">
-            رسوم التوصيل <span class="zone-form__required">*</span>
-          </label>
-          <p-inputnumber
-            inputId="deliveryFee"
-            formControlName="deliveryFee"
-            [min]="0"
-            mode="currency"
-            currency="EGP"
-            locale="ar-EG"
-            styleClass="zone-form__number"
-          />
-        </div>
-      </div>
-
-      <!-- Minimum Order -->
-      <div class="col-6">
-        <div class="zone-form__field">
-          <label class="zone-form__label" for="minimumOrder">
-            الحد الأدنى للطلب <span class="zone-form__required">*</span>
-          </label>
-          <p-inputnumber
-            inputId="minimumOrder"
-            formControlName="minimumOrder"
-            [min]="0"
-            mode="currency"
-            currency="EGP"
-            locale="ar-EG"
-            styleClass="zone-form__number"
-          />
-        </div>
-      </div>
+    <div class="zone-form__field">
+      <label class="zone-form__label" for="minOrder">
+        الحد الأدنى للطلب <span class="zone-form__required">*</span>
+      </label>
+      <p-inputnumber
+        inputId="minOrder"
+        formControlName="minOrder"
+        [min]="0"
+        mode="currency"
+        currency="EGP"
+        locale="ar-EG"
+        styleClass="zone-form__number"
+      />
     </div>
 
     <!-- Active / Inactive -->

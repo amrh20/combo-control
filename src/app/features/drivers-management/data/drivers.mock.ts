@@ -4,6 +4,8 @@ export type DriverAvailability = 'available' | 'busy' | 'offline';
 export type DriverAccountStatus = 'active' | 'inactive';
 export type ComplaintSeverity = 'low' | 'medium' | 'high';
 export type ComplaintResolution = 'pending' | 'resolved';
+export type CaptainRole = 'COLLECTOR' | 'DELIVERY';
+export type CaptainVehicleType = 'Motorcycle' | 'Car' | 'Bicycle';
 
 export interface DriverStats {
   totalCompletedOrders: number;
@@ -30,17 +32,21 @@ export interface DriverComplaint {
   resolution: ComplaintResolution;
 }
 
-export interface DriverProfile {
+export interface CaptainProfile {
   id: string;
   name: string;
   phone: string;
-  /** Login credential for the driver app. Never rendered in the admin UI. */
+  /** Login credential for the captain app. Never rendered in the admin UI. */
   password?: string;
-  zoneId: string;
-  zoneName: string;
+  role: CaptainRole;
+  /** Dispatch hub this captain starts from. */
+  hubId: string;
+  /** Denormalized hub name so the table can sort and search without a join. */
+  hubName: string;
   availability: DriverAvailability;
   accountStatus: DriverAccountStatus;
-  vehicleType: string;
+  /** Empty for collectors — they do not operate a vehicle. */
+  vehicleType: CaptainVehicleType | '';
   licenseExpiry: string;
   stats: DriverStats;
   deliveredOrders: DriverDeliveredOrder[];
@@ -69,25 +75,33 @@ export const RESOLUTION_CONFIG: Record<string, { label: string; labelAr: string 
   resolved: { label: 'Resolved', labelAr: 'تم الحل'      },
 };
 
-export const ZONE_OPTIONS = [
-  { id: 'ZN-001', name: 'مجمع شطر ١٣'       },
-  { id: 'ZN-002', name: 'حي الروضة'           },
-  { id: 'ZN-004', name: 'مجمع الواحة'         },
-  { id: 'ZN-005', name: 'حي الورود'           },
-  { id: 'ZN-007', name: 'مجمع شطر ٥'          },
-  { id: 'ZN-008', name: 'حي الياسمين'         },
+export const ROLE_OPTIONS: { label: string; value: CaptainRole }[] = [
+  { label: 'طيار توصيل', value: 'DELIVERY' },
+  { label: 'مُجمّع طلبات', value: 'COLLECTOR' },
+];
+
+export const ROLE_CONFIG: Record<CaptainRole, { labelAr: string }> = {
+  DELIVERY: { labelAr: 'طيار توصيل' },
+  COLLECTOR: { labelAr: 'مُجمّع طلبات' },
+};
+
+export const VEHICLE_OPTIONS: { label: string; value: CaptainVehicleType }[] = [
+  { label: 'دراجة نارية', value: 'Motorcycle' },
+  { label: 'سيارة', value: 'Car' },
+  { label: 'دراجة هوائية (عجلة)', value: 'Bicycle' },
 ];
 
 const mkOrders = (items: Omit<DriverDeliveredOrder, 'status'>[]): DriverDeliveredOrder[] =>
   items.map(o => ({ ...o, status: 'delivered' as const }));
 
-export const DRIVERS_DATA: DriverProfile[] = [
+export const DRIVERS_DATA: CaptainProfile[] = [
   {
     id: 'DR-001',
     name: 'محمد العتيبي',
     phone: '+20 10 1234 5678',
-    zoneId: 'ZN-001',
-    zoneName: 'مجمع شطر ١٣',
+    role: 'DELIVERY',
+    hubId: 'HB-001',
+    hubName: 'شارع ١٣',
     availability: 'available',
     accountStatus: 'active',
     vehicleType: 'Motorcycle',
@@ -134,8 +148,9 @@ export const DRIVERS_DATA: DriverProfile[] = [
     id: 'DR-002',
     name: 'أحمد الشهري',
     phone: '+20 11 2345 6789',
-    zoneId: 'ZN-001',
-    zoneName: 'مجمع شطر ١٣',
+    role: 'DELIVERY',
+    hubId: 'HB-001',
+    hubName: 'شارع ١٣',
     availability: 'busy',
     accountStatus: 'active',
     vehicleType: 'Motorcycle',
@@ -174,11 +189,12 @@ export const DRIVERS_DATA: DriverProfile[] = [
     id: 'DR-003',
     name: 'خالد الدوسري',
     phone: '+20 12 3456 7890',
-    zoneId: 'ZN-001',
-    zoneName: 'مجمع شطر ١٣',
+    role: 'COLLECTOR',
+    hubId: 'HB-001',
+    hubName: 'شارع ١٣',
     availability: 'available',
     accountStatus: 'active',
-    vehicleType: 'Car',
+    vehicleType: '',
     licenseExpiry: '2028-01-08',
     stats: {
       totalCompletedOrders: 412,
@@ -205,8 +221,9 @@ export const DRIVERS_DATA: DriverProfile[] = [
     id: 'DR-004',
     name: 'سعد القحطاني',
     phone: '+20 10 4567 8901',
-    zoneId: 'ZN-002',
-    zoneName: 'حي الروضة',
+    role: 'DELIVERY',
+    hubId: 'HB-002',
+    hubName: 'شارع ٩',
     availability: 'available',
     accountStatus: 'active',
     vehicleType: 'Motorcycle',
@@ -253,11 +270,12 @@ export const DRIVERS_DATA: DriverProfile[] = [
     id: 'DR-005',
     name: 'فيصل المطيري',
     phone: '+20 11 5678 9012',
-    zoneId: 'ZN-002',
-    zoneName: 'حي الروضة',
+    role: 'COLLECTOR',
+    hubId: 'HB-002',
+    hubName: 'شارع ٩',
     availability: 'busy',
     accountStatus: 'inactive',
-    vehicleType: 'Motorcycle',
+    vehicleType: '',
     licenseExpiry: '2026-05-30',
     stats: {
       totalCompletedOrders: 290,
@@ -301,8 +319,9 @@ export const DRIVERS_DATA: DriverProfile[] = [
     id: 'DR-006',
     name: 'عبدالله الحربي',
     phone: '+20 12 6789 0123',
-    zoneId: 'ZN-004',
-    zoneName: 'مجمع الواحة',
+    role: 'DELIVERY',
+    hubId: 'HB-003',
+    hubName: 'عباس العقاد',
     availability: 'available',
     accountStatus: 'active',
     vehicleType: 'Car',
@@ -341,8 +360,9 @@ export const DRIVERS_DATA: DriverProfile[] = [
     id: 'DR-007',
     name: 'ناصر الزهراني',
     phone: '+20 10 7890 1234',
-    zoneId: 'ZN-004',
-    zoneName: 'مجمع الواحة',
+    role: 'DELIVERY',
+    hubId: 'HB-003',
+    hubName: 'عباس العقاد',
     availability: 'offline',
     accountStatus: 'active',
     vehicleType: 'Motorcycle',
@@ -372,11 +392,12 @@ export const DRIVERS_DATA: DriverProfile[] = [
     id: 'DR-008',
     name: 'يوسف الغامدي',
     phone: '+20 11 8901 2345',
-    zoneId: 'ZN-007',
-    zoneName: 'مجمع شطر ٥',
+    role: 'COLLECTOR',
+    hubId: 'HB-001',
+    hubName: 'شارع ١٣',
     availability: 'available',
     accountStatus: 'active',
-    vehicleType: 'Motorcycle',
+    vehicleType: '',
     licenseExpiry: '2028-06-10',
     stats: {
       totalCompletedOrders: 367,
@@ -412,11 +433,12 @@ export const DRIVERS_DATA: DriverProfile[] = [
     id: 'DR-009',
     name: 'راشد العمري',
     phone: '+20 12 9012 3456',
-    zoneId: 'ZN-008',
-    zoneName: 'حي الياسمين',
+    role: 'DELIVERY',
+    hubId: 'HB-003',
+    hubName: 'عباس العقاد',
     availability: 'offline',
     accountStatus: 'inactive',
-    vehicleType: 'Car',
+    vehicleType: 'Bicycle',
     licenseExpiry: '2026-09-25',
     stats: {
       totalCompletedOrders: 198,
@@ -452,8 +474,9 @@ export const DRIVERS_DATA: DriverProfile[] = [
     id: 'DR-010',
     name: 'كريم حسن',
     phone: '+20 10 1122 3344',
-    zoneId: 'ZN-005',
-    zoneName: 'حي الورود',
+    role: 'DELIVERY',
+    hubId: 'HB-002',
+    hubName: 'شارع ٩',
     availability: 'busy',
     accountStatus: 'active',
     vehicleType: 'Motorcycle',
@@ -494,18 +517,20 @@ function normalizePhone(value: string): string {
   return value.replace(/[\s\-()+]/g, '').toLowerCase();
 }
 
-export function matchesDriverSearch(driver: DriverProfile, query: string): boolean {
+export function matchesDriverSearch(captain: CaptainProfile, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
 
   const qPhone = normalizePhone(q);
-  const driverPhone = normalizePhone(driver.phone);
+  const captainPhone = normalizePhone(captain.phone);
+  const roleLabel = ROLE_CONFIG[captain.role].labelAr.toLowerCase();
 
   return (
-    driver.id.toLowerCase().includes(q) ||
-    driver.name.toLowerCase().includes(q) ||
-    driver.zoneName.toLowerCase().includes(q) ||
-    driverPhone.includes(qPhone)
+    captain.id.toLowerCase().includes(q) ||
+    captain.name.toLowerCase().includes(q) ||
+    captain.hubName.toLowerCase().includes(q) ||
+    roleLabel.includes(q) ||
+    captainPhone.includes(qPhone)
   );
 }
 

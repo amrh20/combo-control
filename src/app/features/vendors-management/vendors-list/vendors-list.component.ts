@@ -1,4 +1,4 @@
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TableModule } from 'primeng/table';
@@ -6,17 +6,20 @@ import { SelectModule } from 'primeng/select';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { ComboInputComponent } from '../../../shared/components/combo-input/combo-input.component';
 import {
-  CATEGORY_CONFIG,
+  VendorCategory,
+  VendorCategoryService,
+  categoryTextColor,
+  isCategoryIconImage,
+} from '../../../core/services/vendor-category.service';
+import { HubService } from '../../../core/services/hub.service';
+import { VendorService } from '../../../core/services/vendor.service';
+import {
   getEffectiveLiveStatus,
   getVendorInitials,
   LIVE_STATUS_CONFIG,
   LiveStatus,
-  syncVendorsFromState,
   SystemStatus,
-  updateVendor,
-  VendorCategory,
   VendorProfile,
-  ZONE_OPTIONS,
   matchesVendorFilters,
 } from '../data/vendors.mock';
 
@@ -35,29 +38,32 @@ import {
   styleUrl: './vendors-list.component.scss',
 })
 export class VendorsListComponent {
-  readonly categoryConfig = CATEGORY_CONFIG;
-  readonly liveStatusConfig = LIVE_STATUS_CONFIG;
-  readonly zoneOptions = ZONE_OPTIONS;
+  private readonly categoryService = inject(VendorCategoryService);
+  private readonly hubService = inject(HubService);
+  private readonly vendorService = inject(VendorService);
 
-  private readonly vendors = signal<VendorProfile[]>(syncVendorsFromState());
+  readonly liveStatusConfig = LIVE_STATUS_CONFIG;
 
   readonly searchQuery = signal('');
-  readonly categoryFilter = signal<VendorCategory | 'all'>('all');
-  readonly zoneFilter = signal<string | 'all'>('all');
+  readonly categoryFilter = signal<string>('all');
+  readonly hubFilter = signal<string | 'all'>('all');
   readonly liveStatusFilter = signal<LiveStatus | 'all'>('all');
 
-  readonly categoryFilterOptions = [
-    { label: 'كل الفئات', value: 'all' as const },
-    ...Object.entries(CATEGORY_CONFIG).map(([value, cfg]) => ({
-      label: cfg.labelAr,
-      value: value as VendorCategory,
+  readonly categoryFilterOptions = computed(() => [
+    { label: 'كل الفئات', value: 'all' },
+    ...this.categoryService.categories().map((category) => ({
+      label: category.isActive ? category.name : `${category.name} (غير نشطة)`,
+      value: category.id,
     })),
-  ];
+  ]);
 
-  readonly zoneFilterOptions = [
-    { label: 'كل المناطق', value: 'all' as const },
-    ...ZONE_OPTIONS.map(z => ({ label: z.name, value: z.id })),
-  ];
+  readonly hubFilterOptions = computed(() => [
+    { label: 'كل نقاط التجميع', value: 'all' as const },
+    ...this.hubService.hubs().map((hub) => ({
+      label: hub.isActive ? hub.name : `${hub.name} (غير نشطة)`,
+      value: hub.id,
+    })),
+  ]);
 
   readonly liveStatusFilterOptions = [
     { label: 'كل الحالات المباشرة', value: 'all' as const },
@@ -67,16 +73,28 @@ export class VendorsListComponent {
     })),
   ];
 
-  readonly filteredVendors = computed(() =>
-    this.vendors().filter(v =>
-      matchesVendorFilters(v, {
-        search: this.searchQuery(),
-        category: this.categoryFilter(),
-        zoneId: this.zoneFilter(),
-        liveStatus: this.liveStatusFilter(),
-      }),
-    ),
-  );
+  readonly filteredVendors = computed(() => {
+    const names = new Map(
+      this.categoryService.categories().map((category) => [category.id, category.name]),
+    );
+    return this.vendorService.vendors()
+      .map((vendor) => ({
+        ...vendor,
+        hubName: this.hubService.nameOf(vendor.hubId) || vendor.hubName,
+      }))
+      .filter((vendor) =>
+        matchesVendorFilters(
+          vendor,
+          {
+            search: this.searchQuery(),
+            category: this.categoryFilter(),
+            hubId: this.hubFilter(),
+            liveStatus: this.liveStatusFilter(),
+          },
+          names.get(vendor.category) ?? '',
+        ),
+      );
+  });
 
   onSearchChange(value: string): void {
     this.searchQuery.set(value);
@@ -86,12 +104,12 @@ export class VendorsListComponent {
     this.searchQuery.set('');
   }
 
-  onCategoryFilterChange(value: VendorCategory | 'all'): void {
+  onCategoryFilterChange(value: string): void {
     this.categoryFilter.set(value);
   }
 
-  onZoneFilterChange(value: string | 'all'): void {
-    this.zoneFilter.set(value);
+  onHubFilterChange(value: string | 'all'): void {
+    this.hubFilter.set(value);
   }
 
   onLiveStatusFilterChange(value: LiveStatus | 'all'): void {
@@ -102,7 +120,7 @@ export class VendorsListComponent {
     return (
       !!this.searchQuery() ||
       this.categoryFilter() !== 'all' ||
-      this.zoneFilter() !== 'all' ||
+      this.hubFilter() !== 'all' ||
       this.liveStatusFilter() !== 'all'
     );
   }
@@ -110,12 +128,20 @@ export class VendorsListComponent {
   clearFilters(): void {
     this.searchQuery.set('');
     this.categoryFilter.set('all');
-    this.zoneFilter.set('all');
+    this.hubFilter.set('all');
     this.liveStatusFilter.set('all');
   }
 
-  getCategoryLabel(vendor: VendorProfile): string {
-    return CATEGORY_CONFIG[vendor.category].labelAr;
+  categoryOf(vendor: VendorProfile): VendorCategory | null {
+    return this.categoryService.getById(vendor.category);
+  }
+
+  isImageIcon(iconUrl: string): boolean {
+    return isCategoryIconImage(iconUrl);
+  }
+
+  categoryText(hex: string): string {
+    return categoryTextColor(hex);
   }
 
   getInitials(vendor: VendorProfile): string {
@@ -132,9 +158,6 @@ export class VendorsListComponent {
 
   onSystemToggle(vendorId: string, active: boolean): void {
     const systemStatus: SystemStatus = active ? 'active' : 'inactive';
-    updateVendor(vendorId, { systemStatus });
-    this.vendors.update(list =>
-      list.map(v => (v.id === vendorId ? { ...v, systemStatus } : v)),
-    );
+    this.vendorService.update(vendorId, { systemStatus });
   }
 }

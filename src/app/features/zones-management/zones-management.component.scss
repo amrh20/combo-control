@@ -3,7 +3,10 @@
 // All PrimeNG overrides use :host ::ng-deep at the bottom of this file
 // ═══════════════════════════════════════════════════════════════════
 
+@use '../../shared/styles/filter-toolbar' as filters;
+
 .zones-management {
+  @include filters.filter-toolbar;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -75,12 +78,11 @@
     unicode-bidi: embed;
   }
 
-  // ── Coverage area text ────────────────────────────
-  &__coverage {
+  &__money {
     font-size: 13px;
-    color: var(--Combo-text-text-primary-paragraph);
-    direction: rtl;
-    unicode-bidi: embed;
+    font-weight: 600;
+    color: var(--Combo-text-text-default);
+    white-space: nowrap;
   }
 
   // ── Status badge (pill with dot indicator) ────────
@@ -125,16 +127,6 @@
     flex-shrink: 0;
   }
 
-  // ── Shop count number ─────────────────────────────
-  &__shop-count {
-    display: inline-block;
-    font-weight: 700;
-    font-size: 15px;
-    color: var(--Combo-text-text-default);
-    min-width: 24px;
-    text-align: center;
-  }
-
   // ── Action icon buttons ───────────────────────────
   &__actions {
     display: flex;
@@ -165,6 +157,239 @@
       color: var(--Combo-icon-icon-neutral);
       &:hover { background-color: var(--Combo-bg-background-neutral-100); border-color: var(--Combo-border-border-neutral-primary); }
     }
+  }
+
+  // ── Row expansion toggler ─────────────────────────
+  &__th--toggler {
+    width: 52px;
+  }
+
+  &__sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  &__toggler {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--Combo-icon-icon-neutral);
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+
+    i {
+      font-size: 12px;
+      transition: transform 0.25s ease;
+    }
+
+    &:hover {
+      background-color: var(--Combo-bg-background-neutral-100);
+      color: var(--Combo-text-text-primary);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--Combo-border-border-primary-light);
+      outline-offset: 1px;
+    }
+  }
+
+  // chevron-left points toward the reading direction in RTL; rotating it -90° points it down.
+  &__row--expanded &__toggler {
+    color: var(--Combo-text-text-primary);
+    background-color: var(--Combo-bg-background-primary-50);
+    border-color: var(--Combo-border-border-primary-light);
+
+    i {
+      transform: rotate(-90deg);
+    }
+  }
+
+  &__name-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__count {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--Combo-text-text-secondary-paragraph);
+    background-color: var(--Combo-bg-background-neutral-100);
+
+    i {
+      font-size: 10px;
+    }
+  }
+
+  // ── Expandable detail row ─────────────────────────
+  // Grid rows 0fr → 1fr animates to the content's natural height in both directions.
+  &__detail {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition: grid-template-rows 0.3s ease, opacity 0.25s ease;
+  }
+
+  &__detail-row--open &__detail {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+
+  &__detail-inner {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  &__detail-panel {
+    margin: 4px 16px 16px;
+    margin-inline-start: 52px;
+    padding: 14px 16px;
+    border: 1px solid var(--Combo-border-border-neutral-secondary);
+    border-inline-start: 3px solid var(--Combo-border-border-primary-light);
+    border-radius: 10px;
+    background-color: var(--Combo-bg-background-neutral-50);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  &__detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  &__detail-title {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Alexandria', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--Combo-text-text-display);
+  }
+
+  &__detail-count {
+    min-width: 22px;
+    padding: 1px 7px;
+    border-radius: 20px;
+    font-size: 11px;
+    text-align: center;
+    color: var(--Combo-text-text-primary);
+    background-color: var(--Combo-bg-background-primary-50);
+  }
+
+  &__add-sub-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    font-family: 'Alexandria', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    color: var(--Combo-text-text-oncolor-primary);
+    background-color: var(--Combo-button-button-background-primary-default);
+    transition: background-color 0.18s ease;
+
+    i {
+      font-size: 12px;
+    }
+
+    &:hover {
+      background-color: var(--Combo-button-button-background-primary-hovered);
+    }
+
+    &:active {
+      background-color: var(--Combo-button-button-background-primary-pressed);
+    }
+  }
+
+  &__detail-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 18px;
+    border: 1px dashed var(--Combo-border-border-neutral-primary);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--Combo-text-text-secondary-paragraph);
+  }
+
+  &__mini-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: var(--Combo-bg-background-card);
+
+    th,
+    td {
+      padding: 9px 12px;
+      text-align: start;
+      border-bottom: 1px solid var(--Combo-border-border-neutral-secondary);
+    }
+
+    th {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--Combo-text-text-secondary-paragraph);
+      background-color: var(--Combo-bg-background-neutral-100);
+    }
+
+    td {
+      font-size: 13px;
+      color: var(--Combo-text-text-default);
+    }
+
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    tbody tr:hover td {
+      background-color: var(--Combo-table-table-background-row-hovered);
+    }
+  }
+
+  &__sub-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+  }
+
+  &__swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  &__sub-id {
+    font-family: 'Alexandria', sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--Combo-text-text-secondary-paragraph);
   }
 
   // ── Empty-state message ───────────────────────────
@@ -233,8 +458,28 @@
     }
 
     // Row hover
-    .p-datatable-tbody > tr:hover > td {
+    .p-datatable-tbody > tr.zones-management__row:hover > td {
       background-color: var(--Combo-table-table-background-row-hovered) !important;
+    }
+
+    .p-datatable-tbody > tr > td.zones-management__toggler-cell {
+      padding-inline-end: 0 !important;
+      width: 52px;
+    }
+
+    // Detail row: no padding/border while collapsed so it occupies zero height.
+    .p-datatable-tbody > tr.zones-management__detail-row > td {
+      padding: 0 !important;
+      border-bottom: none !important;
+    }
+
+    .p-datatable-tbody > tr.zones-management__detail-row--open > td {
+      border-bottom: 1px solid var(--Combo-border-border-neutral-secondary) !important;
+    }
+
+    .p-datatable-tbody > tr.zones-management__row--expanded > td {
+      border-bottom-color: transparent !important;
+      background-color: var(--Combo-bg-background-primary-50) !important;
     }
 
     // Sort icon

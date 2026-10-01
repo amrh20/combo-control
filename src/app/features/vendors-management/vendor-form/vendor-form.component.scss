@@ -2,11 +2,15 @@
 // Vendor Form — BEM component styles
 // ═══════════════════════════════════════════════════════════════════
 
+.hidden {
+  display: none;
+}
+
 .vendor-form {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  max-width: 860px;
+  max-width: 960px;
 
   // ── Page header ───────────────────────────────────
   &__header {
@@ -141,21 +145,97 @@
     color: var(--Combo-text-text-secondary-paragraph);
   }
 
+  &__map-lead {
+    margin: -8px 0 16px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--Combo-text-text-secondary-paragraph);
+  }
+
+  &__map {
+    position: relative;
+    height: 420px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--Combo-controls-control-border);
+    background: var(--Combo-bg-background-neutral-100);
+  }
+
+  &__map-canvas {
+    position: absolute;
+    inset: 0;
+    /* Leaflet positions tiles and controls on the physical axes. */
+    direction: ltr;
+    cursor: default;
+  }
+
+  &__map--ready &__map-canvas {
+    cursor: crosshair;
+  }
+
+  &__map-mask {
+    position: absolute;
+    inset: 0;
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.72);
+    color: var(--Combo-text-text-primary-paragraph);
+    font-size: 14px;
+    font-weight: 600;
+    pointer-events: none;
+  }
+
+  &__map-error,
+  &__map-ok {
+    margin: 12px 0 0;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  &__map-error {
+    color: var(--Combo-text-text-error);
+  }
+
+  &__map-ok {
+    color: var(--Combo-text-text-success);
+  }
+
   &__logo-placeholder {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    min-height: 100px;
+    width: 100%;
+    min-height: 120px;
     padding: 20px;
     border: 2px dashed var(--Combo-border-border-neutral-secondary);
     border-radius: 10px;
     background: var(--Combo-bg-background-neutral-100);
     color: var(--Combo-text-text-secondary-paragraph);
+    font-family: 'Alexandria', sans-serif;
     font-size: 13px;
+    cursor: pointer;
+    overflow: hidden;
 
     .pi { font-size: 24px; color: var(--Combo-icon-icon-neutral); }
+
+    &--filled {
+      padding: 0;
+      border-style: solid;
+    }
+  }
+
+  &__logo-preview {
+    display: block;
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    border-radius: 8px;
   }
 
   // ── Action buttons ────────────────────────────────
@@ -186,9 +266,14 @@
       border: 1px solid var(--Combo-button-button-background-primary-default);
       color: var(--Combo-text-text-oncolor-primary);
 
-      &:hover {
+      &:hover:not(:disabled) {
         background-color: var(--Combo-button-button-background-primary-hovered);
         border-color: var(--Combo-button-button-background-primary-hovered);
+      }
+
+      &:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
       }
     }
 
@@ -227,6 +312,15 @@
     }
 
     &::placeholder { color: var(--Combo-text-text-secondary-paragraph); }
+  }
+
+  select.vendor-form__native-select {
+    appearance: none;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236b7280' d='M1.4.6 6 5.2 10.6.6 12 2l-6 6-6-6z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: left 14px center;
+    padding-left: 36px !important;
   }
 
   // ── Select / Dropdown ─────────────────────────────
@@ -314,7 +408,7 @@
 
   // ── InputNumber (inside affix wrapper) ────────────
   .vendor-form__number-input {
-    flex: 1;
+    width: 100%;
 
     .p-inputnumber-input {
       width: 100% !important;
@@ -322,12 +416,32 @@
       font-size: 14px !important;
       color: var(--Combo-text-text-default) !important;
       background-color: var(--Combo-bg-background-card) !important;
-      border: none !important;
-      border-radius: 0 !important;
+      border: 1px solid var(--Combo-form-field-border-default) !important;
+      border-radius: 8px !important;
       padding: 10px 14px !important;
       box-shadow: none !important;
       outline: none !important;
+
+      &:focus {
+        border-color: var(--Combo-border-border-primary) !important;
+        box-shadow: 0 0 0 3px var(--Combo-bg-background-primary-50) !important;
+      }
     }
+  }
+
+  .vendor-form__pin {
+    background: transparent;
+    border: none;
+  }
+
+  .vendor-form__pin-dot {
+    display: block;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #b45309;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px #b45309;
   }
 
   // ── Toggle switch ─────────────────────────────────

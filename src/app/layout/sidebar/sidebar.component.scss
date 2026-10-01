@@ -112,6 +112,100 @@
     font-size: 14px;
   }
 
+  &__link.sidebar__link--nested {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border-inline-start: 2px solid transparent;
+    color: var(--Combo-text-text-secondary-paragraph);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.45;
+    white-space: normal;
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+
+    .sidebar__icon {
+      font-size: 14px;
+      color: var(--Combo-icon-icon-neutral);
+    }
+
+    &:hover {
+      background-color: var(--Combo-bg-background-primary-50);
+      color: var(--Combo-text-text-primary);
+
+      .sidebar__icon {
+        color: var(--Combo-text-text-primary);
+      }
+    }
+  }
+
+  // Soft highlight, distinct from the solid parent-link active state.
+  // The negative offset places this green edge over the submenu's gray rail.
+  &__link.sidebar__link--child-active {
+    margin-inline-start: -18px;
+    padding-inline-start: 28px;
+    border-inline-start-color: var(--Combo-border-border-primary);
+    background-color: var(--Combo-bg-background-primary-50);
+    color: var(--Combo-text-text-primary);
+    font-weight: 700;
+
+    .sidebar__icon {
+      color: var(--Combo-text-text-primary);
+    }
+  }
+
+  // ── Collapsible group ─────────────────────────────
+  &__group-toggle {
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-family: 'Alexandria', sans-serif;
+    text-align: start;
+    cursor: pointer;
+  }
+
+  &__group--active > .sidebar__group-toggle {
+    color: var(--Combo-text-text-primary);
+    font-weight: 600;
+  }
+
+  &__chevron {
+    margin-inline-start: auto;
+    font-size: 11px;
+    color: var(--Combo-icon-icon-neutral);
+    transition: transform 0.25s ease;
+  }
+
+  &__group--open > .sidebar__group-toggle .sidebar__chevron {
+    transform: rotate(180deg);
+  }
+
+  // Animating grid rows 0fr → 1fr gives a natural-height slide without measuring in JS.
+  &__submenu {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition: grid-template-rows 0.25s ease, opacity 0.2s ease;
+  }
+
+  &__group--open > .sidebar__submenu {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+
+  &__submenu-list {
+    min-height: 0;
+    overflow: hidden;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 8px 0 0;
+    margin-inline-start: 24px;
+    padding: 0;
+    padding-inline-start: 16px;
+    border-inline-start: 2px solid var(--Combo-border-border-neutral-secondary);
+  }
+
   // ── Collapse button ───────────────────────────────
   &__toggle {
     display: flex;

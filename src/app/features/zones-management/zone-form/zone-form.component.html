@@ -1,84 +1,118 @@
 <div class="zone-form">
 
-  <!-- ── Page Header ─────────────────────────────────────── -->
-  <div class="zone-form__header">
-    <button type="button" class="zone-form__back-btn" (click)="cancel()">
-      <i class="pi pi-arrow-right"></i>
-      العودة إلى المناطق
-    </button>
-    <h1 class="zone-form__title">{{ isEditMode ? 'تعديل المنطقة' : 'إنشاء منطقة جديدة' }}</h1>
-    <p class="zone-form__subtitle">
-      {{ isEditMode ? 'تحديث بيانات المنطقة ' + zoneId : 'عرّف مركزاً جديداً للتوصيل أو منطقة تغطية.' }}
-    </p>
-  </div>
+  @if (missing()) {
+    <div class="zone-form__missing">
+      <i class="pi pi-exclamation-circle"></i>
+      <p>المنطقة غير موجودة.</p>
+      <button type="button" class="zone-form__btn zone-form__btn--ghost" (click)="cancel()">
+        العودة إلى المناطق
+      </button>
+    </div>
+  } @else {
 
-  <!-- ── Form Card ────────────────────────────────────────── -->
-  <div class="zone-form__card">
-    <h2 class="zone-form__section-title">معلومات المنطقة</h2>
+    <div class="zone-form__header">
+      <button type="button" class="zone-form__back-btn" (click)="cancel()">
+        <i class="pi pi-arrow-right"></i>
+        العودة إلى المناطق
+      </button>
+      <h1 class="zone-form__title">{{ zoneId() ? 'تعديل المنطقة' : 'إنشاء منطقة جديدة' }}</h1>
+      <p class="zone-form__subtitle">
+        @if (zoneId(); as id) {
+          حدّث مضلع سكن العملاء والحد الأدنى للطلب للمنطقة {{ id }}.
+        } @else {
+          ارسم مضلع منطقة سكن العملاء، ثم اضبط الحد الأدنى للطلب.
+        }
+      </p>
+      @if (areaSqKm() !== null) {
+        <span class="zone-form__area-pill">
+          <i class="pi pi-chart-pie"></i>
+          المساحة: {{ areaSqKm() }} كم²
+        </span>
+      }
+    </div>
 
-    <div class="row g-4">
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" class="zone-form__layout">
+      <div class="zone-form__card">
+        <h2 class="zone-form__section-title">قواعد المنطقة</h2>
 
-      <!-- Zone Name -->
-      <div class="col-md-6">
         <div class="zone-form__field">
-          <label class="zone-form__label" for="zoneName">اسم المنطقة <span class="zone-form__required">*</span></label>
+          <label class="zone-form__label" for="zoneName">
+            اسم المنطقة <span class="zone-form__required">*</span>
+          </label>
           <input
             id="zoneName"
             type="text"
             pInputText
-            [(ngModel)]="form.name"
-            name="zoneName"
-            placeholder="e.g. مجمع شطر ١٣"
+            formControlName="name"
+            placeholder="مثال: زهراء المعادي"
             class="zone-form__input"
+            [ngClass]="{ 'zone-form__input--invalid': invalid('name') }"
+          />
+          @if (invalid('name')) {
+            <small class="zone-form__error">اسم المنطقة مطلوب (حرفان على الأقل).</small>
+          }
+        </div>
+
+        <div class="zone-form__field">
+          <label class="zone-form__label" for="minOrder">
+            الحد الأدنى للطلب <span class="zone-form__required">*</span>
+          </label>
+          <p-inputnumber
+            inputId="minOrder"
+            formControlName="minOrder"
+            [min]="0"
+            mode="currency"
+            currency="EGP"
+            locale="ar-EG"
+            styleClass="zone-form__number"
           />
         </div>
-      </div>
 
-      <!-- Status Toggle -->
-      <div class="col-md-6">
         <div class="zone-form__field">
           <label class="zone-form__label">الحالة</label>
           <div class="zone-form__toggle-row">
-            <p-toggleswitch [(ngModel)]="form.isActive" name="status" inputId="statusToggle" />
+            <p-toggleswitch formControlName="isActive" inputId="statusToggle" />
             <span
               class="zone-form__toggle-label"
-              [ngClass]="form.isActive ? 'zone-form__toggle-label--active' : 'zone-form__toggle-label--inactive'"
+              [ngClass]="form.controls.isActive.value
+                ? 'zone-form__toggle-label--active'
+                : 'zone-form__toggle-label--inactive'"
             >
-              {{ form.isActive ? 'نشط' : 'غير نشط' }}
+              {{ form.controls.isActive.value ? 'نشط' : 'غير نشط' }}
             </span>
           </div>
         </div>
-      </div>
 
-      <!-- Coverage Area (full width) -->
-      <div class="col-12">
-        <div class="zone-form__field">
-          <label class="zone-form__label" for="coverage">الوصف / منطقة التغطية</label>
-          <textarea
-            id="coverage"
-            pTextarea
-            [(ngModel)]="form.coverage"
-            name="coverage"
-            rows="3"
-            placeholder="e.g. شارع الملك فهد – حي النزهة"
-            class="zone-form__input zone-form__input--textarea"
-          ></textarea>
+        @if (geometryError()) {
+          <div class="zone-form__notice">
+            <i class="pi pi-info-circle"></i>
+            ارسم مضلع منطقة العملاء على الخريطة قبل الحفظ.
+          </div>
+        }
+
+        <div class="zone-form__actions">
+          <button type="button" class="zone-form__btn zone-form__btn--ghost" (click)="cancel()">
+            إلغاء
+          </button>
+          <button
+            type="submit"
+            class="zone-form__btn zone-form__btn--primary"
+            [disabled]="form.invalid || !currentPolygonGeoJSON()"
+          >
+            <i class="pi pi-check"></i>
+            {{ zoneId() ? 'حفظ التغييرات' : 'إنشاء المنطقة' }}
+          </button>
         </div>
       </div>
 
-    </div>
+      <div class="zone-form__map">
+        <ctrl-zone-map
+          [initialGeometry]="initialGeometry()"
+          (polygonChanged)="onPolygonChanged($event)"
+        />
+      </div>
+    </form>
 
-    <!-- ── Action Buttons ──────────────────────────────────── -->
-    <div class="zone-form__actions">
-      <button type="button" class="zone-form__btn zone-form__btn--ghost" (click)="cancel()">
-        إلغاء
-      </button>
-      <button type="button" class="zone-form__btn zone-form__btn--primary" (click)="save()">
-        <i class="pi pi-check"></i>
-        {{ isEditMode ? 'حفظ التغييرات' : 'إنشاء المنطقة' }}
-      </button>
-    </div>
-
-  </div>
+  }
 
 </div>

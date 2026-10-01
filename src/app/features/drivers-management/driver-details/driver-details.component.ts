@@ -1,4 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgClass, DecimalPipe } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -7,14 +8,19 @@ import { SelectModule } from 'primeng/select';
 import { InputTextModule } from 'primeng/inputtext';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
 import { DriverService } from '../../../core/services/driver.service';
+import { HubService } from '../../../core/services/hub.service';
 import {
   AVAILABILITY_CONFIG,
   ACCOUNT_STATUS_CONFIG,
+  CaptainProfile,
+  CaptainRole,
+  CaptainVehicleType,
   DRIVER_CURRENCY,
-  DriverProfile,
   RESOLUTION_CONFIG,
+  ROLE_CONFIG,
+  ROLE_OPTIONS,
   SEVERITY_CONFIG,
-  ZONE_OPTIONS,
+  VEHICLE_OPTIONS,
   getInitials,
 } from '../data/drivers.mock';
 
@@ -38,18 +44,18 @@ export class DriverDetailsComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly driverService = inject(DriverService);
+  private readonly hubService = inject(HubService);
 
   readonly availabilityConfig = AVAILABILITY_CONFIG;
   readonly accountStatusConfig = ACCOUNT_STATUS_CONFIG;
   readonly severityConfig = SEVERITY_CONFIG;
   readonly resolutionConfig = RESOLUTION_CONFIG;
+  readonly roleConfig = ROLE_CONFIG;
   readonly currency = DRIVER_CURRENCY;
-  readonly zoneOptions = ZONE_OPTIONS;
-  readonly vehicleOptions = [
-    { label: 'دراجة نارية', value: 'Motorcycle' },
-    { label: 'سيارة',       value: 'Car'        },
-    { label: 'دراجة',       value: 'Bicycle'    },
-  ];
+  readonly roleOptions = ROLE_OPTIONS;
+  readonly vehicleOptions = VEHICLE_OPTIONS;
+  readonly activeHubs = this.hubService.activeHubs;
+  readonly showVehicle = signal(true);
 
   private readonly driverId = signal<string | null>(null);
 
@@ -67,13 +73,20 @@ export class DriverDetailsComponent implements OnInit {
     return d ? d.deliveredOrders.slice(0, 10) : [];
   });
 
-  readonly profileForm = this.fb.group({
+  readonly profileForm = this.fb.nonNullable.group({
     name:          ['', Validators.required],
     phone:         ['', Validators.required],
-    vehicleType:   ['', Validators.required],
+    role:          ['DELIVERY' as CaptainRole, Validators.required],
+    hubId:         ['', Validators.required],
+    vehicleType:   ['' as CaptainVehicleType | ''],
     licenseExpiry: ['', Validators.required],
-    zoneId:        ['', Validators.required],
   });
+
+  constructor() {
+    this.profileForm.controls.role.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe((role) => this.syncVehicleControl(role));
+  }
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
@@ -88,7 +101,8 @@ export class DriverDetailsComponent implements OnInit {
     return getInitials(name);
   }
 
-  vehicleLabel(type: string): string {
+  vehicleLabel(type: CaptainVehicleType | ''): string {
+    if (!type) return '—';
     return this.vehicleOptions.find(v => v.value === type)?.label ?? type;
   }
 
@@ -98,10 +112,12 @@ export class DriverDetailsComponent implements OnInit {
     this.profileForm.patchValue({
       name:          d.name,
       phone:         d.phone,
-      vehicleType:   d.vehicleType,
+      role:          d.role,
+      hubId:         d.hubId,
+      vehicleType:   d.role === 'DELIVERY' ? d.vehicleType : '',
       licenseExpiry: d.licenseExpiry,
-      zoneId:        d.zoneId,
-    });
+    }, { emitEvent: false });
+    this.syncVehicleControl(d.role);
     this.isEditing.set(true);
   }
 
@@ -120,19 +136,39 @@ export class DriverDetailsComponent implements OnInit {
     if (!d) return;
 
     const v = this.profileForm.getRawValue();
-    const zone = ZONE_OPTIONS.find(z => z.id === v.zoneId);
+    const hub = this.hubService.getById(v.hubId);
+    const isCollector = v.role === 'COLLECTOR';
 
-    const patch: Partial<DriverProfile> = {
-      name:          v.name!,
-      phone:         v.phone!,
-      vehicleType:   v.vehicleType!,
-      licenseExpiry: v.licenseExpiry!,
-      zoneId:        v.zoneId!,
-      zoneName:      zone?.name ?? d.zoneName,
+    const patch: Partial<CaptainProfile> = {
+      name:          v.name,
+      phone:         v.phone,
+      role:          v.role,
+      hubId:         v.hubId,
+      hubName:       hub?.name ?? d.hubName,
+      vehicleType:   isCollector ? '' : v.vehicleType,
+      licenseExpiry: v.licenseExpiry,
     };
 
     this.driverService.updateDriver(d.id, patch);
     this.isEditing.set(false);
+  }
+
+  private syncVehicleControl(role: CaptainRole): void {
+    const vehicle = this.profileForm.controls.vehicleType;
+    const isDelivery = role === 'DELIVERY';
+    this.showVehicle.set(isDelivery);
+
+    if (isDelivery) {
+      vehicle.setValidators(Validators.required);
+      if (!vehicle.value) {
+        vehicle.markAsTouched();
+      }
+    } else {
+      vehicle.clearValidators();
+      vehicle.setValue('', { emitEvent: false });
+    }
+
+    vehicle.updateValueAndValidity();
   }
 
   goBack(): void {

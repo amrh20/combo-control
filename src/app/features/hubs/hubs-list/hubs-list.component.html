@@ -1,0 +1,136 @@
+<div class="hubs-list">
+
+  <div class="hubs-list__header">
+    <div class="hubs-list__header-text">
+      <h1 class="hubs-list__title">الشوارع ومراكز الانطلاق</h1>
+      <p class="hubs-list__subtitle">
+        الشوارع ومراكز الانطلاق المخوّلة بالتوصيل إلى المناطق الفرعية. المتجر يُربط بالشارع أو مركز الانطلاق، لا بالمنطقة مباشرة.
+      </p>
+    </div>
+
+    <p-button
+      label="إنشاء شارع أو مركز"
+      icon="pi pi-plus"
+      styleClass="hubs-list__create-btn"
+      [routerLink]="['/hubs/create']"
+    />
+  </div>
+
+  <div class="hubs-list__toolbar">
+    <label class="hubs-list__search">
+      <i class="pi pi-search hubs-list__search-icon" aria-hidden="true"></i>
+      <input
+        class="hubs-list__search-input"
+        type="text"
+        placeholder="بحث بالاسم أو الكود..."
+        aria-label="بحث بالاسم أو الكود"
+        [value]="searchQuery()"
+        (input)="onSearchInput($event)"
+      />
+    </label>
+
+    <label class="hubs-list__field">
+      <span class="hubs-list__field-label">الحالة</span>
+      <span class="hubs-list__select-wrap">
+        <select
+          class="hubs-list__select"
+          aria-label="تصفية حسب الحالة"
+          [value]="statusFilter()"
+          (change)="onStatusChange($event)"
+        >
+          <option value="all">الكل</option>
+          <option value="active">نشط</option>
+          <option value="inactive">غير نشط</option>
+        </select>
+        <i class="pi pi-chevron-down hubs-list__select-icon" aria-hidden="true"></i>
+      </span>
+    </label>
+
+    <label class="hubs-list__field">
+      <span class="hubs-list__field-label">المنطقة المخدومة</span>
+      <span class="hubs-list__select-wrap hubs-list__select-wrap--wide">
+        <select
+          class="hubs-list__select"
+          aria-label="تصفية حسب المنطقة المخدومة"
+          [value]="servedZoneFilter()"
+          (change)="onServedZoneChange($event)"
+        >
+          <option value="all">الكل</option>
+          @for (zone of servedZones(); track zone.id) {
+            <option [value]="zone.id">{{ zone.name }}</option>
+          }
+        </select>
+        <i class="pi pi-chevron-down hubs-list__select-icon" aria-hidden="true"></i>
+      </span>
+    </label>
+  </div>
+
+  <div class="hubs-list__card">
+    <p-table
+      [value]="filteredData()"
+      [first]="pageFirst()"
+      (onPage)="onPage($event)"
+      [paginator]="true"
+      [rows]="10"
+      [rowsPerPageOptions]="[10, 25, 50]"
+      [tableStyle]="{ 'min-width': '52rem' }"
+      sortMode="single"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th pSortableColumn="id" class="hubs-list__th" style="width: 120px">
+            الرقم <p-sortIcon field="id" />
+          </th>
+          <th pSortableColumn="name" class="hubs-list__th">
+            اسم الشارع أو المركز <p-sortIcon field="name" />
+          </th>
+          <th pSortableColumn="servingZones" class="hubs-list__th">
+            المناطق المخدومة <p-sortIcon field="servingZones" />
+          </th>
+          <th pSortableColumn="isActive" class="hubs-list__th" style="width: 140px">
+            الحالة <p-sortIcon field="isActive" />
+          </th>
+          <th class="hubs-list__th hubs-list__th--center" style="width: 90px">الإجراءات</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-hub>
+        <tr>
+          <td><code class="hubs-list__id-pill">{{ hub.id }}</code></td>
+          <td><span class="hubs-list__name">{{ hub.name }}</span></td>
+          <td class="hubs-list__zones">{{ hub.servingZones }}</td>
+          <td>
+            <span
+              class="hubs-list__badge"
+              [ngClass]="hub.isActive ? 'hubs-list__badge--active' : 'hubs-list__badge--inactive'"
+            >
+              <span class="hubs-list__badge-dot"></span>
+              {{ hub.isActive ? 'نشط' : 'غير نشط' }}
+            </span>
+          </td>
+          <td>
+            <div class="hubs-list__actions">
+              <a
+                [routerLink]="['/hubs/edit', hub.id]"
+                class="hubs-list__action-btn"
+                title="تعديل الشارع أو المركز"
+                aria-label="تعديل الشارع أو المركز"
+              >
+                <i class="pi pi-pencil"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="hubs-list__empty">
+            {{ hasActiveFilters() ? 'لا توجد نتائج مطابقة للبحث أو التصفية.' : 'لا توجد شوارع أو مراكز انطلاق.' }}
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+</div>

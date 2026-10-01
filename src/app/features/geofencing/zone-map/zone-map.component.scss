@@ -32,6 +32,10 @@
     max-width: 420px;
   }
 
+  &--readonly &__search {
+    left: 14px;
+  }
+
   &__search-wrap {
     display: flex;
     align-items: center;

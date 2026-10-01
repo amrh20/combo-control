@@ -24,6 +24,7 @@
     "bootstrap": "^5.3.8",
     "chart.js": "^4.4.0",
     "leaflet": "^1.9.4",
+    "leaflet-control-geocoder": "^4.0.0",
     "primeicons": "^7.0.0",
     "primeng": "^21.1.1",
     "rxjs": "~7.8.0",

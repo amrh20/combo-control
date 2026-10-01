@@ -1,0 +1,165 @@
+<div class="sub-zone-list">
+
+  <div class="sub-zone-list__header">
+    <div class="sub-zone-list__header-text">
+      <h1 class="sub-zone-list__title">المناطق الفرعية</h1>
+      <p class="sub-zone-list__subtitle">
+        تقسيمات داخل المناطق الرئيسية بحد أدنى للطلب ولون تمييز خاص. يجب أن يقع مضلع المنطقة الفرعية داخل حدود منطقته الرئيسية.
+      </p>
+    </div>
+
+    <p-button
+      label="إضافة منطقة فرعية"
+      icon="pi pi-plus"
+      styleClass="sub-zone-list__create-btn"
+      [routerLink]="['/sub-zones/create']"
+    />
+  </div>
+
+  <div class="sub-zone-list__toolbar">
+    <label class="sub-zone-list__search">
+      <i class="pi pi-search sub-zone-list__search-icon" aria-hidden="true"></i>
+      <input
+        class="sub-zone-list__search-input"
+        type="text"
+        placeholder="بحث بالاسم أو الكود..."
+        aria-label="بحث بالاسم أو الكود"
+        [value]="searchQuery()"
+        (input)="onSearchInput($event)"
+      />
+    </label>
+
+    <label class="sub-zone-list__field">
+      <span class="sub-zone-list__field-label">الحالة</span>
+      <span class="sub-zone-list__select-wrap">
+        <select
+          class="sub-zone-list__select"
+          aria-label="تصفية حسب الحالة"
+          [value]="statusFilter()"
+          (change)="onStatusChange($event)"
+        >
+          <option value="all">الكل</option>
+          <option value="active">نشط</option>
+          <option value="inactive">غير نشط</option>
+        </select>
+        <i class="pi pi-chevron-down sub-zone-list__select-icon" aria-hidden="true"></i>
+      </span>
+    </label>
+
+    <label class="sub-zone-list__field">
+      <span class="sub-zone-list__field-label">المنطقة الرئيسية</span>
+      <span class="sub-zone-list__select-wrap sub-zone-list__select-wrap--wide">
+        <select
+          class="sub-zone-list__select"
+          aria-label="تصفية حسب المنطقة الرئيسية"
+          [value]="parentFilter()"
+          (change)="onParentChange($event)"
+        >
+          <option value="all">الكل</option>
+          @for (zone of parentZones(); track zone.id) {
+            <option [value]="zone.id">{{ zone.name }}</option>
+          }
+        </select>
+        <i class="pi pi-chevron-down sub-zone-list__select-icon" aria-hidden="true"></i>
+      </span>
+    </label>
+  </div>
+
+  <div class="sub-zone-list__card">
+    <p-table
+      [value]="filteredData()"
+      [first]="pageFirst()"
+      (onPage)="onPage($event)"
+      [paginator]="true"
+      [rows]="10"
+      [rowsPerPageOptions]="[10, 25, 50]"
+      [tableStyle]="{ 'min-width': '56rem' }"
+      sortMode="single"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th pSortableColumn="name" class="sub-zone-list__th">
+            اسم المنطقة الفرعية <p-sortIcon field="name" />
+          </th>
+          <th pSortableColumn="parentZoneName" class="sub-zone-list__th">
+            المنطقة الرئيسية <p-sortIcon field="parentZoneName" />
+          </th>
+          <th pSortableColumn="minOrder" class="sub-zone-list__th" style="width: 170px">
+            الحد الأدنى للطلب <p-sortIcon field="minOrder" />
+          </th>
+          <th pSortableColumn="isActive" class="sub-zone-list__th" style="width: 140px">
+            الحالة <p-sortIcon field="isActive" />
+          </th>
+          <th class="sub-zone-list__th sub-zone-list__th--center" style="width: 120px">الإجراءات</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-subZone>
+        <tr>
+          <td>
+            <div class="sub-zone-list__name-cell">
+              <span
+                class="sub-zone-list__swatch"
+                [style.background-color]="subZone.color"
+                aria-hidden="true"
+              ></span>
+              <div class="sub-zone-list__name-stack">
+                <span class="sub-zone-list__name">{{ subZone.name }}</span>
+                <code class="sub-zone-list__id">{{ subZone.id }}</code>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="sub-zone-list__parent">
+              <i class="pi pi-map-marker"></i>
+              {{ subZone.parentZoneName }}
+            </span>
+          </td>
+          <td class="sub-zone-list__money">{{ subZone.minOrder | number: '1.0-2' }} ج.م</td>
+          <td>
+            <span
+              class="sub-zone-list__badge"
+              [ngClass]="subZone.isActive ? 'sub-zone-list__badge--active' : 'sub-zone-list__badge--inactive'"
+            >
+              <span class="sub-zone-list__badge-dot"></span>
+              {{ subZone.isActive ? 'نشط' : 'غير نشط' }}
+            </span>
+          </td>
+          <td>
+            <div class="sub-zone-list__actions">
+              <a
+                [routerLink]="['/sub-zones/edit', subZone.id]"
+                class="sub-zone-list__action-btn"
+                title="تعديل المنطقة الفرعية"
+                aria-label="تعديل المنطقة الفرعية"
+              >
+                <i class="pi pi-pencil"></i>
+              </a>
+              <button
+                type="button"
+                class="sub-zone-list__action-btn sub-zone-list__action-btn--delete"
+                title="حذف المنطقة الفرعية"
+                aria-label="حذف المنطقة الفرعية"
+                (click)="remove(subZone)"
+              >
+                <i class="pi pi-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5" class="sub-zone-list__empty">
+            <i class="pi pi-clone"></i>
+            <span>
+              {{ hasActiveFilters() ? 'لا توجد نتائج مطابقة للبحث أو التصفية.' : 'لا توجد مناطق فرعية بعد.' }}
+            </span>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+</div>

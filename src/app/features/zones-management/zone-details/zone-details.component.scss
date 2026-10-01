@@ -72,11 +72,11 @@
   // ── Summary row (3 stat cards) ────────────────────
   &__summary-row {
     display: grid;
-    grid-template-columns: 160px 160px 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
 
     @media (max-width: 768px) {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
     }
   }
 
@@ -104,6 +104,16 @@
     font-size: 28px;
     font-weight: 700;
     color: var(--Combo-text-text-display);
+
+    &--money {
+      font-size: 22px;
+    }
+  }
+
+  &__currency {
+    font-size: 13px;
+    font-weight: 600;
+    margin-inline-start: 4px;
   }
 
   &__stat-text {
@@ -149,6 +159,51 @@
   &__card {
     background-color: var(--Combo-bg-background-card);
     border: 1px solid var(--Combo-controls-control-border);
+    border-radius: 12px;
+    overflow: hidden;
+
+    &--map { overflow: visible; }
+  }
+
+  &__hubs {
+    padding: 16px 20px 20px;
+  }
+
+  &__hubs-empty {
+    margin: 0;
+    font-size: 13px;
+    color: var(--Combo-text-text-secondary-paragraph);
+  }
+
+  &__hub-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__hub-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--Combo-border-border-neutral-secondary);
+    text-decoration: none;
+    color: var(--Combo-text-text-default);
+    font-weight: 600;
+
+    &:hover {
+      background: var(--Combo-bg-background-primary-50);
+      border-color: var(--Combo-border-border-primary-light);
+    }
+  }
+
+  &__map {
+    height: 540px;
+    margin: 16px;
     border-radius: 12px;
     overflow: hidden;
   }

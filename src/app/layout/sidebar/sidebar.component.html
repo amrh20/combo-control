@@ -5,9 +5,9 @@
 >
 
   <div class="sidebar__logo">
-    <div class="sidebar__logo-mark">C</div>
     @if (!collapsed()) {
-      <span class="sidebar__logo-text">كومبو كنترول</span>
+    <img src="/assets/images/logo.svg" alt="logo" class="sidebar__logo-image" 
+    width="120" height="120">
     }
     @if (mobile()) {
       <button
@@ -21,22 +21,72 @@
     }
   </div>
 
+  <ng-template #navLink let-item let-nested="nested">
+    <a
+      [routerLink]="item.route"
+      [routerLinkActive]="nested ? 'sidebar__link--child-active' : 'sidebar__link--active'"
+      class="sidebar__link"
+      [class.sidebar__link--nested]="nested"
+      [title]="collapsed() ? item.label : ''"
+      (click)="onNavClick()"
+    >
+      <i class="pi sidebar__icon" [ngClass]="item.icon"></i>
+      @if (!collapsed()) {
+        <span class="sidebar__label">{{ item.label }}</span>
+      }
+    </a>
+  </ng-template>
+
   <ul class="sidebar__nav">
-    @for (item of navItems; track item.route) {
-      <li>
-        <a
-          [routerLink]="item.route"
-          routerLinkActive="sidebar__link--active"
-          class="sidebar__link"
-          [title]="collapsed() ? item.label : ''"
-          (click)="onNavClick()"
-        >
-          <i class="pi sidebar__icon" [ngClass]="item.icon"></i>
-          @if (!collapsed()) {
-            <span class="sidebar__label">{{ item.label }}</span>
+    @for (item of navItems; track item.label) {
+      @if (item.kind === 'group') {
+        @if (collapsed()) {
+          <!-- Icon-only rail: there is no room for an accordion, so children render flat. -->
+          @for (child of item.children; track child.route) {
+            <li>
+              <ng-container *ngTemplateOutlet="navLink; context: { $implicit: child }" />
+            </li>
           }
-        </a>
-      </li>
+        } @else {
+          <li
+            class="sidebar__group"
+            [class.sidebar__group--open]="isOpen(item.id)"
+            [class.sidebar__group--active]="activeGroups().has(item.id)"
+          >
+            <button
+              type="button"
+              class="sidebar__link sidebar__group-toggle"
+              [attr.aria-expanded]="isOpen(item.id)"
+              [attr.aria-controls]="'nav-group-' + item.id"
+              (click)="toggleGroup(item.id)"
+            >
+              <i class="pi sidebar__icon" [ngClass]="item.icon"></i>
+              <span class="sidebar__label">{{ item.label }}</span>
+              <i class="pi pi-chevron-down sidebar__chevron" aria-hidden="true"></i>
+            </button>
+
+            <div
+              class="sidebar__submenu"
+              [id]="'nav-group-' + item.id"
+              [attr.inert]="isOpen(item.id) ? null : ''"
+            >
+              <ul class="sidebar__submenu-list">
+                @for (child of item.children; track child.route) {
+                  <li>
+                    <ng-container
+                      *ngTemplateOutlet="navLink; context: { $implicit: child, nested: true }"
+                    />
+                  </li>
+                }
+              </ul>
+            </div>
+          </li>
+        }
+      } @else {
+        <li>
+          <ng-container *ngTemplateOutlet="navLink; context: { $implicit: item }" />
+        </li>
+      }
     }
   </ul>
 

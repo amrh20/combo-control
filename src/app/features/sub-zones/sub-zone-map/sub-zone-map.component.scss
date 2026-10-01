@@ -1,0 +1,156 @@
+// ═══════════════════════════════════════════════════════════════════
+// Sub-zone Map — Leaflet container + overlays
+// ═══════════════════════════════════════════════════════════════════
+:host {
+  display: block;
+  height: 100%;
+}
+
+.sub-zone-map {
+  position: relative;
+  height: 100%;
+  min-height: 540px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--Combo-controls-control-border);
+
+  &__canvas {
+    position: absolute;
+    inset: 0;
+    background: var(--Combo-bg-background-neutral-100);
+  }
+
+  &__badge {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 1000;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--Combo-bg-background-card);
+    border: 1px solid var(--Combo-border-border-primary-light);
+    color: var(--Combo-text-text-primary);
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+
+    .pi { font-size: 13px; }
+  }
+
+  // Blocks map interaction until a parent zone is chosen.
+  &__overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(2px);
+  }
+
+  &__overlay-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    max-width: 320px;
+    padding: 20px 24px;
+    border-radius: 12px;
+    background: var(--Combo-bg-background-card);
+    border: 1px solid var(--Combo-border-border-neutral-secondary);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    text-align: center;
+
+    .pi {
+      font-size: 28px;
+      color: var(--Combo-icon-icon-primary);
+    }
+
+    p {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--Combo-text-text-primary-paragraph);
+    }
+  }
+
+  &__hint {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    max-width: calc(100% - 28px);
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: var(--Combo-bg-background-card);
+    border: 1px solid var(--Combo-border-border-neutral-secondary);
+    color: var(--Combo-text-text-secondary-paragraph);
+    font-size: 12.5px;
+    font-weight: 500;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+
+    .pi { font-size: 12px; color: var(--Combo-icon-icon-primary); }
+  }
+
+  &__legend {
+    position: absolute;
+    top: 14px;
+    left: 56px; // clear the Geoman toolbar
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: var(--Combo-bg-background-card);
+    border: 1px solid var(--Combo-border-border-neutral-secondary);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--Combo-text-text-primary-paragraph);
+  }
+
+  &__legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+
+  &__legend-swatch {
+    width: 14px;
+    height: 10px;
+    border-radius: 3px;
+    border: 2px solid transparent;
+    opacity: 0.85;
+
+    &--parent {
+      background: rgba(128, 128, 128, 0.15);
+      border: 2px dashed gray;
+    }
+
+    &--draft {
+      background: linear-gradient(135deg, #2563eb 0 33%, #d97706 33% 66%, #7c3aed 66%);
+      border-color: var(--Combo-border-border-neutral-primary);
+    }
+  }
+}
+
+:host ::ng-deep {
+  .leaflet-pm-toolbar .button-container a {
+    cursor: pointer;
+  }
+
+  .leaflet-pm-toolbar .leaflet-buttons-control-button.pm-disabled {
+    cursor: not-allowed;
+  }
+}

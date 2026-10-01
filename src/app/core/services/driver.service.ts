@@ -1,14 +1,16 @@
-import { Injectable, computed, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import {
   DRIVERS_DATA,
+  CaptainProfile,
+  CaptainRole,
+  CaptainVehicleType,
   DriverAccountStatus,
-  DriverProfile,
-  ZONE_OPTIONS,
 } from '../../features/drivers-management/data/drivers.mock';
+import { HubService } from './hub.service';
 
 export type DriverFormData = Pick<
-  DriverProfile,
-  'name' | 'phone' | 'zoneId' | 'zoneName' | 'vehicleType'
+  CaptainProfile,
+  'name' | 'phone' | 'role' | 'hubId' | 'hubName' | 'vehicleType'
 > & {
   /** Set on create; omitted on update when the admin leaves the field blank. */
   password?: string;
@@ -16,7 +18,8 @@ export type DriverFormData = Pick<
 
 @Injectable({ providedIn: 'root' })
 export class DriverService {
-  private readonly driversSignal = signal<DriverProfile[]>(
+  private readonly hubService = inject(HubService);
+  private readonly driversSignal = signal<CaptainProfile[]>(
     structuredClone(DRIVERS_DATA),
   );
 
@@ -25,27 +28,30 @@ export class DriverService {
 
   readonly driverCount = computed(() => this.driversSignal().length);
 
-  getById(id: string): DriverProfile | null {
+  getById(id: string): CaptainProfile | null {
     return this.driversSignal().find((d) => d.id === id) ?? null;
   }
 
   /**
-   * Create a new driver from form data.
-   * Defaults: available, active account, empty stats/history.
+   * Create a new captain from form data.
+   * Defaults: offline, active account, empty stats/history.
+   * Collectors are stored without a vehicle.
    */
-  addDriver(driverData: Partial<DriverProfile> & { password?: string }): DriverProfile {
-    const zone = this.resolveZone(driverData.zoneId, driverData.zoneName);
+  addDriver(driverData: Partial<CaptainProfile> & { password?: string }): CaptainProfile {
+    const hub = this.resolveHub(driverData.hubId, driverData.hubName);
+    const role: CaptainRole = driverData.role ?? 'DELIVERY';
     const password = driverData.password?.trim();
-    const next: DriverProfile = {
+    const next: CaptainProfile = {
       id: this.nextDriverId(),
       name: (driverData.name ?? '').trim(),
       phone: (driverData.phone ?? '').trim(),
       ...(password ? { password } : {}),
-      zoneId: zone.id,
-      zoneName: zone.name,
+      role,
+      hubId: hub.id,
+      hubName: hub.name,
       availability: driverData.availability ?? 'offline',
       accountStatus: driverData.accountStatus ?? 'active',
-      vehicleType: driverData.vehicleType ?? 'Motorcycle',
+      vehicleType: this.resolveVehicle(role, driverData.vehicleType),
       licenseExpiry: driverData.licenseExpiry ?? this.defaultLicenseExpiry(),
       stats: driverData.stats ?? {
         totalCompletedOrders: 0,
@@ -62,7 +68,7 @@ export class DriverService {
     return next;
   }
 
-  updateDriver(id: string, driverData: Partial<DriverProfile>): void {
+  updateDriver(id: string, driverData: Partial<CaptainProfile>): void {
     this.driversSignal.update((list) =>
       list.map((driver) => {
         if (driver.id !== id) {
@@ -70,20 +76,26 @@ export class DriverService {
         }
 
         const patch = { ...driverData };
-        if (patch.zoneId && !patch.zoneName) {
-          const zone = ZONE_OPTIONS.find((z) => z.id === patch.zoneId);
-          if (zone) {
-            patch.zoneName = zone.name;
+        const role = patch.role ?? driver.role;
+
+        if (patch.hubId && !patch.hubName) {
+          const hub = this.hubService.getById(patch.hubId);
+          if (hub) {
+            patch.hubName = hub.name;
           }
         }
 
-        return { ...driver, ...patch };
+        if (patch.role === 'COLLECTOR' || (role === 'COLLECTOR' && patch.vehicleType !== undefined)) {
+          patch.vehicleType = '';
+        }
+
+        return { ...driver, ...patch, role };
       }),
     );
   }
 
   /**
-   * Lock / unlock a driver account.
+   * Lock / unlock a captain account.
    * `isLocked: true` → inactive; `isLocked: false` → active.
    */
   toggleDriverLock(id: string, isLocked: boolean): void {
@@ -91,24 +103,32 @@ export class DriverService {
     this.updateDriver(id, { accountStatus });
   }
 
-  private resolveZone(
-    zoneId?: string,
-    zoneName?: string,
+  private resolveHub(
+    hubId?: string,
+    hubName?: string,
   ): { id: string; name: string } {
-    if (zoneId) {
-      const found = ZONE_OPTIONS.find((z) => z.id === zoneId);
+    if (hubId) {
+      const found = this.hubService.getById(hubId);
       if (found) {
-        return found;
+        return { id: found.id, name: found.name };
       }
-      return { id: zoneId, name: zoneName ?? zoneId };
+      return { id: hubId, name: hubName ?? hubId };
     }
-    if (zoneName) {
-      const found = ZONE_OPTIONS.find((z) => z.name === zoneName);
-      if (found) {
-        return found;
-      }
+    const active = this.hubService.activeHubs();
+    if (active.length > 0) {
+      return { id: active[0].id, name: active[0].name };
     }
-    return ZONE_OPTIONS[0];
+    return { id: '', name: hubName ?? '' };
+  }
+
+  private resolveVehicle(
+    role: CaptainRole,
+    vehicleType?: CaptainVehicleType | '',
+  ): CaptainVehicleType | '' {
+    if (role === 'COLLECTOR') {
+      return '';
+    }
+    return vehicleType || 'Motorcycle';
   }
 
   private nextDriverId(): string {

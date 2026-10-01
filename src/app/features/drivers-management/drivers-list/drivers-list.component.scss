@@ -194,6 +194,18 @@
       color: var(--Combo-text-text-secondary-paragraph);
       border-color: var(--Combo-border-border-neutral-secondary);
     }
+
+    &--role-delivery {
+      background: var(--Combo-bg-background-primary-50);
+      color: var(--Combo-text-text-primary);
+      border-color: var(--Combo-border-border-primary);
+    }
+
+    &--role-collector {
+      background: var(--Combo-bg-background-warning-50);
+      color: var(--Combo-text-text-warning);
+      border-color: var(--Combo-border-border-warning-light);
+    }
   }
 
   &__actions {
@@ -275,9 +287,9 @@
     flex-direction: column;
     width: 100%;
     max-width: 28rem;
-    max-height: min(90vh, 720px);
+    max-height: calc(100dvh - 48px);
     padding: 24px;
-    overflow: visible;
+    overflow: hidden;
     background: var(--Combo-bg-background-card);
     border: 1px solid var(--Combo-border-border-neutral-secondary);
     border-radius: 12px;
@@ -286,6 +298,7 @@
 
   &__modal-header {
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
@@ -324,10 +337,13 @@
 
   &__modal-body {
     display: flex;
+    flex: 1 1 auto;
     flex-direction: column;
     gap: 16px;
     min-height: 0;
-    overflow: visible;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   &__field {
@@ -362,12 +378,17 @@
   }
 
   &__modal-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     justify-content: flex-start;
     gap: 10px;
     margin-top: 8px;
     padding-top: 16px;
+    background: var(--Combo-bg-background-card);
     border-top: 1px solid var(--Combo-border-border-neutral-secondary);
   }
 
@@ -388,9 +409,14 @@
       background: var(--Combo-button-button-background-primary-default);
       border: 1px solid var(--Combo-button-button-background-primary-default);
 
-      &:hover {
+      &:hover:not(:disabled) {
         background: var(--Combo-button-button-background-primary-hovered);
         border-color: var(--Combo-button-button-background-primary-hovered);
+      }
+
+      &:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
       }
     }
 

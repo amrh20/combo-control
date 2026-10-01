@@ -1,10 +1,11 @@
 <div class="zones-management">
 
-  <!-- ── Page Header ──────────────────────────────────────── -->
   <div class="zones-management__header">
     <div class="zones-management__header-text">
       <h1 class="zones-management__title">إدارة المناطق</h1>
-      <p class="zones-management__subtitle">إدارة مراكز التوصيل والشوارع ومناطق التغطية.</p>
+      <p class="zones-management__subtitle">
+        مناطق سكن العملاء. ارسم مضلع التوصيل واضبط الحد الأدنى للطلب، ثم اربط نقطة تجميع بهذه المنطقة.
+      </p>
     </div>
 
     <p-button
@@ -15,10 +16,42 @@
     />
   </div>
 
-  <!-- ── Table Card ───────────────────────────────────────── -->
+  <div class="zones-management__toolbar">
+    <label class="zones-management__search">
+      <i class="pi pi-search zones-management__search-icon" aria-hidden="true"></i>
+      <input
+        class="zones-management__search-input"
+        type="text"
+        placeholder="بحث بالاسم أو الكود..."
+        aria-label="بحث بالاسم أو الكود"
+        [value]="searchQuery()"
+        (input)="onSearchInput($event)"
+      />
+    </label>
+
+    <label class="zones-management__field">
+      <span class="zones-management__field-label">الحالة</span>
+      <span class="zones-management__select-wrap">
+        <select
+          class="zones-management__select"
+          aria-label="تصفية حسب الحالة"
+          [value]="statusFilter()"
+          (change)="onStatusChange($event)"
+        >
+          <option value="all">الكل</option>
+          <option value="active">نشط</option>
+          <option value="inactive">غير نشط</option>
+        </select>
+        <i class="pi pi-chevron-down zones-management__select-icon" aria-hidden="true"></i>
+      </span>
+    </label>
+  </div>
+
   <div class="zones-management__card">
     <p-table
-      [value]="zones"
+      [value]="filteredData()"
+      [first]="pageFirst()"
+      (onPage)="onPage($event)"
       [paginator]="true"
       [rows]="10"
       [rowsPerPageOptions]="[10, 25, 50]"
@@ -26,59 +59,65 @@
       sortMode="single"
     >
 
-      <!-- Header -->
       <ng-template pTemplate="header">
         <tr>
+          <th class="zones-management__th zones-management__th--toggler">
+            <span class="zones-management__sr-only">توسيع</span>
+          </th>
           <th pSortableColumn="id" class="zones-management__th" style="width: 110px">
             رقم المنطقة <p-sortIcon field="id" />
           </th>
           <th pSortableColumn="name" class="zones-management__th">
             اسم المنطقة <p-sortIcon field="name" />
           </th>
-          <th class="zones-management__th">الوصف / منطقة التغطية</th>
-          <th pSortableColumn="status" class="zones-management__th" style="width: 140px">
-            الحالة <p-sortIcon field="status" />
+          <th pSortableColumn="minOrder" class="zones-management__th" style="width: 160px">
+            الحد الأدنى <p-sortIcon field="minOrder" />
           </th>
-          <th pSortableColumn="shopCount" class="zones-management__th zones-management__th--center" style="width: 130px">
-            عدد المتاجر <p-sortIcon field="shopCount" />
+          <th pSortableColumn="isActive" class="zones-management__th" style="width: 140px">
+            الحالة <p-sortIcon field="isActive" />
           </th>
           <th class="zones-management__th zones-management__th--center" style="width: 110px">الإجراءات</th>
         </tr>
       </ng-template>
 
-      <!-- Body -->
       <ng-template pTemplate="body" let-zone>
-        <tr>
-          <!-- Zone ID -->
+        @let expanded = isExpanded(zone.id);
+        @let children = subZonesOf(zone.id);
+        <tr class="zones-management__row" [class.zones-management__row--expanded]="expanded">
+          <td class="zones-management__toggler-cell">
+            <button
+              type="button"
+              class="zones-management__toggler"
+              [attr.aria-expanded]="expanded"
+              [attr.aria-controls]="'zone-detail-' + zone.id"
+              [attr.aria-label]="(expanded ? 'إخفاء' : 'عرض') + ' المناطق الفرعية لـ ' + zone.name"
+              (click)="toggleRow(zone.id)"
+            >
+              <i class="pi pi-chevron-left" aria-hidden="true"></i>
+            </button>
+          </td>
           <td>
             <code class="zones-management__id-pill">{{ zone.id }}</code>
           </td>
-
-          <!-- Zone Name (Arabic) -->
           <td>
-            <span class="zones-management__zone-name">{{ zone.name }}</span>
+            <div class="zones-management__name-cell">
+              <span class="zones-management__zone-name">{{ zone.name }}</span>
+              <span class="zones-management__count" [title]="children.length + ' منطقة فرعية'">
+                <i class="pi pi-clone" aria-hidden="true"></i>
+                {{ children.length }}
+              </span>
+            </div>
           </td>
-
-          <!-- Coverage Description -->
-          <td class="zones-management__coverage">{{ zone.coverage }}</td>
-
-          <!-- Status Badge -->
+          <td class="zones-management__money">{{ zone.minOrder | number: '1.0-2' }} ج.م</td>
           <td>
             <span
               class="zones-management__badge"
-              [ngClass]="'zones-management__badge--' + zone.status"
+              [ngClass]="zone.isActive ? 'zones-management__badge--active' : 'zones-management__badge--inactive'"
             >
               <span class="zones-management__badge-dot"></span>
-              {{ zone.status === 'active' ? 'نشط' : 'غير نشط' }}
+              {{ zone.isActive ? 'نشط' : 'غير نشط' }}
             </span>
           </td>
-
-          <!-- Shop Count -->
-          <td class="zones-management__td--center">
-            <span class="zones-management__shop-count">{{ zone.shopCount }}</span>
-          </td>
-
-          <!-- Actions: View + Edit -->
           <td>
             <div class="zones-management__actions">
               <a
@@ -98,12 +137,101 @@
             </div>
           </td>
         </tr>
+
+        <!-- Always rendered so collapsing animates too; `inert` keeps hidden content out of the tab order. -->
+        <tr class="zones-management__detail-row" [class.zones-management__detail-row--open]="expanded">
+          <td colspan="6" class="zones-management__detail-cell">
+            <div
+              class="zones-management__detail"
+              [id]="'zone-detail-' + zone.id"
+              [attr.inert]="expanded ? null : ''"
+              [attr.aria-hidden]="!expanded"
+            >
+              <div class="zones-management__detail-inner">
+                <div class="zones-management__detail-panel">
+                  <div class="zones-management__detail-header">
+                    <h3 class="zones-management__detail-title">
+                      المناطق الفرعية في {{ zone.name }}
+                      <span class="zones-management__detail-count">{{ children.length }}</span>
+                    </h3>
+                    <a
+                      class="zones-management__add-sub-btn"
+                      [routerLink]="['/sub-zones/create']"
+                      [queryParams]="{ parentId: zone.id }"
+                    >
+                      <i class="pi pi-plus" aria-hidden="true"></i>
+                      إضافة منطقة فرعية
+                    </a>
+                  </div>
+
+                  @if (children.length === 0) {
+                    <div class="zones-management__detail-empty">
+                      <i class="pi pi-clone" aria-hidden="true"></i>
+                      <span>لا توجد مناطق فرعية لهذه المنطقة بعد.</span>
+                    </div>
+                  } @else {
+                    <table class="zones-management__mini-table">
+                      <thead>
+                        <tr>
+                          <th>اسم المنطقة الفرعية</th>
+                          <th style="width: 150px">الحد الأدنى</th>
+                          <th style="width: 120px">الحالة</th>
+                          <th class="zones-management__th--center" style="width: 80px">تعديل</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (subZone of children; track subZone.id) {
+                          <tr>
+                            <td>
+                              <div class="zones-management__sub-name">
+                                <span
+                                  class="zones-management__swatch"
+                                  [style.background-color]="subZone.color"
+                                  aria-hidden="true"
+                                ></span>
+                                <span>{{ subZone.name }}</span>
+                                <code class="zones-management__sub-id">{{ subZone.id }}</code>
+                              </div>
+                            </td>
+                            <td class="zones-management__money">{{ subZone.minOrder | number: '1.0-2' }} ج.م</td>
+                            <td>
+                              <span
+                                class="zones-management__badge"
+                                [ngClass]="subZone.isActive ? 'zones-management__badge--active' : 'zones-management__badge--inactive'"
+                              >
+                                <span class="zones-management__badge-dot"></span>
+                                {{ subZone.isActive ? 'نشط' : 'غير نشط' }}
+                              </span>
+                            </td>
+                            <td>
+                              <div class="zones-management__actions">
+                                <a
+                                  [routerLink]="['/sub-zones/edit', subZone.id]"
+                                  class="zones-management__action-btn zones-management__action-btn--edit"
+                                  title="تعديل المنطقة الفرعية"
+                                  aria-label="تعديل المنطقة الفرعية"
+                                >
+                                  <i class="pi pi-pencil"></i>
+                                </a>
+                              </div>
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  }
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
       </ng-template>
 
-      <!-- Empty State -->
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="6" class="zones-management__empty">لا توجد مناطق.</td>
+          <td colspan="6" class="zones-management__empty">
+            {{ hasActiveFilters() ? 'لا توجد نتائج مطابقة للبحث أو التصفية.' : 'لا توجد مناطق.' }}
+          </td>
         </tr>
       </ng-template>
 

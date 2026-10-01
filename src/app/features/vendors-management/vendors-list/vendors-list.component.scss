@@ -196,8 +196,35 @@
   }
 
   &__category {
-    font-size: 13px;
-    color: var(--Combo-text-text-primary-paragraph);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    white-space: nowrap;
+
+    &--missing {
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: var(--Combo-text-text-secondary-paragraph);
+      font-weight: 500;
+    }
+  }
+
+  &__category-emoji {
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  &__category-icon {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
   }
 
   &__zone {

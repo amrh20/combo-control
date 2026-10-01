@@ -1,35 +1,30 @@
 // ═══════════════════════════════════════════════════════════════════
 // Geofencing — shared models & constants
+// Polygon + map center live in the core Zone model. This file keeps
+// the map component's local event types and the city dropdown.
 // ═══════════════════════════════════════════════════════════════════
 
+import type { ZonePolygon } from '../../../core/models/zone.model';
+
+export type { ZonePolygon as ZoneGeometry } from '../../../core/models/zone.model';
+export { CAIRO_CENTER, DEFAULT_ZOOM } from '../../../core/models/zone.model';
+
 /**
- * Final payload emitted by the "Save Zone" button.
- * Shape is intentionally PostGIS / GeoJSON friendly so the Node.js
- * backend can pipe `geometry` straight into a `geometry(Polygon, 4326)`
- * column (e.g. via `ST_GeomFromGeoJSON`).
+ * Final payload emitted by the legacy geofencing screen.
+ * Shape is intentionally PostGIS / GeoJSON friendly.
  */
 export interface CreateZonePayload {
   name: string;
   city: string;
-  deliveryFee: number;
-  minimumOrder: number;
+  /** Cart value floor. Delivery price is calculated separately. */
+  minOrder: number;
   isActive: boolean;
-  geometry: {
-    type: 'Polygon';
-    coordinates: number[][][]; // Standard GeoJSON [lng, lat] format
-  };
-}
-
-/** Just the geometry slice, kept separate so the map component can emit
- *  it independently of the form fields. */
-export interface ZoneGeometry {
-  type: 'Polygon';
-  coordinates: number[][][];
+  geometry: ZonePolygon;
 }
 
 /** Payload broadcast by the map whenever the drawn polygon changes. */
 export interface PolygonChange {
-  geometry: ZoneGeometry;
+  geometry: ZonePolygon;
   /** Area of the polygon in square kilometres (rounded for display). */
   areaSqKm: number;
 }
@@ -50,7 +45,3 @@ export const CITY_OPTIONS: CityOption[] = [
   { label: 'السويس',       value: 'suez' },
   { label: 'الإسماعيلية',  value: 'ismailia' },
 ];
-
-/** Default map view — Cairo, Egypt. */
-export const CAIRO_CENTER: [number, number] = [30.0444, 31.2357];
-export const DEFAULT_ZOOM = 12;

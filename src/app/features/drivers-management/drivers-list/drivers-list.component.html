@@ -2,9 +2,9 @@
 
   <div class="drivers-list__header">
     <div class="drivers-list__header-text">
-      <h1 class="drivers-list__title">إدارة السائقين والأسطول</h1>
+      <h1 class="drivers-list__title">إدارة الكباتن والأسطول</h1>
       <p class="drivers-list__subtitle">
-        متابعة توفّر السائقين وحالة الحساب وأداء التوصيل عبر المناطق.
+        متابعة توفّر الكباتن وحالة الحساب وأداء التجميع والتوصيل حسب مركز الانطلاق.
       </p>
     </div>
     <button
@@ -13,7 +13,7 @@
       (click)="openAddModal()"
     >
       <i class="pi pi-plus"></i>
-      إضافة سائق جديد
+      إضافة كابتن جديد
     </button>
   </div>
 
@@ -23,7 +23,7 @@
         inputId="driverSearch"
         type="search"
         icon="pi-search"
-        placeholder="ابحث بالاسم أو الهاتف أو المنطقة..."
+        placeholder="ابحث بالاسم أو الهاتف أو مركز الانطلاق..."
         [value]="searchQuery()"
         (valueChange)="onSearchChange($event)"
       />
@@ -39,7 +39,7 @@
       }
     </div>
     <span class="drivers-list__result-count">
-      {{ filteredDrivers().length }} سائق
+      {{ filteredDrivers().length }} كابتن
     </span>
   </div>
 
@@ -49,20 +49,23 @@
       [paginator]="true"
       [rows]="10"
       [rowsPerPageOptions]="[10, 25]"
-      [tableStyle]="{ 'min-width': '72rem' }"
+      [tableStyle]="{ 'min-width': '80rem' }"
       sortMode="single"
     >
       <ng-template pTemplate="header">
         <tr>
-          <th pSortableColumn="id" class="drivers-list__th" style="width: 100px">
-            رقم السائق <p-sortIcon field="id" />
+          <th pSortableColumn="id" class="drivers-list__th" style="width: 110px">
+            رقم الكابتن <p-sortIcon field="id" />
+          </th>
+          <th pSortableColumn="role" class="drivers-list__th" style="width: 140px">
+            الدور <p-sortIcon field="role" />
           </th>
           <th pSortableColumn="name" class="drivers-list__th">
             الاسم <p-sortIcon field="name" />
           </th>
           <th class="drivers-list__th" style="width: 150px">الهاتف</th>
-          <th pSortableColumn="zoneName" class="drivers-list__th">
-            المنطقة المعيّنة <p-sortIcon field="zoneName" />
+          <th pSortableColumn="hubName" class="drivers-list__th">
+            مركز الانطلاق <p-sortIcon field="hubName" />
           </th>
           <th pSortableColumn="availability" class="drivers-list__th" style="width: 130px">
             التوفّر <p-sortIcon field="availability" />
@@ -85,6 +88,14 @@
             <code class="drivers-list__id-pill">{{ driver.id }}</code>
           </td>
           <td>
+            <span
+              class="drivers-list__badge"
+              [class]="'drivers-list__badge--role-' + (driver.role === 'DELIVERY' ? 'delivery' : 'collector')"
+            >
+              {{ roleLabel(driver.role) }}
+            </span>
+          </td>
+          <td>
             <span class="drivers-list__name">{{ driver.name }}</span>
           </td>
           <td>
@@ -93,7 +104,7 @@
           <td>
             <span class="drivers-list__zone">
               <i class="pi pi-map-marker"></i>
-              <span>{{ driver.zoneName }}</span>
+              <span>{{ driver.hubName }}</span>
             </span>
           </td>
           <td>
@@ -145,11 +156,11 @@
 
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="8" class="drivers-list__empty">
+          <td colspan="9" class="drivers-list__empty">
             @if (searchQuery()) {
-              لا يوجد سائقون مطابقون لبحثك.
+              لا يوجد كباتن مطابقون لبحثك.
             } @else {
-              لا يوجد سائقون.
+              لا يوجد كباتن.
             }
           </td>
         </tr>
@@ -161,9 +172,10 @@
 
 @if (modalOpen()) {
   <div
+    #captainDialog
     class="drivers-list__modal-overlay"
     role="presentation"
-    (click)="closeModal()"
+    (click)="closeModalOnBackdrop($event)"
   >
     <div
       class="drivers-list__modal"
@@ -192,6 +204,26 @@
         [formGroup]="form"
         (ngSubmit)="saveDriver()"
       >
+        <div class="drivers-list__field">
+          <label class="drivers-list__label" for="captainRole">
+            دور الكابتن <span class="drivers-list__required">*</span>
+          </label>
+          <p-select
+            inputId="captainRole"
+            [options]="roleOptions"
+            optionLabel="label"
+            optionValue="value"
+            formControlName="role"
+            placeholder="اختر الدور..."
+            styleClass="drivers-list__select"
+            panelStyleClass="drivers-list__select-panel"
+            [appendTo]="captainDialog"
+          />
+          @if (form.controls.role.touched && form.controls.role.invalid) {
+            <span class="drivers-list__field-error">دور الكابتن مطلوب</span>
+          }
+        </div>
+
         <div class="drivers-list__field">
           <label class="drivers-list__label" for="driverName">
             الاسم <span class="drivers-list__required">*</span>
@@ -247,7 +279,7 @@
           />
           <span class="drivers-list__field-hint">
             @if (modalMode() === 'add') {
-              كلمة المرور المبدئية لدخول السائق
+              كلمة المرور المبدئية لدخول الكابتن
             } @else {
               اتركه فارغاً إذا لم ترد تغيير كلمة المرور
             }
@@ -258,49 +290,52 @@
         </div>
 
         <div class="drivers-list__field">
-          <label class="drivers-list__label" for="driverZone">
-            المنطقة المعينة <span class="drivers-list__required">*</span>
+          <label class="drivers-list__label" for="captainHub">
+            مركز الانطلاق <span class="drivers-list__required">*</span>
           </label>
           <p-select
-            inputId="driverZone"
-            [options]="zoneOptions"
+            inputId="captainHub"
+            [options]="activeHubs()"
             optionLabel="name"
             optionValue="id"
-            formControlName="zoneId"
-            placeholder="اختر منطقة..."
+            formControlName="hubId"
+            placeholder="اختر مركز الانطلاق..."
             styleClass="drivers-list__select"
             panelStyleClass="drivers-list__select-panel"
-            appendTo="self"
+            [appendTo]="captainDialog"
           />
-          @if (form.controls.zoneId.touched && form.controls.zoneId.invalid) {
-            <span class="drivers-list__field-error">المنطقة مطلوبة</span>
+          @if (form.controls.hubId.touched && form.controls.hubId.invalid) {
+            <span class="drivers-list__field-error">مركز الانطلاق مطلوب</span>
           }
         </div>
 
-        <div class="drivers-list__field">
-          <label class="drivers-list__label" for="driverVehicle">
-            المركبة <span class="drivers-list__required">*</span>
-          </label>
-          <p-select
-            inputId="driverVehicle"
-            [options]="vehicleOptions"
-            optionLabel="label"
-            optionValue="value"
-            formControlName="vehicleType"
-            placeholder="اختر نوع المركبة..."
-            styleClass="drivers-list__select"
-            panelStyleClass="drivers-list__select-panel"
-            appendTo="self"
-          />
-          @if (form.controls.vehicleType.touched && form.controls.vehicleType.invalid) {
-            <span class="drivers-list__field-error">نوع المركبة مطلوب</span>
-          }
-        </div>
+        @if (showVehicle()) {
+          <div class="drivers-list__field">
+            <label class="drivers-list__label" for="driverVehicle">
+              المركبة <span class="drivers-list__required">*</span>
+            </label>
+            <p-select
+              inputId="driverVehicle"
+              [options]="vehicleOptions"
+              optionLabel="label"
+              optionValue="value"
+              formControlName="vehicleType"
+              placeholder="اختر نوع المركبة..."
+              styleClass="drivers-list__select"
+              panelStyleClass="drivers-list__select-panel"
+              [appendTo]="captainDialog"
+            />
+            @if (form.controls.vehicleType.touched && form.controls.vehicleType.invalid) {
+              <span class="drivers-list__field-error">نوع المركبة مطلوب</span>
+            }
+          </div>
+        }
 
         <div class="drivers-list__modal-footer">
           <button
             type="submit"
             class="drivers-list__btn drivers-list__btn--primary"
+            [disabled]="form.invalid"
           >
             <i class="pi pi-check"></i>
             حفظ

@@ -1,4 +1,4 @@
-<div class="zone-map">
+<div class="zone-map" [class.zone-map--readonly]="readOnly()">
 
   <!-- Location search -->
   <div class="zone-map__search" (focusout)="closeSearchResults()">
@@ -60,7 +60,7 @@
   }
 
   <!-- Helper hint while nothing is drawn -->
-  @if (!hasPolygon()) {
+  @if (!readOnly() && !hasPolygon()) {
     <div class="zone-map__hint">
       <i class="pi pi-pencil"></i>
       استخدم أداة المضلع لرسم منطقة التوصيل.

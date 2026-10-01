@@ -1,0 +1,209 @@
+<div class="sub-zone-builder">
+
+  @if (missing()) {
+    <div class="sub-zone-builder__missing">
+      <i class="pi pi-exclamation-circle"></i>
+      <p>المنطقة الفرعية غير موجودة.</p>
+      <button type="button" class="sub-zone-builder__btn sub-zone-builder__btn--ghost" (click)="cancel()">
+        العودة إلى المناطق الفرعية
+      </button>
+    </div>
+  } @else {
+
+    <div class="sub-zone-builder__header">
+      <button type="button" class="sub-zone-builder__back-btn" (click)="cancel()">
+        <i class="pi pi-arrow-right"></i>
+        {{ backLabel() }}
+      </button>
+      <h1 class="sub-zone-builder__title">
+        {{ subZoneId() ? 'تعديل المنطقة الفرعية' : 'إضافة مناطق فرعية' }}
+      </h1>
+      <p class="sub-zone-builder__subtitle">
+        اختر المنطقة الرئيسية مرة واحدة، ثم ارسم كل المناطق المطلوبة واملأ بيانات الكروت.
+      </p>
+    </div>
+
+    <form (ngSubmit)="onSubmit()" class="sub-zone-builder__layout">
+      <aside class="sub-zone-builder__card">
+        <!-- Parent zone -->
+        <section class="sub-zone-builder__parent-section">
+          <h2 class="sub-zone-builder__section-title">المنطقة الرئيسية</h2>
+          <div class="sub-zone-builder__field">
+            <label class="sub-zone-builder__label" for="parentZone">
+              المنطقة الرئيسية <span class="sub-zone-builder__required">*</span>
+            </label>
+            <div class="sub-zone-builder__select-wrap">
+              <select
+                id="parentZone"
+                [formControl]="parentZoneIdControl"
+                class="sub-zone-builder__input sub-zone-builder__select"
+                [ngClass]="{
+                  'sub-zone-builder__input--invalid':
+                    parentZoneIdControl.invalid && (parentZoneIdControl.touched || submitted())
+                }"
+              >
+                <option value="" disabled>اختر المنطقة الرئيسية</option>
+                @for (zone of zones(); track zone.id) {
+                  <option [value]="zone.id">
+                    {{ zone.name }}{{ zone.isActive ? '' : ' (غير نشطة)' }}
+                  </option>
+                }
+              </select>
+              <i
+                class="pi sub-zone-builder__select-icon"
+                [ngClass]="presetParentId() ? 'pi-lock' : 'pi-chevron-down'"
+              ></i>
+            </div>
+            @if (parentZoneIdControl.invalid && (parentZoneIdControl.touched || submitted())) {
+              <small class="sub-zone-builder__error">اختيار المنطقة الرئيسية مطلوب.</small>
+            } @else if (parentZone(); as parent) {
+              <small class="sub-zone-builder__help">
+                الحد الأدنى الافتراضي: {{ parent.minOrder | number: '1.0-2' }} ج.م
+                @if (presetParentId()) {
+                  — محددة من قائمة المناطق
+                } @else if (subZones().length > 0 && !subZoneId()) {
+                  — احذف الرسومات لتغيير المنطقة
+                }
+              </small>
+            }
+          </div>
+        </section>
+
+        <!-- Dynamic sub-zone cards -->
+        <section class="sub-zone-builder__drafts">
+          <div class="sub-zone-builder__drafts-heading">
+            <h2 class="sub-zone-builder__section-title sub-zone-builder__section-title--plain">
+              المناطق الجديدة
+            </h2>
+            <span class="sub-zone-builder__count">{{ subZones().length }}</span>
+          </div>
+
+          @if (subZones().length === 0) {
+            <div class="sub-zone-builder__empty">
+              <i class="pi pi-pencil"></i>
+              <p>ارسم مضلعاً على الخريطة لإضافة كارت منطقة فرعية.</p>
+            </div>
+          } @else {
+            <div class="sub-zone-builder__draft-list">
+              @for (draft of subZones(); track draft.layerId; let index = $index) {
+                <article
+                  class="sub-zone-builder__draft-card"
+                  [class.sub-zone-builder__draft-card--invalid]="issuesFor(draft.layerId).length > 0"
+                  [style.--draft-color]="draft.color"
+                >
+                  <div class="sub-zone-builder__draft-header">
+                    <div class="sub-zone-builder__draft-title">
+                      <span
+                        class="sub-zone-builder__draft-swatch"
+                        [style.background-color]="draft.color"
+                      ></span>
+                      <span>منطقة فرعية {{ index + 1 }}</span>
+                      <small>{{ draft.areaSqKm | number: '1.0-2' }} كم²</small>
+                    </div>
+                    @if (!subZoneId()) {
+                      <button
+                        type="button"
+                        class="sub-zone-builder__delete"
+                        title="حذف المنطقة والرسم"
+                        [attr.aria-label]="'حذف المنطقة الفرعية ' + (index + 1)"
+                        (click)="removeDraft(draft.layerId)"
+                      >
+                        <i class="pi pi-trash"></i>
+                      </button>
+                    }
+                  </div>
+
+                  <div class="sub-zone-builder__field">
+                    <label class="sub-zone-builder__label" [for]="'draftName-' + draft.layerId">
+                      اسم المنطقة الفرعية <span class="sub-zone-builder__required">*</span>
+                    </label>
+                    <input
+                      [id]="'draftName-' + draft.layerId"
+                      type="text"
+                      pInputText
+                      class="sub-zone-builder__input"
+                      placeholder="مثال: الحي السابع"
+                      [value]="draft.name"
+                      [class.sub-zone-builder__input--invalid]="submitted() && !draft.name.trim()"
+                      (input)="updateName(draft.layerId, $event)"
+                    />
+                  </div>
+
+                  <div class="sub-zone-builder__draft-row">
+                    <div class="sub-zone-builder__field">
+                      <label class="sub-zone-builder__label" [for]="'draftMin-' + draft.layerId">
+                        الحد الأدنى
+                      </label>
+                      <p-inputnumber
+                        [inputId]="'draftMin-' + draft.layerId"
+                        [ngModel]="draft.minOrder"
+                        [ngModelOptions]="{ standalone: true }"
+                        [min]="0"
+                        mode="currency"
+                        currency="EGP"
+                        locale="ar-EG"
+                        styleClass="sub-zone-builder__number"
+                        (ngModelChange)="updateMinOrder(draft.layerId, $event)"
+                      />
+                    </div>
+
+                    <div class="sub-zone-builder__field sub-zone-builder__field--color">
+                      <label class="sub-zone-builder__label" [for]="'draftColor-' + draft.layerId">
+                        لون التمييز
+                      </label>
+                      <label
+                        class="sub-zone-builder__color-picker"
+                        [style.background-color]="draft.color"
+                      >
+                        <input
+                          [id]="'draftColor-' + draft.layerId"
+                          type="color"
+                          [value]="draft.color"
+                          (input)="updateColor(draft.layerId, $any($event.target).value)"
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  @if (issuesFor(draft.layerId).length > 0) {
+                    <ul class="sub-zone-builder__issues">
+                      @for (issue of issuesFor(draft.layerId); track issue) {
+                        <li>{{ issue }}</li>
+                      }
+                    </ul>
+                  }
+                </article>
+              }
+            </div>
+          }
+        </section>
+
+        <div class="sub-zone-builder__actions">
+          <button type="button" class="sub-zone-builder__btn sub-zone-builder__btn--ghost" (click)="cancel()">
+            إلغاء
+          </button>
+          <button
+            type="submit"
+            class="sub-zone-builder__btn sub-zone-builder__btn--primary"
+            [disabled]="!canSave()"
+          >
+            <i class="pi pi-check"></i>
+            {{ subZoneId() ? 'حفظ التغييرات' : 'حفظ المناطق' }}
+          </button>
+        </div>
+      </aside>
+
+      <div class="sub-zone-builder__map">
+        <ctrl-sub-zone-map
+          [parentGeometry]="parentGeometry()"
+          [siblings]="siblings()"
+          (polygonCreated)="onPolygonCreated($event)"
+          (polygonChanged)="onPolygonChanged($event)"
+          (polygonRemoved)="onPolygonRemoved($event)"
+        />
+      </div>
+    </form>
+
+  }
+
+</div>

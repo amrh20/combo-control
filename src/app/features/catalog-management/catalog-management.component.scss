@@ -374,8 +374,9 @@
     flex-direction: column;
     width: 100%;
     max-width: 28rem;
-    max-height: min(90vh, 640px);
+    max-height: calc(100dvh - 48px);
     padding: 24px;
+    overflow: hidden;
     background: var(--Combo-bg-background-card);
     border: 1px solid var(--Combo-border-border-neutral-secondary);
     border-radius: 12px;
@@ -384,6 +385,7 @@
 
   &__modal-header {
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
@@ -422,9 +424,13 @@
 
   &__modal-body {
     display: flex;
+    flex: 1 1 auto;
     flex-direction: column;
     gap: 16px;
     min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   &__field {
@@ -453,12 +459,17 @@
   }
 
   &__modal-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
     display: flex;
+    flex-shrink: 0;
     align-items: center;
     justify-content: flex-start;
     gap: 10px;
     margin-top: 8px;
     padding-top: 16px;
+    background: var(--Combo-bg-background-card);
     border-top: 1px solid var(--Combo-border-border-neutral-secondary);
   }
 

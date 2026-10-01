@@ -1,4 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -8,11 +9,16 @@ import { SelectModule } from 'primeng/select';
 import { InputTextModule } from 'primeng/inputtext';
 import { ComboInputComponent } from '../../../shared/components/combo-input/combo-input.component';
 import { DriverFormData, DriverService } from '../../../core/services/driver.service';
+import { HubService } from '../../../core/services/hub.service';
 import {
   ACCOUNT_STATUS_CONFIG,
   AVAILABILITY_CONFIG,
-  DriverProfile,
-  ZONE_OPTIONS,
+  CaptainProfile,
+  CaptainRole,
+  CaptainVehicleType,
+  ROLE_CONFIG,
+  ROLE_OPTIONS,
+  VEHICLE_OPTIONS,
   matchesDriverSearch,
 } from '../data/drivers.mock';
 
@@ -36,19 +42,21 @@ type ModalMode = 'add' | 'edit';
 })
 export class DriversListComponent {
   private readonly driverService = inject(DriverService);
+  private readonly hubService = inject(HubService);
   private readonly fb = inject(FormBuilder);
 
   readonly availabilityConfig = AVAILABILITY_CONFIG;
   readonly accountStatusConfig = ACCOUNT_STATUS_CONFIG;
-  readonly zoneOptions = ZONE_OPTIONS;
-  readonly vehicleOptions = [
-    { label: 'دراجة نارية', value: 'Motorcycle' },
-    { label: 'سيارة', value: 'Car' },
-  ];
+  readonly roleConfig = ROLE_CONFIG;
+  readonly roleOptions = ROLE_OPTIONS;
+  readonly vehicleOptions = VEHICLE_OPTIONS;
+  readonly activeHubs = this.hubService.activeHubs;
 
   readonly searchQuery = signal('');
   readonly modalOpen = signal(false);
   readonly modalMode = signal<ModalMode>('add');
+  /** Mirrors role so the vehicle field can show or hide without reading a stale control. */
+  readonly showVehicle = signal(true);
   private readonly editingId = signal<string | null>(null);
 
   readonly filteredDrivers = computed(() => {
@@ -57,16 +65,24 @@ export class DriversListComponent {
   });
 
   readonly modalTitle = computed(() =>
-    this.modalMode() === 'edit' ? 'تعديل بيانات السائق' : 'إضافة سائق جديد',
+    this.modalMode() === 'edit' ? 'تعديل بيانات الكابتن' : 'إضافة كابتن جديد',
   );
 
   readonly form = this.fb.nonNullable.group({
+    role: ['DELIVERY' as CaptainRole, Validators.required],
     name: ['', Validators.required],
     phone: ['', Validators.required],
     password: [''],
-    zoneId: ['', Validators.required],
-    vehicleType: ['Motorcycle', Validators.required],
+    hubId: ['', Validators.required],
+    vehicleType: ['' as CaptainVehicleType | ''],
   });
+
+  constructor() {
+    this.form.controls.role.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe((role) => this.syncVehicleControl(role));
+    this.syncVehicleControl(this.form.controls.role.value);
+  }
 
   onSearchChange(value: string): void {
     this.searchQuery.set(value);
@@ -76,8 +92,12 @@ export class DriversListComponent {
     this.searchQuery.set('');
   }
 
-  isAccountActive(driver: DriverProfile): boolean {
-    return driver.accountStatus === 'active';
+  roleLabel(role: CaptainRole): string {
+    return this.roleConfig[role].labelAr;
+  }
+
+  isAccountActive(captain: CaptainProfile): boolean {
+    return captain.accountStatus === 'active';
   }
 
   onAccountToggle(driverId: string, active: boolean): void {
@@ -89,27 +109,37 @@ export class DriversListComponent {
     this.modalMode.set('add');
     this.editingId.set(null);
     this.applyPasswordValidators('add');
-    this.form.reset({
-      name: '',
-      phone: '',
-      password: '',
-      zoneId: ZONE_OPTIONS[0]?.id ?? '',
-      vehicleType: 'Motorcycle',
-    });
+    this.form.reset(
+      {
+        role: 'DELIVERY',
+        name: '',
+        phone: '',
+        password: '',
+        hubId: this.activeHubs()[0]?.id ?? '',
+        vehicleType: 'Motorcycle',
+      },
+      { emitEvent: false },
+    );
+    this.syncVehicleControl('DELIVERY');
     this.modalOpen.set(true);
   }
 
-  openEditModal(driver: DriverProfile): void {
+  openEditModal(captain: CaptainProfile): void {
     this.modalMode.set('edit');
-    this.editingId.set(driver.id);
+    this.editingId.set(captain.id);
     this.applyPasswordValidators('edit');
-    this.form.reset({
-      name: driver.name,
-      phone: driver.phone,
-      password: '',
-      zoneId: driver.zoneId,
-      vehicleType: driver.vehicleType,
-    });
+    this.form.reset(
+      {
+        role: captain.role,
+        name: captain.name,
+        phone: captain.phone,
+        password: '',
+        hubId: captain.hubId,
+        vehicleType: captain.role === 'DELIVERY' ? captain.vehicleType : '',
+      },
+      { emitEvent: false },
+    );
+    this.syncVehicleControl(captain.role);
     this.modalOpen.set(true);
   }
 
@@ -119,6 +149,13 @@ export class DriversListComponent {
     this.form.reset();
   }
 
+  /** Ignore clicks that land on portaled dropdowns inside the backdrop. */
+  closeModalOnBackdrop(event: MouseEvent): void {
+    if (event.target === event.currentTarget) {
+      this.closeModal();
+    }
+  }
+
   saveDriver(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -126,15 +163,17 @@ export class DriversListComponent {
     }
 
     const value = this.form.getRawValue();
-    const zone = ZONE_OPTIONS.find((z) => z.id === value.zoneId);
+    const hub = this.hubService.getById(value.hubId);
     const password = value.password.trim();
+    const isCollector = value.role === 'COLLECTOR';
 
     const payload: DriverFormData = {
       name: value.name.trim(),
       phone: value.phone.trim(),
-      zoneId: value.zoneId,
-      zoneName: zone?.name ?? value.zoneId,
-      vehicleType: value.vehicleType,
+      role: value.role,
+      hubId: value.hubId,
+      hubName: hub?.name ?? value.hubId,
+      vehicleType: isCollector ? '' : value.vehicleType,
     };
 
     if (password) {
@@ -160,6 +199,25 @@ export class DriversListComponent {
     } else {
       password.clearValidators();
     }
-    password.updateValueAndValidity();
+    password.updateValueAndValidity({ emitEvent: false });
+  }
+
+  /** Delivery captains must pick a vehicle. Collectors have the control cleared and optional. */
+  private syncVehicleControl(role: CaptainRole): void {
+    const vehicle = this.form.controls.vehicleType;
+    const isDelivery = role === 'DELIVERY';
+    this.showVehicle.set(isDelivery);
+
+    if (isDelivery) {
+      vehicle.setValidators(Validators.required);
+      if (!vehicle.value) {
+        vehicle.markAsTouched();
+      }
+    } else {
+      vehicle.clearValidators();
+      vehicle.setValue('', { emitEvent: false });
+    }
+
+    vehicle.updateValueAndValidity();
   }
 }

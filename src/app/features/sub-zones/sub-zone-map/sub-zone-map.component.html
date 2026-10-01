@@ -1,0 +1,43 @@
+<div class="sub-zone-map">
+
+  <div #mapContainer class="sub-zone-map__canvas"></div>
+
+  @if (polygonCount() > 0) {
+    <div class="sub-zone-map__badge">
+      <i class="pi pi-chart-pie"></i>
+      <span>
+        {{ polygonCount() }} مناطق — {{ totalAreaSqKm() | number: '1.0-2' }} كم²
+      </span>
+    </div>
+  }
+
+  @if (!parentGeometry()) {
+    <div class="sub-zone-map__overlay">
+      <div class="sub-zone-map__overlay-card">
+        <i class="pi pi-map"></i>
+        <p>اختر المنطقة الرئيسية أولاً لعرض حدودها على الخريطة وتفعيل أدوات الرسم.</p>
+      </div>
+    </div>
+  } @else if (polygonCount() === 0) {
+    <div class="sub-zone-map__hint">
+      <i class="pi pi-pencil"></i>
+      ارسم أكثر من مضلع داخل الحدود؛ سيُضاف كارت لكل منطقة تلقائياً.
+    </div>
+  }
+
+  @if (parentGeometry()) {
+    <div class="sub-zone-map__legend">
+      <span class="sub-zone-map__legend-item">
+        <span class="sub-zone-map__legend-swatch sub-zone-map__legend-swatch--parent"></span>
+        المنطقة الرئيسية
+      </span>
+      <span class="sub-zone-map__legend-item">
+        <span
+          class="sub-zone-map__legend-swatch sub-zone-map__legend-swatch--draft"
+        ></span>
+        المناطق الجديدة
+      </span>
+    </div>
+  }
+
+</div>

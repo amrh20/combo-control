@@ -1,12 +1,3 @@
-export type VendorCategory =
-  | 'restaurants'
-  | 'cafes'
-  | 'groceries'
-  | 'pharmacy'
-  | 'bakery'
-  | 'electronics'
-  | 'produce';
-
 export type LiveStatus = 'open' | 'busy' | 'closed';
 export type LiveStatusOverride = 'auto' | 'force_busy' | 'force_closed';
 export type SystemStatus = 'active' | 'inactive';
@@ -20,9 +11,13 @@ export interface VendorStats {
 export interface VendorSettings {
   openingTime: string;
   closingTime: string;
-  deliveryFee: number;
-  minOrderValue: number;
   autoAccept: boolean;
+}
+
+/** WGS84 storefront pin. Must fall inside the assigned hub polygon. */
+export interface VendorLocation {
+  lat: number;
+  lng: number;
 }
 
 export interface VendorProfile {
@@ -30,9 +25,13 @@ export interface VendorProfile {
   name: string;
   phone: string;
   contactPerson: string;
-  category: VendorCategory;
-  zoneId: string;
-  zoneName: string;
+  /** Id from VendorCategoryService (e.g. VC-001). */
+  category: string;
+  /** Hub this shop is physically assigned to. */
+  hubId: string;
+  hubName: string;
+  /** Storefront coordinate inside `hubId`'s polygon. */
+  location: VendorLocation;
   logoUrl?: string;
   systemStatus: SystemStatus;
   liveStatusOverride: LiveStatusOverride;
@@ -40,21 +39,13 @@ export interface VendorProfile {
   /** Shown when closed outside hours — e.g. "17:00" */
   nextOpeningTime?: string;
   settings: VendorSettings;
+  /** Cart value floor. Delivery price is calculated separately. */
+  minOrder: number;
   discountPercent: number;
   commissionRate: number;
   walletBalance: number;
   stats: VendorStats;
 }
-
-export const CATEGORY_CONFIG: Record<VendorCategory, { label: string; labelAr: string }> = {
-  restaurants: { label: 'Restaurants',  labelAr: 'مطاعم'       },
-  cafes:       { label: 'Cafés',        labelAr: 'مقاهي'       },
-  groceries:   { label: 'Groceries',    labelAr: 'بقالة'       },
-  pharmacy:    { label: 'Pharmacy',     labelAr: 'صيدليات'     },
-  bakery:      { label: 'Bakery',       labelAr: 'مخابز'       },
-  electronics: { label: 'Electronics',  labelAr: 'إلكترونيات'  },
-  produce:     { label: 'Produce',      labelAr: 'فواكه'       },
-};
 
 export const LIVE_STATUS_CONFIG: Record<LiveStatus, { label: string; labelAr: string }> = {
   open:   { label: 'Open',   labelAr: 'مفتوح'          },
@@ -76,138 +67,144 @@ export const LIVE_OVERRIDE_CONFIG: Record<
   force_closed: { label: 'فرض مغلق',      description: 'إيقاف الطلبات لبقية اليوم' },
 };
 
-export const ZONE_OPTIONS = [
-  { id: 'ZN-001', name: 'مجمع شطر ١٣'  },
-  { id: 'ZN-002', name: 'حي الروضة'     },
-  { id: 'ZN-004', name: 'مجمع الواحة'   },
-  { id: 'ZN-005', name: 'حي الورود'     },
-  { id: 'ZN-007', name: 'مجمع شطر ٥'   },
-  { id: 'ZN-008', name: 'حي الياسمين'  },
-];
-
 const DEFAULT_SETTINGS: VendorSettings = {
-  openingTime:   '09:00',
-  closingTime:   '23:00',
-  deliveryFee:   10,
-  minOrderValue: 30,
-  autoAccept:    false,
+  openingTime: '09:00',
+  closingTime: '23:00',
+  autoAccept:  false,
 };
 
 export const VENDORS_DATA: VendorProfile[] = [
   {
-    id: 'SH-001', name: 'مطعم البيت', phone: '+966 50 123 4567', contactPerson: 'خالد المنصور',
-    category: 'restaurants', zoneId: 'ZN-001', zoneName: 'مجمع شطر ١٣',
+    id: 'SH-013', name: 'سوق الأمل', phone: '+20 10 1234 5678', contactPerson: 'أمل حسن',
+    category: 'VC-001', hubId: 'HB-001', hubName: 'شارع ١٣',
+    location: { lat: 29.9605, lng: 31.2556 },
     systemStatus: 'active', liveStatusOverride: 'auto', liveStatus: 'open',
-    settings: { openingTime: '11:00', closingTime: '23:30', deliveryFee: 10, minOrderValue: 50, autoAccept: true },
+    minOrder: 40,
+    settings: { openingTime: '08:00', closingTime: '23:00', autoAccept: true },
+    discountPercent: 0, commissionRate: 8, walletBalance: 1540.0,
+    stats: { rating: 4.6, totalReviews: 210, totalCompletedOrders: 980 },
+  },
+  {
+    id: 'SH-001', name: 'مطعم البيت', phone: '+966 50 123 4567', contactPerson: 'خالد المنصور',
+    category: 'VC-006', hubId: 'HB-001', hubName: 'شارع ١٣',
+    location: { lat: 29.9605, lng: 31.2566 },
+    systemStatus: 'active', liveStatusOverride: 'auto', liveStatus: 'open',
+    minOrder: 50,
+    settings: { openingTime: '11:00', closingTime: '23:30', autoAccept: true },
     discountPercent: 15, commissionRate: 12, walletBalance: 4250.75,
     stats: { rating: 4.7, totalReviews: 328, totalCompletedOrders: 1842 },
   },
   {
     id: 'SH-002', name: 'كافيه الصباح', phone: '+966 55 234 5678', contactPerson: 'نورة العتيبي',
-    category: 'cafes', zoneId: 'ZN-002', zoneName: 'حي الروضة',
+    category: 'VC-007', hubId: 'HB-002', hubName: 'شارع ٩',
+    location: { lat: 29.9582, lng: 31.2476 },
     systemStatus: 'active', liveStatusOverride: 'force_busy', liveStatus: 'busy',
-    settings: { openingTime: '07:00', closingTime: '22:00', deliveryFee: 8, minOrderValue: 25, autoAccept: false },
+    minOrder: 25,
+    settings: { openingTime: '07:00', closingTime: '22:00', autoAccept: false },
     discountPercent: 0, commissionRate: 10, walletBalance: 1120.0,
     stats: { rating: 4.5, totalReviews: 156, totalCompletedOrders: 920 },
   },
   {
     id: 'SH-003', name: 'بقالة النور', phone: '+966 54 345 6789', contactPerson: 'فهد الشمري',
-    category: 'groceries', zoneId: 'ZN-004', zoneName: 'مجمع الواحة',
+    category: 'VC-001', hubId: 'HB-003', hubName: 'عباس العقاد',
+    location: { lat: 30.054, lng: 31.3388 },
     systemStatus: 'active', liveStatusOverride: 'auto', liveStatus: 'open',
-    settings: { openingTime: '08:00', closingTime: '00:00', deliveryFee: 5, minOrderValue: 20, autoAccept: true },
+    minOrder: 20,
+    settings: { openingTime: '08:00', closingTime: '00:00', autoAccept: true },
     discountPercent: 10, commissionRate: 8, walletBalance: 8900.5,
     stats: { rating: 4.8, totalReviews: 512, totalCompletedOrders: 3210 },
   },
   {
     id: 'SH-004', name: 'صيدلية الرعاية', phone: '+966 56 456 7890', contactPerson: 'د. سارة الحربي',
-    category: 'pharmacy', zoneId: 'ZN-008', zoneName: 'حي الياسمين',
+    category: 'VC-005', hubId: 'HB-003', hubName: 'عباس العقاد',
+    location: { lat: 30.056, lng: 31.3388 },
     systemStatus: 'active', liveStatusOverride: 'auto', liveStatus: 'closed', nextOpeningTime: '08:00',
-    settings: { ...DEFAULT_SETTINGS, openingTime: '08:00', closingTime: '23:00', deliveryFee: 15, minOrderValue: 40 },
+    minOrder: 40,
+    settings: { ...DEFAULT_SETTINGS, openingTime: '08:00', closingTime: '23:00' },
     discountPercent: 0, commissionRate: 6, walletBalance: 320.0,
     stats: { rating: 4.6, totalReviews: 89, totalCompletedOrders: 445 },
   },
   {
     id: 'SH-005', name: 'مطعم لذة الشام', phone: '+966 50 567 8901', contactPerson: 'أحمد القحطاني',
-    category: 'restaurants', zoneId: 'ZN-001', zoneName: 'مجمع شطر ١٣',
+    category: 'VC-006', hubId: 'HB-001', hubName: 'شارع ١٣',
+    location: { lat: 29.9605, lng: 31.2576 },
     systemStatus: 'active', liveStatusOverride: 'auto', liveStatus: 'open',
-    settings: { openingTime: '12:00', closingTime: '01:00', deliveryFee: 12, minOrderValue: 60, autoAccept: true },
+    minOrder: 60,
+    settings: { openingTime: '12:00', closingTime: '01:00', autoAccept: true },
     discountPercent: 20, commissionRate: 12, walletBalance: 6775.25,
     stats: { rating: 4.9, totalReviews: 421, totalCompletedOrders: 2156 },
   },
   {
     id: 'SH-006', name: 'محل الفاكهة الطازجة', phone: '+966 53 678 9012', contactPerson: 'يوسف الزهراني',
-    category: 'produce', zoneId: 'ZN-005', zoneName: 'حي الورود',
+    category: 'VC-002', hubId: 'HB-002', hubName: 'شارع ٩',
+    location: { lat: 29.9582, lng: 31.2484 },
     systemStatus: 'active', liveStatusOverride: 'force_busy', liveStatus: 'busy',
-    settings: { openingTime: '06:00', closingTime: '21:00', deliveryFee: 7, minOrderValue: 30, autoAccept: false },
+    minOrder: 30,
+    settings: { openingTime: '06:00', closingTime: '21:00', autoAccept: false },
     discountPercent: 5, commissionRate: 9, walletBalance: 2300.0,
     stats: { rating: 4.3, totalReviews: 67, totalCompletedOrders: 534 },
   },
   {
     id: 'SH-007', name: 'سوبرماركت الحارة', phone: '+966 55 789 0123', contactPerson: 'عبدالله الدوسري',
-    category: 'groceries', zoneId: 'ZN-007', zoneName: 'مجمع شطر ٥',
+    category: 'VC-001', hubId: 'HB-002', hubName: 'شارع ٩',
+    location: { lat: 29.9582, lng: 31.2492 },
     systemStatus: 'active', liveStatusOverride: 'auto', liveStatus: 'open',
-    settings: { openingTime: '08:00', closingTime: '00:00', deliveryFee: 0, minOrderValue: 15, autoAccept: true },
+    minOrder: 15,
+    settings: { openingTime: '08:00', closingTime: '00:00', autoAccept: true },
     discountPercent: 0, commissionRate: 8, walletBalance: 12450.0,
     stats: { rating: 4.4, totalReviews: 890, totalCompletedOrders: 4521 },
   },
   {
     id: 'SH-008', name: 'مخبز زهرة الأصيل', phone: '+966 54 890 1234', contactPerson: 'ريم السعيد',
-    category: 'bakery', zoneId: 'ZN-002', zoneName: 'حي الروضة',
+    category: 'VC-003', hubId: 'HB-002', hubName: 'شارع ٩',
+    location: { lat: 29.9582, lng: 31.25 },
     systemStatus: 'inactive', liveStatusOverride: 'auto', liveStatus: 'closed', nextOpeningTime: '05:00',
-    settings: { openingTime: '05:00', closingTime: '14:00', deliveryFee: 6, minOrderValue: 20, autoAccept: false },
+    minOrder: 20,
+    settings: { openingTime: '05:00', closingTime: '14:00', autoAccept: false },
     discountPercent: 0, commissionRate: 7, walletBalance: 500.0,
     stats: { rating: 4.2, totalReviews: 34, totalCompletedOrders: 198 },
   },
   {
     id: 'SH-009', name: 'مطعم النخلة', phone: '+966 50 901 2345', contactPerson: 'محمد الغامدي',
-    category: 'restaurants', zoneId: 'ZN-004', zoneName: 'مجمع الواحة',
+    category: 'VC-006', hubId: 'HB-003', hubName: 'عباس العقاد',
+    location: { lat: 30.058, lng: 31.3388 },
     systemStatus: 'active', liveStatusOverride: 'auto', liveStatus: 'open',
-    settings: { openingTime: '11:00', closingTime: '23:00', deliveryFee: 10, minOrderValue: 45, autoAccept: true },
+    minOrder: 45,
+    settings: { openingTime: '11:00', closingTime: '23:00', autoAccept: true },
     discountPercent: 12, commissionRate: 12, walletBalance: 3100.75,
     stats: { rating: 4.6, totalReviews: 245, totalCompletedOrders: 1287 },
   },
   {
     id: 'SH-010', name: 'متجر التقنية الحديثة', phone: '+966 56 012 3456', contactPerson: 'فيصل المطيري',
-    category: 'electronics', zoneId: 'ZN-007', zoneName: 'مجمع شطر ٥',
+    category: 'VC-008', hubId: 'HB-003', hubName: 'عباس العقاد',
+    location: { lat: 30.06, lng: 31.3388 },
     systemStatus: 'active', liveStatusOverride: 'force_closed', liveStatus: 'closed',
-    settings: { openingTime: '10:00', closingTime: '22:00', deliveryFee: 20, minOrderValue: 100, autoAccept: false },
+    minOrder: 100,
+    settings: { openingTime: '10:00', closingTime: '22:00', autoAccept: false },
     discountPercent: 8, commissionRate: 15, walletBalance: 950.5,
     stats: { rating: 4.1, totalReviews: 112, totalCompletedOrders: 367 },
   },
   {
     id: 'SH-011', name: 'مقهى الورد', phone: '+966 55 123 9876', contactPerson: 'لينا الحسن',
-    category: 'cafes', zoneId: 'ZN-008', zoneName: 'حي الياسمين',
+    category: 'VC-007', hubId: 'HB-001', hubName: 'شارع ١٣',
+    location: { lat: 29.9605, lng: 31.2586 },
     systemStatus: 'active', liveStatusOverride: 'auto', liveStatus: 'closed', nextOpeningTime: '16:00',
-    settings: { openingTime: '16:00', closingTime: '01:00', deliveryFee: 8, minOrderValue: 30, autoAccept: true },
+    minOrder: 30,
+    settings: { openingTime: '16:00', closingTime: '01:00', autoAccept: true },
     discountPercent: 0, commissionRate: 10, walletBalance: 780.0,
     stats: { rating: 4.7, totalReviews: 203, totalCompletedOrders: 876 },
   },
   {
     id: 'SH-012', name: 'صيدلية الشفاء', phone: '+966 54 987 6543', contactPerson: 'د. هند العمري',
-    category: 'pharmacy', zoneId: 'ZN-005', zoneName: 'حي الورود',
+    category: 'VC-005', hubId: 'HB-002', hubName: 'شارع ٩',
+    location: { lat: 29.9582, lng: 31.2508 },
     systemStatus: 'inactive', liveStatusOverride: 'auto', liveStatus: 'closed',
-    settings: { openingTime: '09:00', closingTime: '21:00', deliveryFee: 12, minOrderValue: 35, autoAccept: true },
+    minOrder: 35,
+    settings: { openingTime: '09:00', closingTime: '21:00', autoAccept: true },
     discountPercent: 0, commissionRate: 6, walletBalance: 145.0,
     stats: { rating: 3.9, totalReviews: 28, totalCompletedOrders: 156 },
   },
 ];
-
-/** Shared in-memory store — list & details read/write the same reference. */
-export let VENDORS_STATE: VendorProfile[] = structuredClone(VENDORS_DATA);
-
-export function getVendorById(id: string): VendorProfile | undefined {
-  return VENDORS_STATE.find(v => v.id === id);
-}
-
-export function updateVendor(id: string, patch: Partial<VendorProfile>): void {
-  const idx = VENDORS_STATE.findIndex(v => v.id === id);
-  if (idx < 0) return;
-  VENDORS_STATE[idx] = { ...VENDORS_STATE[idx], ...patch };
-}
-
-export function syncVendorsFromState(): VendorProfile[] {
-  return structuredClone(VENDORS_STATE);
-}
 
 export function getVendorInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -229,31 +226,37 @@ export function getEffectiveLiveStatus(vendor: VendorProfile): LiveStatus {
 
 export interface VendorFilters {
   search: string;
-  category: VendorCategory | 'all';
-  zoneId: string | 'all';
+  category: string | 'all';
+  hubId: string | 'all';
   liveStatus: LiveStatus | 'all';
 }
 
-export function matchesVendorSearch(vendor: VendorProfile, query: string): boolean {
+export function matchesVendorSearch(
+  vendor: VendorProfile,
+  query: string,
+  categoryName = '',
+): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
-
-  const categoryLabel = CATEGORY_CONFIG[vendor.category].labelAr.toLowerCase();
 
   return (
     vendor.id.toLowerCase().includes(q) ||
     vendor.name.toLowerCase().includes(q) ||
-    vendor.zoneName.toLowerCase().includes(q) ||
+    vendor.hubName.toLowerCase().includes(q) ||
     vendor.contactPerson.toLowerCase().includes(q) ||
     vendor.phone.replace(/\s/g, '').includes(q.replace(/\s/g, '')) ||
-    categoryLabel.includes(q)
+    categoryName.toLowerCase().includes(q)
   );
 }
 
-export function matchesVendorFilters(vendor: VendorProfile, filters: VendorFilters): boolean {
-  if (!matchesVendorSearch(vendor, filters.search)) return false;
+export function matchesVendorFilters(
+  vendor: VendorProfile,
+  filters: VendorFilters,
+  categoryName = '',
+): boolean {
+  if (!matchesVendorSearch(vendor, filters.search, categoryName)) return false;
   if (filters.category !== 'all' && vendor.category !== filters.category) return false;
-  if (filters.zoneId !== 'all' && vendor.zoneId !== filters.zoneId) return false;
+  if (filters.hubId !== 'all' && vendor.hubId !== filters.hubId) return false;
   if (filters.liveStatus !== 'all' && getEffectiveLiveStatus(vendor) !== filters.liveStatus) return false;
   return true;
 }

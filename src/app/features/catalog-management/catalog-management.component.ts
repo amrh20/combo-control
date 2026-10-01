@@ -6,7 +6,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { CatalogService, Product } from '../../core/services/catalog.service';
-import { syncVendorsFromState, VendorProfile } from '../vendors-management/data/vendors.mock';
+import { VendorService } from '../../core/services/vendor.service';
 
 type ModalMode = 'add' | 'edit';
 
@@ -26,18 +26,21 @@ type ModalMode = 'add' | 'edit';
 })
 export class CatalogManagementComponent implements OnInit {
   private readonly catalog = inject(CatalogService);
+  private readonly vendorService = inject(VendorService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
 
   /** Ecosystem standard — Arabic abbreviation for EGP */
   readonly currency = 'ج.م';
-  readonly vendors: VendorProfile[] = syncVendorsFromState();
+  readonly vendors = this.vendorService.vendors;
 
-  readonly vendorOptions = this.vendors.map(v => ({
-    label: `${v.name} (${v.id})`,
-    value: v.id,
-  }));
+  readonly vendorOptions = computed(() =>
+    this.vendors().map(v => ({
+      label: `${v.name} (${v.id})`,
+      value: v.id,
+    })),
+  );
 
   readonly selectedShopId = signal<string | null>(null);
   readonly modalOpen = signal(false);
@@ -46,7 +49,7 @@ export class CatalogManagementComponent implements OnInit {
 
   readonly selectedVendor = computed(() => {
     const id = this.selectedShopId();
-    return id ? this.vendors.find(v => v.id === id) ?? null : null;
+    return id ? this.vendors().find(v => v.id === id) ?? null : null;
   });
 
   readonly products = computed(() => {
@@ -74,7 +77,7 @@ export class CatalogManagementComponent implements OnInit {
     this.route.queryParamMap.subscribe(params => {
       const shopId = params.get('shopId');
       const valid =
-        shopId && this.vendors.some(v => v.id === shopId) ? shopId : null;
+        shopId && this.vendors().some(v => v.id === shopId) ? shopId : null;
       if (this.selectedShopId() !== valid) {
         this.selectedShopId.set(valid);
       }

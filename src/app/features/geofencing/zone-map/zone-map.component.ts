@@ -5,6 +5,7 @@ import {
   ElementRef,
   OnDestroy,
   inject,
+  input,
   output,
   signal,
   viewChild,
@@ -18,12 +19,8 @@ import * as turf from '@turf/turf';
 import { Subject, of } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, finalize, switchMap } from 'rxjs/operators';
 
-import {
-  CAIRO_CENTER,
-  DEFAULT_ZOOM,
-  PolygonChange,
-  ZoneGeometry,
-} from '../models/zone.model';
+import { CAIRO_CENTER, DEFAULT_ZOOM } from '../models/zone.model';
+import type { PolygonChange, ZoneGeometry } from '../models/zone.model';
 
 interface NominatimResult {
   place_id: number;
@@ -55,6 +52,11 @@ export class ZoneMapComponent implements AfterViewInit, OnDestroy {
   /** Container element Leaflet mounts into. */
   private readonly mapEl = viewChild.required<ElementRef<HTMLDivElement>>('mapContainer');
 
+  /** Existing polygon to draw on init (edit and read-only views). */
+  readonly initialGeometry = input<ZoneGeometry | null>(null);
+  /** Hides drawing tools. The polygon is shown but cannot be edited. */
+  readonly readOnly = input(false);
+
   /** Emits the extracted GeoJSON (or null when the polygon is removed). */
   readonly polygonChanged = output<PolygonChange | null>();
 
@@ -82,7 +84,27 @@ export class ZoneMapComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.map?.remove();
+    this.destroyMap();
+  }
+
+  /** Drop Geoman listeners and the Leaflet instance so nothing outlives the view. */
+  private destroyMap(): void {
+    const map = this.map;
+    if (!map) {
+      return;
+    }
+
+    this.clearSearchMarker();
+    map.off('pm:create');
+    map.off('pm:remove');
+    if (this.currentLayer) {
+      this.currentLayer.off('pm:edit');
+      this.currentLayer.off('pm:update');
+      this.currentLayer.off('pm:dragend');
+      this.currentLayer = undefined;
+    }
+    map.remove();
+    this.map = undefined;
   }
 
   // ── Map setup ─────────────────────────────────────────────
@@ -98,63 +120,121 @@ export class ZoneMapComponent implements AfterViewInit, OnDestroy {
       attribution: '&copy; OpenStreetMap contributors',
     }).addTo(map);
 
-    // Geoman toolbar — only polygon drawing, editing and deletion.
-    map.pm.addControls({
-      position: 'topleft',
-      drawPolygon: true,
-      editMode: true,
-      removalMode: true, // "deleteLayer"
-      // Everything else explicitly off:
-      drawMarker: false,
-      drawCircleMarker: false,
-      drawPolyline: false,
-      drawRectangle: false,
-      drawCircle: false,
-      drawText: false,
-      dragMode: false,
-      cutPolygon: false,
-      rotateMode: false,
-    });
+    if (!this.readOnly()) {
+      // Geoman toolbar — only polygon drawing, editing and deletion.
+      map.pm.addControls({
+        position: 'topleft',
+        drawPolygon: true,
+        editMode: true,
+        removalMode: true, // "deleteLayer"
+        // Everything else explicitly off:
+        drawMarker: false,
+        drawCircleMarker: false,
+        drawPolyline: false,
+        drawRectangle: false,
+        drawCircle: false,
+        drawText: false,
+        dragMode: false,
+        cutPolygon: false,
+        rotateMode: false,
+      });
 
-    // A drawn polygon should snap to a clean look.
-    map.pm.setGlobalOptions({
-      allowSelfIntersection: false,
-      templineStyle: { color: '#1f7a4d' },
-      hintlineStyle: { color: '#1f7a4d', dashArray: '4,4' },
-      pathOptions: {
-        color: '#1f7a4d',
-        fillColor: '#1f7a4d',
-        fillOpacity: 0.15,
-        weight: 2,
-      },
-    });
+      // A drawn polygon should snap to a clean look.
+      map.pm.setGlobalOptions({
+        allowSelfIntersection: false,
+        continueDrawing: false,
+        templineStyle: { color: '#1f7a4d' },
+        hintlineStyle: { color: '#1f7a4d', dashArray: '4,4' },
+        pathOptions: {
+          color: '#1f7a4d',
+          fillColor: '#1f7a4d',
+          fillOpacity: 0.15,
+          weight: 2,
+        },
+      });
 
-    map.on('pm:create', (e: any) => this.onPolygonCreated(e.layer as L.Layer));
-    map.on('pm:remove', (e: any) => this.onPolygonRemoved(e.layer as L.Layer));
+      map.on('pm:create', (e: any) => this.onPolygonCreated(e.layer as L.Layer));
+      map.on('pm:remove', (e: any) => this.onPolygonRemoved(e.layer as L.Layer));
+    }
 
     this.map = map;
+
+    const existing = this.initialGeometry();
+    if (existing) {
+      this.drawGeometry(existing);
+    }
 
     // The container lives inside a flex layout; make sure Leaflet measures
     // the real size once the view has painted.
     setTimeout(() => map.invalidateSize(), 0);
   }
 
+  private drawGeometry(geometry: ZoneGeometry): void {
+    if (!this.map) {
+      return;
+    }
+
+    const ring = geometry.coordinates[0] ?? [];
+    const latLngs = ring.map(([lng, lat]) => L.latLng(lat, lng));
+    if (latLngs.length > 1) {
+      const first = latLngs[0];
+      const last = latLngs[latLngs.length - 1];
+      if (first.equals(last)) {
+        latLngs.pop();
+      }
+    }
+
+    const polygon = L.polygon(latLngs, {
+      color: '#1f7a4d',
+      fillColor: '#1f7a4d',
+      fillOpacity: 0.15,
+      weight: 2,
+    }).addTo(this.map);
+
+    this.currentLayer = polygon;
+    if (polygon.getBounds().isValid()) {
+      this.map.fitBounds(polygon.getBounds(), { padding: [40, 40], maxZoom: 15 });
+    }
+
+    if (!this.readOnly()) {
+      this.watchLayer(polygon);
+      this.enableEditing(polygon);
+      this.setDrawButtonDisabled(true);
+    }
+
+    this.extractAndEmit(polygon);
+  }
+
+  /** Show vertex handles immediately so a loaded zone is editable without the toolbar's Edit toggle. */
+  private enableEditing(polygon: L.Polygon): void {
+    polygon.pm?.enable({
+      allowSelfIntersection: false,
+      snappable: true,
+      draggable: false,
+    });
+  }
+
   // ── Geoman event handlers ─────────────────────────────────
   private onPolygonCreated(layer: L.Layer): void {
     // STRICT RULE: only one polygon allowed. Clear the previous one so the
-    // newest drawing always wins.
+    // newest drawing always wins, then leave draw mode.
     if (this.currentLayer && this.currentLayer !== layer) {
       this.map?.removeLayer(this.currentLayer);
     }
 
     this.currentLayer = layer;
+    this.map?.pm.disableDraw();
     this.setDrawButtonDisabled(true);
-
-    // Re-extract whenever the user edits vertices.
-    layer.on('pm:edit', () => this.extractAndEmit(layer));
-    layer.on('pm:dragend', () => this.extractAndEmit(layer));
-
+    this.watchLayer(layer);
     this.extractAndEmit(layer);
+  }
+
+  /** Keep zone geometry in sync while the polygon is edited or dragged. */
+  private watchLayer(layer: L.Layer): void {
+    const sync = () => this.extractAndEmit(layer);
+    layer.on('pm:edit', sync);
+    layer.on('pm:update', sync);
+    layer.on('pm:dragend', sync);
   }
 
   private onPolygonRemoved(layer: L.Layer): void {

@@ -1,0 +1,211 @@
+<div class="hub-form">
+
+  @if (missing()) {
+    <div class="hub-form__missing">
+      <i class="pi pi-exclamation-circle"></i>
+      <p>الشارع أو مركز الانطلاق غير موجود.</p>
+      <button type="button" class="hub-form__btn hub-form__btn--ghost" (click)="cancel()">
+        العودة إلى الشوارع ومراكز الانطلاق
+      </button>
+    </div>
+  } @else {
+
+    <div class="hub-form__header">
+      <button type="button" class="hub-form__back-btn" (click)="cancel()">
+        <i class="pi pi-arrow-right"></i>
+        العودة إلى الشوارع ومراكز الانطلاق
+      </button>
+      <h1 class="hub-form__title">
+        {{ hubId() ? 'تعديل الشارع أو المركز' : 'إنشاء شارع أو مركز' }}
+      </h1>
+      <p class="hub-form__subtitle">
+        حدّد الشارع أو مركز الانطلاق، المناطق الفرعية التي يوصل إليها، وحدوده على الخريطة.
+      </p>
+    </div>
+
+    <form [formGroup]="form" (ngSubmit)="save()" class="hub-form__layout">
+      <div class="hub-form__card">
+        <h2 class="hub-form__section-title">بيانات الشارع أو المركز</h2>
+
+        <div class="hub-form__field">
+          <label class="hub-form__label" for="hubName">
+            اسم الشارع أو المركز <span class="hub-form__required">*</span>
+          </label>
+          <input
+            id="hubName"
+            type="text"
+            pInputText
+            formControlName="name"
+            placeholder="مثال: شارع ١٣"
+            class="hub-form__input"
+            [ngClass]="{ 'hub-form__input--invalid': invalid('name') }"
+          />
+          @if (invalid('name')) {
+            <small class="hub-form__error">اسم الشارع أو المركز مطلوب (حرفان على الأقل).</small>
+          }
+        </div>
+
+        <div class="hub-form__field">
+          <div class="hub-form__served-heading">
+            <label class="hub-form__label" id="servedAreasLabel">
+            المناطق المخدومة <span class="hub-form__required">*</span>
+            </label>
+            <span class="hub-form__selection-count">
+              {{ selectedSubZoneCount() }} محددة
+            </span>
+          </div>
+
+          <div
+            class="hub-form__zone-tree"
+            [class.hub-form__zone-tree--invalid]="invalid('servedAreas')"
+            role="group"
+            aria-labelledby="servedAreasLabel"
+          >
+            <div class="hub-form__search">
+              <i class="pi pi-search hub-form__search-icon" aria-hidden="true"></i>
+              <input
+                type="search"
+                class="hub-form__search-input"
+                placeholder="ابحث عن منطقة..."
+                aria-label="ابحث عن منطقة"
+                autocomplete="off"
+                [value]="searchQuery()"
+                (input)="onSearchInput($event)"
+                (keydown.enter)="$event.preventDefault()"
+              />
+              @if (hasSearch()) {
+                <button
+                  type="button"
+                  class="hub-form__search-clear"
+                  (click)="clearSearch()"
+                  aria-label="مسح البحث"
+                >
+                  <i class="pi pi-times" aria-hidden="true"></i>
+                </button>
+              }
+            </div>
+
+            @for (group of filteredZoneGroups(); track group.zoneId) {
+              <section class="hub-form__zone-group">
+                <div
+                  class="hub-form__check-row hub-form__check-row--parent"
+                  [class.hub-form__check-row--disabled]="group.subZones.length === 0"
+                  (click)="toggleExpanded(group)"
+                >
+                  <button
+                    type="button"
+                    class="hub-form__chevron"
+                    [attr.aria-expanded]="isGroupOpen(group)"
+                    [attr.aria-label]="isGroupOpen(group) ? 'طي ' + group.zoneName : 'توسيع ' + group.zoneName"
+                  >
+                    <i
+                      class="pi"
+                      [class.pi-chevron-down]="isGroupOpen(group)"
+                      [class.pi-chevron-left]="!isGroupOpen(group)"
+                      aria-hidden="true"
+                    ></i>
+                  </button>
+                  <input
+                    type="checkbox"
+                    class="hub-form__checkbox"
+                    [checked]="group.selected"
+                    [indeterminate]="group.indeterminate"
+                    [disabled]="group.subZones.length === 0"
+                    (click)="$event.stopPropagation()"
+                    (change)="toggleParent(group)"
+                  />
+                  <span class="hub-form__zone-name">{{ group.zoneName }}</span>
+                  <span class="hub-form__zone-count">{{ group.subZones.length }}</span>
+                </div>
+
+                @if (isGroupOpen(group)) {
+                  @if (group.subZones.length === 0) {
+                    <p class="hub-form__no-sub-zones">لا توجد مناطق فرعية نشطة.</p>
+                  } @else {
+                    <div class="hub-form__children">
+                      @for (child of group.subZones; track child.id) {
+                        <label class="hub-form__check-row hub-form__check-row--child">
+                          <input
+                            type="checkbox"
+                            class="hub-form__checkbox"
+                            [checked]="child.selected"
+                            (change)="toggleChild(group, child)"
+                          />
+                          <span>{{ child.name }}</span>
+                        </label>
+                      }
+                    </div>
+                  }
+                }
+              </section>
+            } @empty {
+              <div class="hub-form__tree-empty">
+                <i
+                  class="pi"
+                  [class.pi-search]="hasSearch()"
+                  [class.pi-map-marker]="!hasSearch()"
+                  aria-hidden="true"
+                ></i>
+                {{ hasSearch() ? 'لا توجد مناطق مطابقة للبحث.' : 'لا توجد مناطق فرعية نشطة متاحة.' }}
+              </div>
+            }
+          </div>
+
+          @if (invalid('servedAreas')) {
+            <small class="hub-form__error">اختر منطقة فرعية واحدة على الأقل يوصل إليها هذا المركز.</small>
+          }
+        </div>
+
+        <div class="hub-form__field">
+          <label class="hub-form__label">الحالة</label>
+          <div class="hub-form__toggle-row">
+            <p-toggleswitch formControlName="isActive" inputId="hubActive" />
+            <span
+              class="hub-form__toggle-label"
+              [ngClass]="form.controls.isActive.value
+                ? 'hub-form__toggle-label--active'
+                : 'hub-form__toggle-label--inactive'"
+            >
+              {{ form.controls.isActive.value ? 'نشط' : 'غير نشط' }}
+            </span>
+          </div>
+        </div>
+
+        @if (currentPolygonGeoJSON()) {
+          <p class="hub-form__boundary">تم رسم حدود الشارع التجاري.</p>
+        }
+
+        @if (geometryError()) {
+          <div class="hub-form__notice">
+            <i class="pi pi-info-circle"></i>
+            ارسم حدود الشارع التجاري على الخريطة قبل الحفظ.
+          </div>
+        }
+
+        <div class="hub-form__actions">
+          <button type="button" class="hub-form__btn hub-form__btn--ghost" (click)="cancel()">
+            إلغاء
+          </button>
+          <button
+            type="submit"
+            class="hub-form__btn hub-form__btn--primary"
+            [disabled]="form.invalid || !currentPolygonGeoJSON()"
+          >
+            <i class="pi pi-check"></i>
+            {{ hubId() ? 'حفظ التغييرات' : 'إنشاء الشارع أو المركز' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="hub-form__map">
+        <h2 class="hub-form__map-title">حدود الشارع</h2>
+        <ctrl-hub-pin-map
+          [geometry]="initialGeometry()"
+          (geometryChange)="onGeometryChange($event)"
+        />
+      </div>
+    </form>
+
+  }
+
+</div>
