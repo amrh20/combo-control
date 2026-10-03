@@ -25,6 +25,9 @@
     <a
       [routerLink]="item.route"
       [routerLinkActive]="nested ? 'sidebar__link--child-active' : 'sidebar__link--active'"
+      [routerLinkActiveOptions]="item.exact ? exactMatch : prefixMatch"
+      [class.sidebar__link--board-active]="nested && boardDetailActive(item)"
+      [class.sidebar__link--board-rail]="!nested && boardDetailActive(item)"
       class="sidebar__link"
       [class.sidebar__link--nested]="nested"
       [title]="collapsed() ? item.label : ''"

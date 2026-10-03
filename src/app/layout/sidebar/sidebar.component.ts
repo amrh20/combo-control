@@ -9,6 +9,8 @@ interface NavLink {
   label: string;
   icon: string;
   route: string;
+  /** Exact match so a parent path does not stay active on sibling routes. */
+  exact?: boolean;
 }
 
 interface NavGroup {
@@ -21,7 +23,18 @@ interface NavGroup {
 
 type NavEntry = NavLink | NavGroup;
 
-const link = (label: string, icon: string, route: string): NavLink => ({ kind: 'link', label, icon, route });
+const link = (
+  label: string,
+  icon: string,
+  route: string,
+  options?: { exact?: boolean },
+): NavLink => ({
+  kind: 'link',
+  label,
+  icon,
+  route,
+  exact: options?.exact,
+});
 
 @Component({
   selector: 'ctrl-sidebar',
@@ -63,7 +76,17 @@ export class SidebarComponent {
       ],
     },
     link('المنتجات', 'pi-tag', '/catalog'),
-    link('الطلبات', 'pi-list', '/orders'),
+    {
+      kind: 'group',
+      id: 'orders',
+      label: 'الطلبات',
+      icon: 'pi-list',
+      children: [
+        link('الطلبات المباشرة', 'pi-bolt', '/orders', { exact: true }),
+        link('إنشاء طلب جديد', 'pi-plus', '/orders/create'),
+        link('سجل الطلبات', 'pi-history', '/orders/history'),
+      ],
+    },
     link('الكباتن', 'pi-car', '/drivers'),
     link('الماليات', 'pi-wallet', '/financials'),
     link('العملاء', 'pi-users', '/customers'),
@@ -102,6 +125,18 @@ export class SidebarComponent {
       }
       this.openGroups.update((open) => new Set([...open, ...active]));
     });
+  }
+
+  readonly exactMatch = { exact: true };
+  readonly prefixMatch = { exact: false };
+
+  /** Order detail pages stay under Live Orders, without lighting up Create or History. */
+  boardDetailActive(item: NavLink): boolean {
+    if (item.route !== '/orders') {
+      return false;
+    }
+    const path = this.currentUrl().split(/[?#]/)[0];
+    return /^\/orders\/(?!create$|history$)[^/]+$/.test(path);
   }
 
   isOpen(groupId: string): boolean {

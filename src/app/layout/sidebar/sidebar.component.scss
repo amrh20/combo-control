@@ -91,7 +91,8 @@
       color: var(--Combo-text-text-primary);
     }
 
-    &--active {
+    &--active,
+    &--board-rail {
       background-color: var(--Combo-bg-background-primary) !important;
       color: var(--Combo-text-text-oncolor-primary) !important;
 
@@ -140,7 +141,8 @@
 
   // Soft highlight, distinct from the solid parent-link active state.
   // The negative offset places this green edge over the submenu's gray rail.
-  &__link.sidebar__link--child-active {
+  &__link.sidebar__link--child-active,
+  &__link.sidebar__link--board-active {
     margin-inline-start: -18px;
     padding-inline-start: 28px;
     border-inline-start-color: var(--Combo-border-border-primary);

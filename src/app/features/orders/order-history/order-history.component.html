@@ -1,0 +1,30 @@
+<div class="mx-auto flex max-w-3xl flex-col gap-5">
+  <div>
+    <h1 class="m-0 text-[22px] font-bold leading-snug text-[var(--Combo-text-text-display)]">
+      سجل الطلبات
+    </h1>
+    <p class="m-0 mt-1 text-[13px] leading-normal text-[var(--Combo-text-text-secondary-paragraph)]">
+      أرشيف الطلبات المكتملة والملغاة. الطلبات الحية تبقى في لوحة التشغيل.
+    </p>
+  </div>
+
+  <section class="rounded-2xl border border-gray-200 bg-white px-6 py-16 text-center">
+    <span
+      class="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-500"
+      aria-hidden="true"
+    >
+      <i class="pi pi-history text-xl"></i>
+    </span>
+    <p class="m-0 text-base font-semibold text-[var(--Combo-text-text-display)]">لا توجد طلبات في السجل</p>
+    <p class="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-gray-500">
+      الطلبات المؤرشفة ستظهر هنا بعد إغلاقها من التشغيل.
+    </p>
+    <a
+      routerLink="/orders/create"
+      class="mt-6 inline-flex items-center gap-2 rounded-lg bg-[var(--Combo-bg-background-primary)] px-4 py-2.5 text-sm font-semibold text-white hover:brightness-95"
+    >
+      <i class="pi pi-plus text-xs" aria-hidden="true"></i>
+      إنشاء طلب جديد
+    </a>
+  </section>
+</div>

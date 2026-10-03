@@ -152,6 +152,20 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'orders/create',
+        loadComponent: () =>
+          import('./features/orders/create-order/create-order.component').then(
+            m => m.CreateOrderComponent,
+          ),
+      },
+      {
+        path: 'orders/history',
+        loadComponent: () =>
+          import('./features/orders/order-history/order-history.component').then(
+            m => m.OrderHistoryComponent,
+          ),
+      },
+      {
         path: 'orders/:id',
         loadComponent: () =>
           import('./features/orders/order-details/order-details.component').then(
