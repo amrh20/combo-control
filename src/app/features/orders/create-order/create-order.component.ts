@@ -19,6 +19,7 @@ import {
   LiveStatus,
   VENDORS_DATA,
   VendorProfile,
+  getEffectiveLiveStatus,
 } from '../../vendors-management/data/vendors.mock';
 
 /** One drop-off fee per order. The pin's sub-zone picks the amount. */
@@ -385,6 +386,10 @@ export class CreateOrderComponent {
     return this.vendorCarts.controls.some((cart) => cart.controls.vendorId.value === vendorId);
   }
 
+  canSelectVendor(vendor: VendorProfile): boolean {
+    return getEffectiveLiveStatus(vendor) === 'open';
+  }
+
   statusClass(status: LiveStatus): string {
     if (status === 'open') {
       return 'bg-emerald-50 text-emerald-700';
@@ -534,6 +539,9 @@ export class CreateOrderComponent {
     );
     if (index >= 0) {
       this.vendorCarts.removeAt(index);
+      return;
+    }
+    if (!this.canSelectVendor(vendor)) {
       return;
     }
     this.vendorCarts.push(this.createVendorCart(vendor.id));

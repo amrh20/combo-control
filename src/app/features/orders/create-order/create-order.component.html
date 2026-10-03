@@ -193,7 +193,7 @@
           <div class="mt-3 grid gap-3 md:grid-cols-2">
             <div>
               <label class="mb-1 block text-xs font-medium text-gray-700" for="order-subzone">
-                المنطقة الفرعية <span class="text-red-600">*</span>
+                منطقة التوصيل <span class="text-red-600">*</span>
               </label>
               <select
                 id="order-subzone"
@@ -243,13 +243,13 @@
         <section id="step-hub" class="scroll-mt-3 border-t border-gray-100 pt-2.5">
           <header class="mb-1.5 flex items-baseline justify-between gap-2">
             <p role="heading" aria-level="2" class="m-0 text-sm font-bold text-[var(--Combo-text-text-display)]">
-              المركز والمتاجر
+              تفاصيل الشراء والمتاجر
             </p>
             <p class="m-0 text-[10px] text-gray-400">اختر مركزًا واحدًا ثم المتاجر المطلوبة</p>
           </header>
 
           <label class="mb-1 block text-xs font-medium text-gray-700" for="order-hub">
-            مركز الانطلاق <span class="text-red-600">*</span>
+            نقطة التجميع (الشارع) <span class="text-red-600">*</span>
           </label>
           @if (formState().subZoneId) {
             <select
@@ -278,7 +278,7 @@
 
           <div class="mt-3">
             <div class="mb-1.5 flex items-center justify-between gap-2">
-              <p role="heading" aria-level="3" class="m-0 text-xs font-semibold text-gray-800">المتاجر داخل المركز</p>
+              <p role="heading" aria-level="3" class="m-0 text-xs font-semibold text-gray-800">المتاجر المتاحة في نقطة التجميع</p>
               @if (vendorCarts.length > 0) {
                 <span class="text-[11px] font-medium text-gray-500">{{ vendorCarts.length }} محدد</span>
               }
@@ -293,32 +293,36 @@
                 لا توجد متاجر نشطة داخل هذا المركز.
               </p>
             } @else {
-              <ul class="m-0 grid list-none grid-cols-2 gap-1.5 p-0 lg:grid-cols-4">
+              <ul class="m-0 grid list-none grid-cols-1 gap-1.5 p-0 sm:grid-cols-2 xl:grid-cols-3">
                 @for (vendor of hubVendors(); track vendor.id) {
                   <li>
                     <button
                       type="button"
-                      class="flex w-full items-center justify-between gap-1.5 rounded border px-2 py-1 text-start text-[11px] transition"
+                      class="flex w-full flex-col items-stretch gap-1 rounded border px-2.5 py-1.5 text-start shadow-none transition disabled:opacity-60"
+                      [class.cursor-pointer]="canSelectVendor(vendor)"
+                      [class.cursor-not-allowed]="!canSelectVendor(vendor)"
                       [class.border-gray-200]="!isVendorSelected(vendor.id)"
                       [class.bg-white]="!isVendorSelected(vendor.id)"
                       [style.border-color]="isVendorSelected(vendor.id) ? '#00846A' : null"
                       [style.background-color]="isVendorSelected(vendor.id) ? '#E6F8F5' : null"
+                      [disabled]="!canSelectVendor(vendor)"
                       [attr.aria-pressed]="isVendorSelected(vendor.id)"
+                      [attr.title]="canSelectVendor(vendor) ? vendor.name : 'المتجر غير متاح للطلب حالياً'"
                       (click)="toggleVendor(vendor)"
                     >
-                      <span class="min-w-0">
-                        <span class="block truncate font-semibold text-gray-900">{{ vendor.name }}</span>
-                        <span class="block text-[10px] text-gray-500">حد أدنى {{ vendor.minOrder }} ج.م</span>
-                      </span>
-                      <span class="flex shrink-0 items-center gap-1">
-                        <span
-                          class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold {{ statusClass(vendor.liveStatus) }}"
-                        >
-                          {{ statusLabels[vendor.liveStatus].labelAr }}
+                      <span class="text-xs font-semibold leading-snug text-gray-900">{{ vendor.name }}</span>
+                      <span class="flex items-center justify-between gap-2">
+                        <span class="text-[10px] text-gray-500">حد أدنى {{ vendor.minOrder }} ج.م</span>
+                        <span class="flex shrink-0 items-center gap-1">
+                          <span
+                            class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold {{ statusClass(vendor.liveStatus) }}"
+                          >
+                            {{ statusLabels[vendor.liveStatus].labelAr }}
+                          </span>
+                          @if (isVendorSelected(vendor.id)) {
+                            <i class="pi pi-check text-[10px] text-[#00846A]" aria-hidden="true"></i>
+                          }
                         </span>
-                        @if (isVendorSelected(vendor.id)) {
-                          <i class="pi pi-check text-[10px] text-[#00846A]" aria-hidden="true"></i>
-                        }
                       </span>
                     </button>
                   </li>
@@ -362,7 +366,7 @@
               @for (cart of vendorCarts.controls; track cart.controls.vendorId.value; let vi = $index) {
                 <section class="rounded-md border border-gray-200 bg-white p-2" [formGroupName]="vi">
                   <header class="mb-1.5 flex items-center justify-between gap-2">
-                    <p role="heading" aria-level="3" class="m-0 truncate text-[11px] font-bold text-gray-900">
+                    <p role="heading" aria-level="3" class="m-0 text-[11px] font-bold leading-snug text-gray-900">
                       {{ vendorName(cart.controls.vendorId.value) }}
                     </p>
                     <button
