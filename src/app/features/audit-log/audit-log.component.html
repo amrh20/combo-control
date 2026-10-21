@@ -1,0 +1,255 @@
+<div class="flex flex-col gap-6">
+  <div>
+    <h1 class="m-0 mb-1 text-[22px] font-bold leading-snug text-[var(--Combo-text-text-display)]">
+      سجل التعديلات
+    </h1>
+    <p class="m-0 text-[13px] text-[var(--Combo-text-text-secondary-paragraph)]">
+      كل إجراء على الموظفين والأدوار والكباتن والعملاء والمناطق والمراكز، من الأحدث إلى الأقدم.
+    </p>
+  </div>
+
+  <div class="flex flex-wrap items-center gap-4 rounded-xl border border-gray-100 bg-white p-4 shadow-none">
+    <label class="flex items-center gap-2">
+      <span class="whitespace-nowrap text-xs font-semibold text-gray-500">الكيان</span>
+      <select
+        class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-[13px] text-gray-800 outline-none focus:border-gray-400"
+        aria-label="تصفية حسب الكيان"
+        [value]="entityFilter()"
+        (change)="onEntityChange($event)"
+      >
+        @for (option of entityOptions; track option.value) {
+          <option [value]="option.value">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="relative min-w-[220px] flex-1">
+      <i
+        class="pi pi-search pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-gray-400"
+        aria-hidden="true"
+      ></i>
+      <input
+        type="search"
+        class="h-10 w-full rounded-lg border border-gray-200 bg-white ps-9 pe-3 text-start text-[13px] text-gray-800 outline-none placeholder:text-gray-400 focus:border-gray-400"
+        placeholder="معرّف السجل..."
+        aria-label="تصفية حسب معرّف السجل"
+        [value]="entityIdFilter()"
+        (input)="onEntityId($event)"
+      />
+    </label>
+  </div>
+
+  @if (loadError(); as message) {
+    <div
+      class="flex items-center justify-between gap-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700"
+      role="alert"
+    >
+      <span>{{ message }}</span>
+      <button
+        type="button"
+        class="cursor-pointer rounded-md border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700"
+        (click)="reload()"
+      >
+        إعادة المحاولة
+      </button>
+    </div>
+  }
+
+  <div class="rounded-xl border border-gray-100 bg-white shadow-none">
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[56rem] border-collapse text-start text-sm">
+        <thead>
+          <tr class="border-b border-gray-100 text-[13px] font-semibold text-gray-500">
+            <th class="px-4 py-3 font-semibold">الإجراء</th>
+            <th class="px-4 py-3 font-semibold">الكيان</th>
+            <th class="px-4 py-3 font-semibold">دور المنفّذ</th>
+            <th class="px-4 py-3 font-semibold">الوقت</th>
+            <th class="px-4 py-3 font-semibold">عنوان IP</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (loading() && logs().length === 0) {
+            <tr>
+              <td colspan="5" class="px-4 py-10 text-center text-sm text-gray-500">
+                جاري تحميل سجل التعديلات...
+              </td>
+            </tr>
+          } @else {
+            @for (entry of logs(); track entry.id) {
+              <tr
+                class="cursor-pointer border-b border-gray-100 last:border-b-0 hover:bg-gray-50"
+                tabindex="0"
+                (click)="openDiff(entry)"
+                (keydown.enter)="openDiff(entry)"
+              >
+                <td class="px-4 py-3">
+                  <span dir="ltr" class="inline-block font-semibold text-gray-900">{{ entry.action }}</span>
+                </td>
+                <td class="px-4 py-3">
+                  <div class="font-medium text-gray-800">{{ entityLabel(entry.entity) }}</div>
+                  @if (entry.entityId) {
+                    <div dir="ltr" class="mt-0.5 text-start text-xs text-gray-400">{{ entry.entityId }}</div>
+                  }
+                </td>
+                <td class="px-4 py-3 text-gray-700">{{ actorRoleLabel(entry.actorRole) }}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-gray-700">
+                  {{ entry.at | date: 'd MMM y, h:mm a' }}
+                </td>
+                <td class="px-4 py-3">
+                  <span dir="ltr" class="inline-block text-gray-700">{{ entry.ip || '—' }}</span>
+                </td>
+              </tr>
+            } @empty {
+              @if (!loadError()) {
+                <tr>
+                  <td colspan="5" class="px-4 py-10 text-center text-sm text-gray-500">
+                    لا توجد تعديلات مطابقة.
+                  </td>
+                </tr>
+              }
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-4 py-3">
+      <p class="m-0 text-[13px] text-gray-500">الصفحة {{ pageNumber() }}</p>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          class="inline-flex h-9 cursor-pointer items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-800 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+          [disabled]="backStack().length === 0 || loading()"
+          (click)="goBack()"
+        >
+          <i class="pi pi-chevron-right text-xs" aria-hidden="true"></i>
+          السابق
+        </button>
+        <button
+          type="button"
+          class="inline-flex h-9 cursor-pointer items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-800 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+          [disabled]="!nextCursor() || loading()"
+          (click)="goNext()"
+        >
+          التالي
+          <i class="pi pi-chevron-left text-xs" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@if (selected(); as entry) {
+  <div
+    class="fixed inset-0 z-[1100] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+    role="presentation"
+    (click)="closeOnBackdrop($event)"
+  >
+    <div
+      class="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-none"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="audit-diff-title"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="flex items-start justify-between gap-3 border-b border-gray-100 px-4 py-3">
+        <div>
+          <p
+            id="audit-diff-title"
+            role="heading"
+            aria-level="2"
+            dir="ltr"
+            class="m-0 text-start text-[15px] font-semibold leading-snug text-[var(--Combo-text-text-display)]"
+          >
+            {{ entry.action }}
+          </p>
+          <p class="m-0 mt-0.5 text-[11px] leading-snug text-gray-500">
+            {{ entityLabel(entry.entity) }}
+            @if (entry.entityId) {
+              <span dir="ltr" class="inline-block">· {{ entry.entityId }}</span>
+            }
+            · {{ actorRoleLabel(entry.actorRole) }}
+            · {{ entry.at | date: 'd MMM y, h:mm a' }}
+          </p>
+        </div>
+        <button
+          type="button"
+          class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-gray-500 hover:bg-gray-50"
+          aria-label="إغلاق"
+          (click)="closeDiff()"
+        >
+          <i class="pi pi-times" aria-hidden="true"></i>
+        </button>
+      </header>
+
+      <div class="overflow-y-auto px-4 py-3">
+        @if (snapshotsMissing()) {
+          <p class="m-0 rounded-lg bg-gray-50 px-4 py-3 text-sm text-gray-600">
+            هذا الإجراء لا يحتفظ بنسخة قبل وبعد.
+          </p>
+        } @else if (diffRows().length === 0) {
+          <p class="m-0 rounded-lg bg-gray-50 px-4 py-3 text-sm text-gray-600">
+            لا يوجد فرق بين النسختين.
+          </p>
+        } @else {
+          <div class="overflow-x-auto">
+            <table class="w-full min-w-[36rem] border-collapse text-start text-sm">
+              <thead>
+                <tr class="border-b border-gray-100 text-[13px] font-semibold text-gray-500">
+                  <th class="px-3 py-2 font-semibold">الحقل</th>
+                  <th class="px-3 py-2 font-semibold">النوع</th>
+                  <th class="px-3 py-2 font-semibold">قبل</th>
+                  <th class="px-3 py-2 font-semibold">بعد</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of diffRows(); track row.path) {
+                  <tr class="border-b border-gray-100 align-top last:border-b-0">
+                    <td class="px-3 py-2">
+                      <span dir="ltr" class="inline-block font-medium text-gray-900">{{ row.path }}</span>
+                    </td>
+                    <td class="px-3 py-2 whitespace-nowrap">
+                      <span
+                        class="inline-flex rounded-full px-2 py-0.5 text-xs font-semibold"
+                        [class.bg-emerald-50]="row.kind === 'added'"
+                        [class.text-emerald-700]="row.kind === 'added'"
+                        [class.bg-red-50]="row.kind === 'removed'"
+                        [class.text-red-700]="row.kind === 'removed'"
+                        [class.bg-amber-50]="row.kind === 'changed'"
+                        [class.text-amber-800]="row.kind === 'changed'"
+                      >
+                        {{ diffKindLabel(row.kind) }}
+                      </span>
+                    </td>
+                    <td class="px-3 py-2">
+                      <pre dir="ltr" class="m-0 max-h-40 overflow-auto whitespace-pre-wrap break-all text-start text-xs text-red-800">{{ row.beforeText || '—' }}</pre>
+                    </td>
+                    <td class="px-3 py-2">
+                      <pre dir="ltr" class="m-0 max-h-40 overflow-auto whitespace-pre-wrap break-all text-start text-xs text-emerald-800">{{ row.afterText || '—' }}</pre>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+
+        <details class="mt-4 rounded-lg border border-gray-100">
+          <summary class="cursor-pointer px-3 py-2 text-[13px] font-semibold text-gray-700">
+            JSON الكامل
+          </summary>
+          <div class="grid gap-3 border-t border-gray-100 p-3 md:grid-cols-2">
+            <div>
+              <p class="m-0 mb-1 text-xs font-semibold text-gray-500">قبل</p>
+              <pre dir="ltr" class="m-0 max-h-64 overflow-auto whitespace-pre-wrap break-all rounded-lg bg-gray-50 p-3 text-start text-xs text-gray-800">{{ formatJson(entry.before) }}</pre>
+            </div>
+            <div>
+              <p class="m-0 mb-1 text-xs font-semibold text-gray-500">بعد</p>
+              <pre dir="ltr" class="m-0 max-h-64 overflow-auto whitespace-pre-wrap break-all rounded-lg bg-gray-50 p-3 text-start text-xs text-gray-800">{{ formatJson(entry.after) }}</pre>
+            </div>
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>
+}

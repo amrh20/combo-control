@@ -1,4 +1,5 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgClass } from '@angular/common';
 import {
   AbstractControl,
@@ -8,14 +9,18 @@ import {
   Validators,
 } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { MessageService } from 'primeng/api';
 import { InputTextModule } from 'primeng/inputtext';
+import { ToastModule } from 'primeng/toast';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
+import { forkJoin, of } from 'rxjs';
+import { GeometryInvalidError, GeometryOverlapError } from '../../../core/models/geometry-error';
 import type { HubGeometry } from '../../../core/models/hub.model';
-import { normalizeZonePolygon } from '../../../core/models/zone.model';
+import { normalizeZonePolygon, type ZonePolygon } from '../../../core/models/zone.model';
 import { HubService } from '../../../core/services/hub.service';
 import { SubZoneService } from '../../../core/services/sub-zone.service';
 import { ZoneService } from '../../../core/services/zone.service';
-import { HubPinMapComponent } from '../hub-pin-map/hub-pin-map.component';
+import { MapComponent, type MapOverlay, type MapPolygonChange } from '../../../shared/components/map/map.component';
 
 interface ZoneGroup {
   zoneId: string;
@@ -42,9 +47,11 @@ function atLeastOne(control: AbstractControl): ValidationErrors | null {
     NgClass,
     ReactiveFormsModule,
     InputTextModule,
+    ToastModule,
     ToggleSwitchModule,
-    HubPinMapComponent,
+    MapComponent,
   ],
+  providers: [MessageService],
   templateUrl: './hub-form.component.html',
   styleUrl: './hub-form.component.scss',
 })
@@ -55,9 +62,26 @@ export class HubFormComponent implements OnInit {
   private readonly hubService = inject(HubService);
   private readonly zoneService = inject(ZoneService);
   private readonly subZoneService = inject(SubZoneService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly messages = inject(MessageService);
 
   readonly hubId = signal<string | null>(null);
+  readonly loading = signal(true);
+  readonly saving = signal(false);
   readonly missing = signal(false);
+  readonly loadError = signal<string | null>(null);
+  readonly overlap = signal<ZonePolygon | null>(null);
+  readonly mapOverlays = computed<MapOverlay[]>(() => {
+    const overlap = this.overlap();
+    if (!overlap) return [];
+    return [{
+      id: 'overlap',
+      geometry: overlap,
+      strokeColor: '#dc2626',
+      fillColor: '#dc2626',
+      fillOpacity: 0.35,
+    }];
+  });
   /** Polygon passed into the map once, so later edits do not redraw the layer. */
   readonly initialGeometry = signal<HubGeometry | null>(null);
   /** Latest polygon from the map, before the ring is closed for the payload. */
@@ -96,25 +120,43 @@ export class HubFormComponent implements OnInit {
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
     this.hubId.set(id);
-    if (!id) {
-      this.buildZoneGroups([]);
-      return;
-    }
 
-    const existing = this.hubService.getById(id);
-    if (!existing) {
-      this.missing.set(true);
-      return;
-    }
-
-    this.buildZoneGroups(existing.servingSubZoneIds);
-    this.initialGeometry.set(existing.geometry);
-    this.geometry.set(existing.geometry);
-    this.form.patchValue({
-      name: existing.name,
-      servedAreas: [...existing.servingSubZoneIds],
-      isActive: existing.isActive,
-    });
+    forkJoin({
+      zones: this.zoneService.getZones(),
+      subZones: this.zoneService.getSubZones(),
+      hub: id ? this.hubService.getHubById(id) : of(null),
+    })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ hub }) => {
+          if (id && !hub) {
+            this.missing.set(true);
+            this.loading.set(false);
+            return;
+          }
+          if (hub) {
+            this.buildZoneGroups(hub.servingSubZoneIds);
+            this.initialGeometry.set(hub.geometry);
+            this.geometry.set(hub.geometry);
+            this.form.patchValue({
+              name: hub.name,
+              servedAreas: [...hub.servingSubZoneIds],
+              isActive: hub.isActive,
+            });
+          } else {
+            this.buildZoneGroups([]);
+          }
+          this.loading.set(false);
+        },
+        error: () => {
+          if (id) {
+            this.missing.set(true);
+          } else {
+            this.loadError.set('تعذر تحميل المناطق.');
+          }
+          this.loading.set(false);
+        },
+      });
   }
 
   invalid(field: 'name' | 'servedAreas'): boolean {
@@ -122,8 +164,9 @@ export class HubFormComponent implements OnInit {
     return control.invalid && (control.dirty || control.touched);
   }
 
-  onGeometryChange(geometry: HubGeometry | null): void {
-    this.geometry.set(geometry);
+  onGeometryChange(change: MapPolygonChange | null): void {
+    this.geometry.set(change?.geometry ?? null);
+    this.overlap.set(null);
     if (this.currentPolygonGeoJSON()) {
       this.geometryError.set(false);
     }
@@ -213,12 +256,26 @@ export class HubFormComponent implements OnInit {
     };
 
     const id = this.hubId();
-    if (id) {
-      this.hubService.update(id, payload);
-    } else {
-      this.hubService.add(payload);
-    }
-    this.router.navigate(['/hubs']);
+    const request = id ? this.hubService.updateHub(id, payload) : this.hubService.createHub(payload);
+
+    this.saving.set(true);
+    this.overlap.set(null);
+    request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => this.router.navigate(['/hubs']),
+      error: (error: unknown) => {
+        this.saving.set(false);
+        if (error instanceof GeometryOverlapError) {
+          this.overlap.set(error.overlap);
+          return;
+        }
+        this.messages.add({
+          severity: 'error',
+          summary: 'تعذر الحفظ',
+          detail: error instanceof GeometryInvalidError ? error.message : 'تعذر حفظ الشارع أو المركز.',
+          life: 6000,
+        });
+      },
+    });
   }
 
   cancel(): void {

@@ -1,0 +1,118 @@
+<div class="flex flex-col gap-6">
+  <div>
+    <h1 class="m-0 mb-1 text-[22px] font-bold leading-snug text-[var(--Combo-text-text-display)]">
+      الأدوار والصلاحيات
+    </h1>
+    <p class="m-0 text-[13px] text-[var(--Combo-text-text-secondary-paragraph)]">
+      أدوار لوحة التحكم وما يستطيع كل دور فعله. أدوار النظام ثابتة، والأدوار المخصصة يمكن إنشاؤها وتعديل صلاحياتها.
+    </p>
+  </div>
+
+  <div class="rounded-xl border border-gray-100 bg-white p-6">
+    <div class="mb-4 flex flex-wrap items-center gap-3">
+      <label class="relative min-w-[220px] flex-1">
+        <i
+          class="pi pi-search pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-gray-400"
+          aria-hidden="true"
+        ></i>
+        <input
+          type="search"
+          class="h-10 w-full rounded-lg border border-gray-200 bg-white ps-9 pe-3 text-start text-[13px] text-gray-800 outline-none placeholder:text-gray-400 focus:border-gray-400"
+          placeholder="بحث بالاسم أو المفتاح..."
+          aria-label="بحث بالاسم أو المفتاح"
+          [value]="searchQuery()"
+          (input)="onSearch($event)"
+        />
+      </label>
+
+      <button
+        *ctrlPermission="'roles.manage'"
+        type="button"
+        class="inline-flex h-10 cursor-pointer items-center gap-2 rounded-lg border-0 bg-[var(--Combo-button-button-background-primary-default)] px-4 text-sm font-semibold text-[var(--Combo-text-text-oncolor-primary)] hover:bg-[var(--Combo-button-button-background-primary-hovered)]"
+        (click)="openCreate()"
+      >
+        <i class="pi pi-plus text-xs" aria-hidden="true"></i>
+        إضافة دور
+      </button>
+    </div>
+
+    @if (loadError(); as message) {
+      <div class="mb-4 flex items-center justify-between gap-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+        <span>{{ message }}</span>
+        <button
+          type="button"
+          class="cursor-pointer rounded-md border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700"
+          (click)="reload()"
+        >
+          إعادة المحاولة
+        </button>
+      </div>
+    }
+
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[48rem] border-collapse text-start text-sm">
+        <thead>
+          <tr class="border-b border-gray-100 text-[13px] font-semibold text-gray-500">
+            <th class="px-4 py-3 font-semibold">الاسم</th>
+            <th class="px-4 py-3 font-semibold">المفتاح</th>
+            <th class="px-4 py-3 font-semibold">الوصف</th>
+            <th class="px-4 py-3 font-semibold">النوع</th>
+            <th class="px-4 py-3 text-center font-semibold">الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (role of filteredRoles(); track role.key) {
+            <tr class="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
+              <td class="px-4 py-3 font-semibold text-gray-900">{{ roleName(role) }}</td>
+              <td class="px-4 py-3">
+                <span dir="ltr" class="inline-block text-start text-xs text-gray-500">{{ role.key }}</span>
+              </td>
+              <td class="px-4 py-3 text-gray-700">{{ roleDescription(role) }}</td>
+              <td class="px-4 py-3">
+                <span
+                  class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold"
+                  [class]="role.isSystem ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-600'"
+                >
+                  {{ role.isSystem ? 'دور نظام' : 'دور مخصص' }}
+                </span>
+              </td>
+              <td class="px-4 py-3">
+                <div *ctrlPermission="'roles.manage'" class="flex items-center justify-center">
+                  <button
+                    type="button"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-transparent text-gray-600 hover:bg-gray-50"
+                    [class.cursor-pointer]="!role.isSystem"
+                    [class.opacity-30]="role.isSystem"
+                    [class.cursor-not-allowed]="role.isSystem"
+                    [disabled]="role.isSystem"
+                    [attr.aria-label]="role.isSystem ? 'لا يمكن تعديل ' + roleName(role) : 'تعديل ' + roleName(role)"
+                    [title]="role.isSystem ? 'أدوار النظام لا تُعدَّل من هنا' : 'تعديل الصلاحيات'"
+                    (click)="openEdit(role)"
+                  >
+                    <i class="pi pi-pencil text-sm" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="px-4 py-10 text-center text-sm text-gray-500">
+                @if (loading()) {
+                  جاري تحميل الأدوار...
+                } @else if (searchQuery()) {
+                  لا توجد أدوار مطابقة للبحث.
+                } @else {
+                  لا توجد أدوار.
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@if (formOpen()) {
+  <ctrl-role-form [role]="editing()" (closed)="closeForm()" (saved)="onSaved()" />
+}

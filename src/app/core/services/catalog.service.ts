@@ -1,4 +1,7 @@
-import { Injectable, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject, signal } from '@angular/core';
+import { Observable, map } from 'rxjs';
+import { API_BASE_URL } from '../api-config';
 
 export interface Product {
   id: string;
@@ -269,4 +272,151 @@ export class CatalogService {
     }, 0);
     return `PR-${String(max + 1).padStart(3, '0')}`;
   }
+}
+
+/** Product category that belongs to one vendor. `parentId` is null for a main category. */
+export interface CatalogSection {
+  id: string;
+  name: string;
+  sortOrder: number;
+  parentId?: string | null;
+}
+
+export interface CatalogSectionPayload {
+  name: string;
+  sortOrder?: number;
+  /** Main category id, or null when this section is itself a main category. */
+  parentId?: string | null;
+}
+
+interface SectionApiRecord {
+  id?: string | null;
+  sectionId?: string | null;
+  name?: string | null;
+  sortOrder?: number | string | null;
+  parentId?: string | null;
+}
+
+const VENDORS_URL = `${API_BASE_URL}/v1/vendors`;
+
+/**
+ * Vendor catalog sections (`/v1/vendors/{vendorId}/sections`).
+ * Products are loaded through ProductService.
+ */
+@Injectable({ providedIn: 'root' })
+export class VendorCatalogService {
+  private readonly http = inject(HttpClient);
+
+  /** `GET /v1/vendors/{vendorId}/sections` */
+  getSections(vendorId: string): Observable<CatalogSection[]> {
+    return this.http.get<unknown>(this.sectionsUrl(vendorId)).pipe(
+      map((body) =>
+        unwrapSections(body)
+          .map((row, index) => toSection(row, index))
+          .filter((section): section is CatalogSection => section !== null)
+          .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, 'ar')),
+      ),
+    );
+  }
+
+  /** `POST /v1/vendors/{vendorId}/sections` */
+  createSection(vendorId: string, payload: CatalogSectionPayload): Observable<CatalogSection | null> {
+    return this.http
+      .post<unknown>(this.sectionsUrl(vendorId), toPayload(payload))
+      .pipe(map((body) => parseSection(body)));
+  }
+
+  /** `PATCH /v1/vendors/{vendorId}/sections/{sectionId}` */
+  updateSection(
+    vendorId: string,
+    sectionId: string,
+    payload: CatalogSectionPayload,
+  ): Observable<CatalogSection | null> {
+    return this.http
+      .patch<unknown>(`${this.sectionsUrl(vendorId)}/${sectionId}`, toPayload(payload))
+      .pipe(map((body) => parseSection(body)));
+  }
+
+  /** `DELETE /v1/vendors/{vendorId}/sections/{sectionId}` */
+  deleteSection(vendorId: string, sectionId: string): Observable<void> {
+    return this.http.delete<void>(`${this.sectionsUrl(vendorId)}/${sectionId}`);
+  }
+
+  private sectionsUrl(vendorId: string): string {
+    return `${VENDORS_URL}/${vendorId}/sections`;
+  }
+}
+
+function toPayload(payload: CatalogSectionPayload): CatalogSectionPayload {
+  const body: CatalogSectionPayload = { name: payload.name.trim() };
+  if (payload.sortOrder !== undefined) {
+    body.sortOrder = payload.sortOrder;
+  }
+  if ('parentId' in payload) {
+    const parentId = payload.parentId?.trim() || null;
+    body.parentId = parentId;
+  }
+  return body;
+}
+
+function unwrapSections(body: unknown): SectionApiRecord[] {
+  if (Array.isArray(body)) {
+    return body as SectionApiRecord[];
+  }
+  if (!body || typeof body !== 'object') {
+    return [];
+  }
+  const record = body as Record<string, unknown>;
+  for (const key of ['items', 'data', 'sections']) {
+    const value = record[key];
+    if (Array.isArray(value)) {
+      return value as SectionApiRecord[];
+    }
+  }
+  return [];
+}
+
+function parseSection(body: unknown): CatalogSection | null {
+  if (!body || typeof body !== 'object') {
+    return null;
+  }
+  const record = body as Record<string, unknown>;
+  const direct = toSection(record as SectionApiRecord, 0);
+  if (direct) {
+    return direct;
+  }
+  for (const key of ['section', 'data', 'item']) {
+    const nested = record[key];
+    if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
+      const section = toSection(nested as SectionApiRecord, 0);
+      if (section) {
+        return section;
+      }
+    }
+  }
+  return null;
+}
+
+function readParentId(value: unknown): string | null {
+  if (value == null) {
+    return null;
+  }
+  const id = String(value).trim();
+  return id || null;
+}
+
+function toSection(row: SectionApiRecord, index: number): CatalogSection | null {
+  const id = String(row.id ?? row.sectionId ?? '').trim();
+  const name = String(row.name ?? '').trim();
+  if (!id || !name) {
+    return null;
+  }
+  const sortOrder = Number(row.sortOrder);
+  const parentId = readParentId(row.parentId);
+  return {
+    id,
+    name,
+    sortOrder: Number.isFinite(sortOrder) ? sortOrder : index,
+    parentId,
+  };
 }

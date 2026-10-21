@@ -1,0 +1,185 @@
+<p-toast position="top-center" [baseZIndex]="1300" />
+
+<div class="drivers-list">
+
+  <div class="drivers-list__header">
+    <div class="drivers-list__header-text">
+      <h1 class="drivers-list__title">إدارة الكباتن والأسطول</h1>
+      <p class="drivers-list__subtitle">
+        متابعة توفّر الكباتن وحالة الحساب وأداء التجميع والتوصيل حسب مركز الانطلاق.
+      </p>
+    </div>
+    <button
+      *ctrlPermission="'drivers.write'"
+      type="button"
+      class="drivers-list__add-btn"
+      (click)="openAddModal()"
+    >
+      <i class="pi pi-plus"></i>
+      إضافة كابتن جديد
+    </button>
+  </div>
+
+  <div class="drivers-list__toolbar">
+    <div class="drivers-list__search-wrap">
+      <combo-input
+        inputId="captainSearch"
+        type="search"
+        icon="pi-search"
+        placeholder="ابحث بالاسم أو الهاتف أو مركز الانطلاق..."
+        [value]="searchQuery()"
+        (valueChange)="onSearchChange($event)"
+      />
+      @if (searchQuery()) {
+        <button
+          type="button"
+          class="drivers-list__search-clear"
+          title="مسح البحث"
+          (click)="clearSearch()"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      }
+    </div>
+    <span class="drivers-list__result-count">
+      {{ filteredCaptains().length }} كابتن
+    </span>
+  </div>
+
+  @if (loadError(); as message) {
+    <p class="drivers-list__field-error" role="alert">{{ message }}</p>
+  }
+
+  <div class="drivers-list__card">
+    <p-table
+      [value]="filteredCaptains()"
+      [loading]="loading()"
+      [paginator]="true"
+      [rows]="10"
+      [rowsPerPageOptions]="[10, 25]"
+      [tableStyle]="{ 'min-width': '80rem' }"
+      sortMode="single"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th pSortableColumn="id" class="drivers-list__th" style="width: 110px">
+            رقم الكابتن <p-sortIcon field="id" />
+          </th>
+          <th pSortableColumn="role" class="drivers-list__th" style="width: 150px">
+            الدور <p-sortIcon field="role" />
+          </th>
+          <th pSortableColumn="fullName" class="drivers-list__th">
+            الاسم <p-sortIcon field="fullName" />
+          </th>
+          <th class="drivers-list__th" style="width: 150px">الهاتف</th>
+          <th pSortableColumn="hubName" class="drivers-list__th">
+            مركز الانطلاق <p-sortIcon field="hubName" />
+          </th>
+          <th class="drivers-list__th" style="width: 130px">التوفّر</th>
+          <th pSortableColumn="status" class="drivers-list__th" style="width: 120px">
+            الحساب <p-sortIcon field="status" />
+          </th>
+          <th class="drivers-list__th drivers-list__th--center" style="width: 140px">
+            مفعّل
+          </th>
+          <th class="drivers-list__th drivers-list__th--center" style="width: 240px">
+            الإجراءات
+          </th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-captain>
+        <tr [class.drivers-list__row--inactive]="displayStatus(captain) === 'BLOCKED'">
+          <td>
+            <code class="drivers-list__id-pill" [title]="captain.id">{{ captain.id }}</code>
+          </td>
+          <td>
+            <span
+              class="drivers-list__badge"
+              [class]="'drivers-list__badge drivers-list__badge--role-' + roleBadge(captain.role)"
+            >
+              {{ roleLabel(captain.role) }}
+            </span>
+          </td>
+          <td>
+            <span class="drivers-list__name">{{ captain.fullName }}</span>
+          </td>
+          <td>
+            <span class="drivers-list__phone" dir="ltr">{{ captain.phone }}</span>
+          </td>
+          <td>
+            <span class="drivers-list__zone">
+              <i class="pi pi-map-marker"></i>
+              <span>{{ captain.hubName }}</span>
+            </span>
+          </td>
+          <td>
+            <span class="drivers-list__badge drivers-list__badge--available">
+              <span class="drivers-list__badge-dot"></span>
+              متاح
+            </span>
+          </td>
+          <td>
+            <span
+              class="drivers-list__badge"
+              [class]="
+                'drivers-list__badge drivers-list__badge--account-' +
+                (displayStatus(captain) === 'ACTIVE' ? 'active' : 'blocked')
+              "
+            >
+              {{ statusLabel(displayStatus(captain)) }}
+            </span>
+          </td>
+          <td class="drivers-list__td--center">
+            <p-toggleswitch
+              [ngModel]="isAccountActive(captain)"
+              (ngModelChange)="onAccountToggle(captain, $event)"
+              [disabled]="!auth.hasPermission('drivers.write') || pendingId() === captain.id"
+              [inputId]="'acct-' + captain.id"
+            />
+          </td>
+          <td class="drivers-list__td--center">
+            <div class="drivers-list__actions">
+              <button
+                *ctrlPermission="'drivers.write'"
+                type="button"
+                class="drivers-list__edit-btn"
+                title="تعديل"
+                (click)="openEditModal(captain)"
+              >
+                <i class="pi pi-pencil"></i>
+                تعديل
+              </button>
+              <a
+                [routerLink]="['/drivers', captain.id]"
+                class="drivers-list__profile-btn"
+              >
+                <i class="pi pi-user"></i>
+                عرض الملف
+              </a>
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="9" class="drivers-list__empty">
+            @if (loading()) {
+              جاري تحميل الكباتن...
+            } @else if (searchQuery()) {
+              لا يوجد كباتن مطابقون لبحثك.
+            } @else {
+              لا يوجد كباتن.
+            }
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+
+</div>
+
+@if (formOpen()) {
+  <ctrl-captain-form [captain]="editing()" (closed)="closeForm()" />
+}

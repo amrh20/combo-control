@@ -1,8 +1,12 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { forkJoin } from 'rxjs';
 import { DecimalPipe, NgClass } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
+import { PermissionDirective } from '../../core/directives/permission.directive';
+import { HubService } from '../../core/services/hub.service';
 import { ZoneService } from '../../core/services/zone.service';
 import { SubZoneService } from '../../core/services/sub-zone.service';
 import type { SubZone } from '../../core/models/sub-zone.model';
@@ -17,13 +21,17 @@ import {
 @Component({
   selector: 'ctrl-zones-management',
   standalone: true,
-  imports: [DecimalPipe, NgClass, RouterLink, TableModule, ButtonModule],
+  imports: [DecimalPipe, NgClass, PermissionDirective, RouterLink, TableModule, ButtonModule],
   templateUrl: './zones-management.component.html',
   styleUrl: './zones-management.component.scss',
 })
-export class ZonesManagementComponent {
+export class ZonesManagementComponent implements OnInit {
   private readonly zoneService = inject(ZoneService);
   private readonly subZoneService = inject(SubZoneService);
+  private readonly hubService = inject(HubService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  readonly loadError = signal<string | null>(null);
 
   readonly zones = this.zoneService.zones;
   readonly expandedIds = signal<ReadonlySet<string>>(new Set());
@@ -55,6 +63,18 @@ export class ZonesManagementComponent {
     }
     return grouped;
   });
+
+  ngOnInit(): void {
+    forkJoin({
+      zones: this.zoneService.getZones(),
+      subZones: this.zoneService.getSubZones(),
+      hubs: this.hubService.getHubs(),
+    })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        error: () => this.loadError.set('تعذر تحميل المناطق.'),
+      });
+  }
 
   subZonesOf(zoneId: string): SubZone[] {
     return this.subZonesByParent().get(zoneId) ?? [];

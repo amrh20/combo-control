@@ -1,0 +1,159 @@
+<p-toast position="top-center" [baseZIndex]="1400" />
+
+@if (open()) {
+  <div
+    class="assign-captain__overlay"
+    role="presentation"
+    (click)="close()"
+  >
+    <div
+      class="assign-captain__dialog"
+      dir="rtl"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="assign-captain-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="assign-captain__header">
+        <h2 id="assign-captain-title" class="assign-captain__title">
+          {{ taskId() ? 'إعادة تعيين الكابتن' : 'تعيين كابتن' }}
+        </h2>
+        <button
+          type="button"
+          class="assign-captain__close"
+          aria-label="إغلاق"
+          [disabled]="submitting()"
+          (click)="close()"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      @if (assignError(); as message) {
+        <p class="assign-captain__alert" role="alert">{{ message }}</p>
+      }
+
+      <div class="assign-captain__body">
+        @if (loading()) {
+          <p class="assign-captain__status-message">جاري تحميل الكباتن...</p>
+        } @else if (loadError(); as message) {
+          <div class="assign-captain__status-message">
+            <p>{{ message }}</p>
+            <button type="button" class="assign-captain__retry" (click)="retry()">
+              إعادة المحاولة
+            </button>
+          </div>
+        } @else if (captains().length === 0) {
+          <p class="assign-captain__status-message">لا يوجد كباتن لهذا الطلب.</p>
+        } @else {
+          <ul class="assign-captain__list" role="listbox" aria-label="الكباتن">
+            @for (captain of captains(); track captain.id) {
+              <li>
+                <div
+                  class="assign-captain__card"
+                  [class.assign-captain__card--expanded]="isCaptainSelected(captain.id)"
+                  [class.assign-captain__card--disabled]="!isCaptainSelectable(captain)"
+                  [class.assign-captain__card--offline]="availability(captain) === 'offline'"
+                >
+                  @if (isCaptainSelectable(captain)) {
+                    <button
+                      type="button"
+                      class="assign-captain__select"
+                      role="option"
+                      [attr.aria-selected]="isCaptainSelected(captain.id)"
+                      [attr.aria-expanded]="isCaptainSelected(captain.id)"
+                      (click)="selectCaptain(captain)"
+                    >
+                      <ng-container *ngTemplateOutlet="identity; context: { $implicit: captain }" />
+                    </button>
+
+                    @if (isCaptainSelected(captain.id)) {
+                      <div class="assign-captain__panel">
+                        @if (selectedModeLabel(captain); as modeLabel) {
+                          <p class="assign-captain__mode">{{ modeLabel }}</p>
+                        }
+                        @if (canDelegateFullTrip(captain)) {
+                          <label class="assign-captain__override">
+                            <input
+                              type="checkbox"
+                              [(ngModel)]="delegateFullTrip"
+                              [disabled]="submitting()"
+                            />
+                            <span>{{ delegateLabel(captain) }}</span>
+                          </label>
+                        }
+                        <button
+                          type="button"
+                          class="assign-captain__confirm"
+                          [disabled]="submitting()"
+                          (click)="confirmAssignment()"
+                        >
+                          <i class="pi pi-check"></i>
+                          {{ submitting() ? 'جاري التعيين...' : 'تأكيد التعيين' }}
+                        </button>
+                      </div>
+                    }
+                  } @else {
+                    <div
+                      class="assign-captain__select assign-captain__select--static"
+                      aria-disabled="true"
+                    >
+                      <ng-container *ngTemplateOutlet="identity; context: { $implicit: captain }" />
+                    </div>
+                    @if (getCaptainDisabledReason(captain); as reason) {
+                      <p class="assign-captain__reason">{{ reason }}</p>
+                    }
+                  }
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+
+      <div class="assign-captain__footer">
+        <button
+          type="button"
+          class="assign-captain__cancel"
+          [disabled]="submitting()"
+          (click)="close()"
+        >
+          إلغاء
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<ng-template #identity let-captain>
+  <span class="assign-captain__icon" aria-hidden="true">
+    <i class="pi pi-user"></i>
+  </span>
+  <span class="assign-captain__info">
+    <span class="assign-captain__name-row">
+      <span class="assign-captain__name">{{ captain.fullName }}</span>
+      <span
+        class="assign-captain__badge"
+        [class.assign-captain__badge--available]="availability(captain) === 'available'"
+        [class.assign-captain__badge--offer]="availability(captain) === 'offer'"
+        [class.assign-captain__badge--busy]="availability(captain) === 'busy'"
+        [class.assign-captain__badge--offline]="availability(captain) === 'offline'"
+      >
+        {{ availabilityLabel(captain) }}
+      </span>
+      @switch (captain.role) {
+        @case ('COLLECTOR') {
+          <span class="assign-captain__badge assign-captain__badge--role-collector">مُجمّع طلبات</span>
+        }
+        @case ('DELIVERY') {
+          <span class="assign-captain__badge assign-captain__badge--role-delivery">طيار توصيل</span>
+        }
+        @case ('BOTH') {
+          <span class="assign-captain__badge assign-captain__badge--role-collector">مُجمّع طلبات</span>
+          <span class="assign-captain__badge assign-captain__badge--role-delivery">طيار توصيل</span>
+        }
+      }
+    </span>
+    <span class="assign-captain__phone" dir="ltr">{{ captain.phone }}</span>
+  </span>
+</ng-template>

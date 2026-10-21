@@ -13,18 +13,41 @@
         <label class="catalog__vendor-label" for="vendorSelect">اختر المتجر</label>
         <p-select
           inputId="vendorSelect"
-          [options]="vendorOptions()"
-          optionLabel="label"
-          optionValue="value"
+          [options]="vendors()"
+          optionLabel="name"
+          optionValue="id"
           [ngModel]="selectedShopId()"
           (ngModelChange)="onVendorChange($event)"
+          [disabled]="vendorsLoading()"
           placeholder="اختر المتجر لعرض القائمة..."
           [showClear]="true"
+          [filter]="true"
+          filterBy="name"
+          filterPlaceholder="ابحث باسم المتجر..."
+          filterMatchMode="contains"
+          emptyFilterMessage="لا توجد متاجر مطابقة"
+          emptyMessage="لا توجد متاجر"
+          scrollHeight="280px"
+          panelStyleClass="catalog__vendor-panel"
           styleClass="catalog__vendor-select"
-        />
+        >
+          <ng-template pTemplate="item" let-vendor>
+            <ng-container
+              *ngTemplateOutlet="vendorOption; context: { $implicit: vendor, showSubtitle: true }"
+            />
+          </ng-template>
+          <ng-template pTemplate="selectedItem" let-vendor>
+            @if (vendor) {
+              <ng-container
+                *ngTemplateOutlet="vendorOption; context: { $implicit: vendor, showSubtitle: false }"
+              />
+            }
+          </ng-template>
+        </p-select>
       </div>
 
       <button
+        *ctrlPermission="'catalog.write'"
         type="button"
         class="catalog__add-btn"
         [disabled]="!selectedShopId()"
@@ -36,18 +59,37 @@
     </div>
   </div>
 
-  @if (selectedVendor(); as vendor) {
+  @if (vendorsError(); as message) {
+    <p class="catalog__alert" role="alert">{{ message }}</p>
+  }
+
+  @if (vendorsLoading()) {
+    <div class="catalog__empty">
+      <i class="pi pi-spin pi-spinner"></i>
+      <p class="catalog__empty-title">جاري تحميل المتاجر...</p>
+    </div>
+  } @else if (selectedVendor(); as vendor) {
     <div class="catalog__context">
       <div class="catalog__context-vendor">
-        <span class="catalog__context-name">{{ vendor.name }}</span>
-        <code class="catalog__context-id">{{ vendor.id }}</code>
+        <ng-container
+          *ngTemplateOutlet="vendorOption; context: { $implicit: vendor, showSubtitle: false }"
+        />
       </div>
       <span class="catalog__context-meta">
         {{ products().length }} منتج · {{ availableCount() }} متوفر
       </span>
     </div>
 
-    @if (products().length) {
+    @if (productsError(); as message) {
+      <p class="catalog__alert" role="alert">{{ message }}</p>
+    }
+
+    @if (productsLoading()) {
+      <div class="catalog__empty catalog__empty--selected">
+        <i class="pi pi-spin pi-spinner"></i>
+        <p>جاري تحميل المنتجات...</p>
+      </div>
+    } @else if (products().length) {
       <div class="catalog__grid">
         @for (product of products(); track product.id) {
           <article
@@ -55,12 +97,18 @@
             [class.catalog__card--unavailable]="!product.isAvailable"
           >
             <div class="catalog__card-media">
-              <img
-                [src]="product.imageUrl"
-                [alt]="product.name"
-                class="catalog__card-img"
-                loading="lazy"
-              />
+              @if (product.imageUrl) {
+                <img
+                  [src]="product.imageUrl"
+                  [alt]="product.name"
+                  class="catalog__card-img"
+                  loading="lazy"
+                />
+              } @else {
+                <div class="catalog__card-fallback" aria-hidden="true">
+                  <i class="pi pi-image"></i>
+                </div>
+              }
               <span
                 class="catalog__avail-badge"
                 [class.catalog__avail-badge--on]="product.isAvailable"
@@ -69,7 +117,7 @@
                 {{ product.isAvailable ? 'متوفر' : 'غير متوفر' }}
               </span>
 
-              <div class="catalog__card-actions">
+              <div *ctrlPermission="'catalog.write'" class="catalog__card-actions">
                 <button
                   type="button"
                   class="catalog__card-action catalog__card-action--edit"
@@ -80,26 +128,20 @@
                   <i class="pi pi-pencil"></i>
                   <span>تعديل</span>
                 </button>
-                <button
-                  type="button"
-                  class="catalog__card-action catalog__card-action--delete"
-                  title="حذف"
-                  aria-label="حذف المنتج"
-                  (click)="onDeleteProduct(product)"
-                >
-                  <i class="pi pi-trash"></i>
-                  <span>حذف</span>
-                </button>
               </div>
             </div>
 
             <div class="catalog__card-body">
               <div class="catalog__card-top">
                 <h2 class="catalog__card-name">{{ product.name }}</h2>
-                <span class="catalog__card-category">{{ product.category }}</span>
+                @if (sectionLabel(product); as section) {
+                  <span class="catalog__card-category">{{ section }}</span>
+                }
               </div>
 
-              <p class="catalog__card-desc">{{ product.description }}</p>
+              @if (product.description) {
+                <p class="catalog__card-desc">{{ product.description }}</p>
+              }
 
               <div class="catalog__card-footer">
                 <span class="catalog__card-price">
@@ -114,6 +156,7 @@
                   <p-toggleswitch
                     [ngModel]="product.isAvailable"
                     (ngModelChange)="onAvailabilityToggle(product, $event)"
+                    [disabled]="!auth.hasPermission('catalog.write')"
                     [inputId]="'avail-' + product.id"
                   />
                 </div>
@@ -126,7 +169,7 @@
       <div class="catalog__empty catalog__empty--selected">
         <i class="pi pi-inbox"></i>
         <p>لا توجد منتجات لهذا المتجر بعد.</p>
-        <button type="button" class="catalog__add-btn" (click)="openAddModal()">
+        <button *ctrlPermission="'catalog.write'" type="button" class="catalog__add-btn" (click)="openAddModal()">
           <i class="pi pi-plus"></i>
           إضافة منتج جديد
         </button>
@@ -138,132 +181,27 @@
       <p class="catalog__empty-title">اختر متجراً للبدء</p>
       <p class="catalog__empty-hint">
         يجب اختيار متجر من القائمة أعلاه لعرض وإدارة منتجاته.
-        يمكنك أيضاً الانتقال من صفحة المتاجر عبر «إدارة الكتالوج».
+        يمكنك أيضاً الانتقال من صفحة المتاجر عبر «تصنيفات المنتجات المتجر».
       </p>
     </div>
   }
 
 </div>
 
-@if (modalOpen()) {
-  <div
-    class="catalog__modal-overlay"
-    role="presentation"
-    (click)="closeModal()"
-  >
-    <div
-      class="catalog__modal"
-      dir="rtl"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="product-form-modal-title"
-      (click)="$event.stopPropagation()"
-    >
-      <div class="catalog__modal-header">
-        <h2 id="product-form-modal-title" class="catalog__modal-title">
-          {{ modalTitle() }}
-        </h2>
-        <button
-          type="button"
-          class="catalog__modal-close"
-          aria-label="إغلاق"
-          (click)="closeModal()"
-        >
-          <i class="pi pi-times"></i>
-        </button>
-      </div>
-
-      <form
-        class="catalog__modal-body"
-        [formGroup]="form"
-        (ngSubmit)="saveProduct()"
-      >
-        <div class="catalog__field">
-          <label class="catalog__label" for="productName">
-            اسم المنتج <span class="catalog__required">*</span>
-          </label>
-          <input
-            id="productName"
-            type="text"
-            pInputText
-            formControlName="name"
-            class="catalog__input"
-            placeholder="مثال: كبسة دجاج"
-            dir="rtl"
-          />
-          @if (form.controls.name.touched && form.controls.name.invalid) {
-            <span class="catalog__field-error">اسم المنتج مطلوب</span>
-          }
-        </div>
-
-        <div class="catalog__field">
-          <label class="catalog__label" for="productCategory">
-            الفئة <span class="catalog__required">*</span>
-          </label>
-          <input
-            id="productCategory"
-            type="text"
-            pInputText
-            formControlName="category"
-            class="catalog__input"
-            placeholder="مثال: أطباق رئيسية"
-            dir="rtl"
-          />
-          @if (form.controls.category.touched && form.controls.category.invalid) {
-            <span class="catalog__field-error">الفئة مطلوبة</span>
-          }
-        </div>
-
-        <div class="catalog__field">
-          <label class="catalog__label" for="productPrice">
-            السعر (ج.م) <span class="catalog__required">*</span>
-          </label>
-          <input
-            id="productPrice"
-            type="number"
-            pInputText
-            formControlName="price"
-            class="catalog__input"
-            placeholder="0"
-            min="0"
-            step="0.5"
-            dir="ltr"
-          />
-          @if (form.controls.price.touched && form.controls.price.invalid) {
-            <span class="catalog__field-error">أدخل سعراً صالحاً</span>
-          }
-        </div>
-
-        <div class="catalog__field">
-          <label class="catalog__label" for="productDescription">الوصف</label>
-          <input
-            id="productDescription"
-            type="text"
-            pInputText
-            formControlName="description"
-            class="catalog__input"
-            placeholder="وصف مختصر للمنتج..."
-            dir="rtl"
-          />
-        </div>
-
-        <div class="catalog__modal-footer">
-          <button
-            type="submit"
-            class="catalog__btn catalog__btn--primary"
-          >
-            <i class="pi pi-check"></i>
-            حفظ
-          </button>
-          <button
-            type="button"
-            class="catalog__btn catalog__btn--ghost"
-            (click)="closeModal()"
-          >
-            إلغاء
-          </button>
-        </div>
-      </form>
-    </div>
+<ng-template #vendorOption let-vendor let-showSubtitle="showSubtitle">
+  <div class="catalog__vendor-option">
+    <span class="catalog__vendor-avatar" aria-hidden="true">
+      @if (vendor.logoUrl) {
+        <img [src]="logoSrc(vendor.logoUrl)" alt="" />
+      } @else {
+        <i class="pi pi-shop"></i>
+      }
+    </span>
+    <span class="catalog__vendor-copy">
+      <span class="catalog__vendor-name">{{ vendor.name }}</span>
+      @if (showSubtitle && vendorSubtitle(vendor); as subtitle) {
+        <span class="catalog__vendor-subtitle">{{ subtitle }}</span>
+      }
+    </span>
   </div>
-}
+</ng-template>

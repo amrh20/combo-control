@@ -1,0 +1,159 @@
+<div
+  class="fixed inset-0 z-[1100] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+  role="presentation"
+  (click)="closeOnBackdrop($event)"
+>
+  <div
+    class="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-none"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="role-form-title"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="flex items-start justify-between gap-3 border-b border-gray-100 px-4 py-3">
+      <div>
+        <p id="role-form-title" role="heading" aria-level="2" class="m-0 text-[15px] font-semibold leading-snug text-[var(--Combo-text-text-display)]">
+          {{ creating ? 'إضافة دور' : 'تعديل صلاحيات الدور' }}
+        </p>
+        <p class="m-0 mt-0.5 text-[11px] leading-snug text-gray-500">
+          @if (creating) {
+            حدّد مفتاح الدور واسمه والصلاحيات التي يمنحها. لا يمكن منح صلاحية لا تملكها.
+          } @else {
+            المفتاح والاسم ثابتان. يمكن تعديل الصلاحيات فقط.
+          }
+        </p>
+      </div>
+      <button
+        type="button"
+        class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-gray-500 hover:bg-gray-50"
+        aria-label="إغلاق"
+        (click)="close()"
+      >
+        <i class="pi pi-times" aria-hidden="true"></i>
+      </button>
+    </header>
+
+    <form class="overflow-y-auto px-4 py-3 text-[12px]" [formGroup]="form" (ngSubmit)="save()">
+      @if (saveError(); as message) {
+        <p class="m-0 mb-3 rounded-md bg-red-50 px-3 py-2 text-[12px] text-red-700" role="alert">
+          {{ message }}
+        </p>
+      }
+      @if (blockedByMissingGrant()) {
+        <p class="m-0 mb-3 rounded-md bg-amber-50 px-3 py-2 text-[12px] text-amber-800" role="status">
+          هذا الدور يتضمن صلاحيات لا تملكها، لذلك لا يمكن حفظ التعديل.
+        </p>
+      }
+
+      <div class="grid gap-3 sm:grid-cols-2">
+        <label class="block">
+          <span class="mb-1 block text-[11px] font-medium text-gray-700">
+            المفتاح <span class="text-red-600">*</span>
+          </span>
+          <input
+            type="text"
+            formControlName="key"
+            dir="ltr"
+            class="h-8 w-full rounded-md border border-gray-200 bg-white px-2.5 text-start text-[12px] text-gray-900 outline-none placeholder:text-gray-400 focus:border-[var(--Combo-border-border-primary)] disabled:bg-gray-50 disabled:text-gray-500"
+            placeholder="OPS_LEAD"
+            autocomplete="off"
+            [class.border-red-400]="showKeyError()"
+          />
+          @if (showKeyError()) {
+            <span class="mt-1 block text-[11px] text-red-600">
+              أحرف إنجليزية كبيرة وشرطة سفلية، من 3 إلى 50 حرفاً، ويبدأ بحرف.
+            </span>
+          }
+        </label>
+
+        <label class="block">
+          <span class="mb-1 block text-[11px] font-medium text-gray-700">
+            الاسم <span class="text-red-600">*</span>
+          </span>
+          <input
+            type="text"
+            formControlName="name"
+            class="h-8 w-full rounded-md border border-gray-200 bg-white px-2.5 text-[12px] text-gray-900 outline-none placeholder:text-gray-400 focus:border-[var(--Combo-border-border-primary)] disabled:bg-gray-50 disabled:text-gray-500"
+            placeholder="قائد العمليات"
+            [class.border-red-400]="showNameError()"
+          />
+          @if (showNameError()) {
+            <span class="mt-1 block text-[11px] text-red-600">اسم الدور يجب أن يكون بين حرفين و100 حرف.</span>
+          }
+        </label>
+      </div>
+
+      <div class="mt-4">
+        <div class="mb-2 flex items-center justify-between gap-2">
+          <p class="m-0 text-[11px] font-medium text-gray-700">الصلاحيات</p>
+          <p class="m-0 text-[11px] text-gray-500">{{ selectedCount() }} محددة</p>
+        </div>
+
+        @if (permissionsError(); as message) {
+          <p class="m-0 rounded-md bg-red-50 px-3 py-2 text-[12px] text-red-700" role="alert">{{ message }}</p>
+        } @else if (permissionsLoading()) {
+          <p class="m-0 text-[12px] text-gray-500">جاري تحميل الصلاحيات...</p>
+        } @else {
+          <div class="flex flex-col gap-3">
+            @for (group of groups(); track group.id) {
+              <section class="permission-group">
+                <header class="permission-group__head">
+                  <p class="permission-group__title">{{ group.label }}</p>
+                  @if (groupGrantable(group).length > 0) {
+                    <button
+                      type="button"
+                      class="permission-group__toggle"
+                      (click)="toggleGroup(group)"
+                    >
+                      {{ groupChecked(group) ? 'إلغاء تحديد المجموعة' : 'تحديد المجموعة' }}
+                    </button>
+                  }
+                </header>
+                <ul class="permission-group__list">
+                  @for (permission of group.permissions; track permission.key) {
+                    <li>
+                      <label
+                        class="permission-row"
+                        [class.permission-row--locked]="!canGrant(permission.key)"
+                      >
+                        <input
+                          type="checkbox"
+                          class="permission-row__box"
+                          [checked]="isChecked(permission.key)"
+                          [disabled]="!canGrant(permission.key) || saving()"
+                          (change)="toggle(permission.key)"
+                        />
+                        <span class="permission-row__text">
+                          <span class="permission-row__name">{{ permissionLabel(permission) }}</span>
+                          <span dir="ltr" class="permission-row__key">{{ permission.key }}</span>
+                        </span>
+                      </label>
+                    </li>
+                  }
+                </ul>
+              </section>
+            }
+          </div>
+        }
+      </div>
+
+      <footer class="mt-4 flex items-center justify-end gap-2 border-t border-gray-100 pt-3">
+        <button
+          type="button"
+          class="inline-flex h-8 cursor-pointer items-center rounded-md border border-gray-200 bg-white px-3 text-[12px] font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="saving()"
+          (click)="close()"
+        >
+          إلغاء
+        </button>
+        <button
+          type="submit"
+          class="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border-0 bg-[var(--Combo-button-button-background-primary-default)] px-3 text-[12px] font-semibold text-[var(--Combo-text-text-oncolor-primary)] hover:bg-[var(--Combo-button-button-background-primary-hovered)] disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="saving() || permissionsLoading() || !!permissionsError() || blockedByMissingGrant()"
+        >
+          {{ saving() ? 'جارٍ الحفظ...' : (creating ? 'إنشاء الدور' : 'حفظ الصلاحيات') }}
+        </button>
+      </footer>
+    </form>
+  </div>
+</div>

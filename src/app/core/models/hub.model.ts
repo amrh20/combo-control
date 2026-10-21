@@ -14,3 +14,15 @@ export interface Hub {
 }
 
 export type HubInput = Omit<Hub, 'id'>;
+
+/** `GET` / `POST` / `PATCH /v1/hubs` body. Positions are `[lng, lat]`. */
+export interface HubApiRecord {
+  id: string;
+  name: string;
+  address: string | null;
+  isActive: boolean;
+  geometry: HubGeometry;
+  servingSubZoneIds: string[];
+  createdAt: string;
+  updatedAt: string;
+}

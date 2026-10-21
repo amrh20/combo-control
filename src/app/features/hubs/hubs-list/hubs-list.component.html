@@ -9,12 +9,17 @@
     </div>
 
     <p-button
+      *ctrlPermission="'hubs.write'"
       label="إنشاء شارع أو مركز"
       icon="pi pi-plus"
       styleClass="hubs-list__create-btn"
       [routerLink]="['/hubs/create']"
     />
   </div>
+
+  @if (loadError(); as loadError) {
+    <p role="alert">{{ loadError }}</p>
+  }
 
   <div class="hubs-list__toolbar">
     <label class="hubs-list__search">
@@ -111,6 +116,7 @@
           <td>
             <div class="hubs-list__actions">
               <a
+                *ctrlPermission="'hubs.write'"
                 [routerLink]="['/hubs/edit', hub.id]"
                 class="hubs-list__action-btn"
                 title="تعديل الشارع أو المركز"

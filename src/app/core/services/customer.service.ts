@@ -1,10 +1,9 @@
-import { Injectable, computed, signal } from '@angular/core';
-import {
-  Customer,
-  CustomerStatusFilter,
-  isCustomerStatusFilter,
-} from '../models/customer.model';
-import { matchesSearch } from '../../shared/utils/list-filter';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { Injectable, inject, signal } from '@angular/core';
+import { Observable, map } from 'rxjs';
+import { API_BASE_URL } from '../api-config';
+import { ApiErrorBody } from '../models/auth.model';
+import { Customer, CustomerPage, CustomerStatus } from '../models/customer.model';
 
 const CUSTOMERS_SEED: Customer[] = [
   {
@@ -135,42 +134,97 @@ const CUSTOMERS_SEED: Customer[] = [
   },
 ];
 
+const CUSTOMERS_URL = `${API_BASE_URL}/v1/customers`;
+const STATUSES = new Set<CustomerStatus>(['ACTIVE', 'BLOCKED']);
+
+interface CustomerApiRecord {
+  id: string;
+  phone?: string | null;
+  fullName?: string | null;
+  status?: string | null;
+  createdAt?: string | null;
+}
+
+interface CustomerApiPage {
+  items?: CustomerApiRecord[];
+  nextCursor?: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class CustomerService {
-  private readonly customersSignal = signal<Customer[]>(structuredClone(CUSTOMERS_SEED));
+  private readonly http = inject(HttpClient);
 
-  readonly customers = this.customersSignal.asReadonly();
-  readonly searchQuery = signal('');
-  readonly statusFilter = signal<CustomerStatusFilter>('ALL');
+  /**
+   * Local book for order creation. The customers screen does not read or write this list.
+   */
+  readonly customers = signal<Customer[]>(structuredClone(CUSTOMERS_SEED)).asReadonly();
 
-  readonly filteredCustomers = computed(() => {
-    const query = this.searchQuery();
-    const status = this.statusFilter();
-    return this.customersSignal().filter((customer) => {
-      const statusMatches = status === 'ALL' || customer.status === status;
-      const searchMatches = matchesSearch(query, customer.fullName, customer.phone);
-      return statusMatches && searchMatches;
-    });
-  });
+  /** `GET /v1/customers`. `search` is sent only when it has at least 2 characters. */
+  getCustomers(
+    search?: string,
+    status?: string,
+    cursor?: string,
+    limit = 100,
+  ): Observable<CustomerPage> {
+    let params = new HttpParams().set('limit', String(limit));
+    const query = search?.trim() ?? '';
+    if (query.length >= 2) {
+      params = params.set('search', query);
+    }
+    if (status === 'ACTIVE' || status === 'BLOCKED') {
+      params = params.set('status', status);
+    }
+    if (cursor) {
+      params = params.set('cursor', cursor);
+    }
 
-  setSearch(query: string): void {
-    this.searchQuery.set(query);
+    return this.http.get<CustomerApiPage>(CUSTOMERS_URL, { params }).pipe(map(toCustomerPage));
   }
 
-  setStatusFilter(value: string): void {
-    this.statusFilter.set(isCustomerStatusFilter(value) ? value : 'ALL');
+  /** `PATCH /v1/customers/{id}/status` */
+  updateCustomerStatus(id: string, status: 'BLOCKED' | 'ACTIVE'): Observable<Customer> {
+    return this.http
+      .patch<CustomerApiRecord>(`${CUSTOMERS_URL}/${id}/status`, { status })
+      .pipe(map(toCustomer));
+  }
+}
+
+export function customerErrorMessage(error: unknown, fallback: string): string {
+  if (!(error instanceof HttpErrorResponse)) {
+    return fallback;
   }
 
-  toggleStatus(id: string): void {
-    this.customersSignal.update((list) =>
-      list.map((customer) =>
-        customer.id === id
-          ? {
-              ...customer,
-              status: customer.status === 'ACTIVE' ? 'BLOCKED' : 'ACTIVE',
-            }
-          : customer,
-      ),
-    );
+  const body = error.error as ApiErrorBody | null;
+  const message = body?.error?.message?.trim() ?? '';
+  if (/[\u0600-\u06FF]/.test(message)) {
+    return message;
   }
+  if (error.status === 404) {
+    return 'العميل غير موجود.';
+  }
+  if (error.status === 400) {
+    return 'تعذر تنفيذ الطلب. راجع البحث أو الحالة وحاول مرة أخرى.';
+  }
+  return fallback;
+}
+
+function toCustomerPage(body: CustomerApiPage): CustomerPage {
+  return {
+    items: (body.items ?? []).map(toCustomer),
+    nextCursor: body.nextCursor ?? null,
+  };
+}
+
+function toCustomer(row: CustomerApiRecord): Customer {
+  return {
+    id: row.id,
+    phone: row.phone?.trim() ?? '',
+    fullName: row.fullName?.trim() ?? '',
+    status: asStatus(row.status),
+    joinedAt: row.createdAt?.slice(0, 10) ?? '',
+  };
+}
+
+function asStatus(value: string | null | undefined): CustomerStatus {
+  return value && STATUSES.has(value as CustomerStatus) ? (value as CustomerStatus) : 'ACTIVE';
 }

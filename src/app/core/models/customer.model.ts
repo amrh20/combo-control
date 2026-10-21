@@ -6,10 +6,20 @@ export interface Customer {
   id: string;
   fullName: string;
   phone: string;
-  totalOrders: number;
-  totalSpent: number;
+  /**
+   * Not returned by `GET /v1/customers`. Present on the local book used by order creation.
+   */
+  totalOrders?: number;
+  /** Not returned by `GET /v1/customers`. Present on the local book used by order creation. */
+  totalSpent?: number;
   status: CustomerStatus;
   joinedAt: string;
+}
+
+/** `GET /v1/customers` cursor page. */
+export interface CustomerPage {
+  items: Customer[];
+  nextCursor: string | null;
 }
 
 export const CUSTOMER_STATUS_FILTERS: ReadonlyArray<{

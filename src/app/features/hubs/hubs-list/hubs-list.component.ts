@@ -1,10 +1,14 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { forkJoin } from 'rxjs';
 import { NgClass } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
+import { PermissionDirective } from '../../../core/directives/permission.directive';
 import { HubService } from '../../../core/services/hub.service';
 import { SubZoneService } from '../../../core/services/sub-zone.service';
+import { ZoneService } from '../../../core/services/zone.service';
 import {
   asStatusFilter,
   matchesSearch,
@@ -16,13 +20,17 @@ import {
 @Component({
   selector: 'ctrl-hubs-list',
   standalone: true,
-  imports: [NgClass, RouterLink, TableModule, ButtonModule],
+  imports: [NgClass, PermissionDirective, RouterLink, TableModule, ButtonModule],
   templateUrl: './hubs-list.component.html',
   styleUrl: './hubs-list.component.scss',
 })
-export class HubsListComponent {
+export class HubsListComponent implements OnInit {
   private readonly hubService = inject(HubService);
   private readonly subZoneService = inject(SubZoneService);
+  private readonly zoneService = inject(ZoneService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  readonly loadError = signal<string | null>(null);
 
   readonly servedZones = this.subZoneService.subZones;
   readonly searchQuery = signal('');
@@ -55,6 +63,18 @@ export class HubsListComponent {
       this.statusFilter() !== 'all' ||
       this.servedZoneFilter() !== 'all',
   );
+
+  ngOnInit(): void {
+    forkJoin({
+      zones: this.zoneService.getZones(),
+      subZones: this.zoneService.getSubZones(),
+      hubs: this.hubService.getHubs(),
+    })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        error: () => this.loadError.set('تعذر تحميل الشوارع ومراكز الانطلاق.'),
+      });
+  }
 
   onSearchInput(event: Event): void {
     this.searchQuery.set(readControlValue(event));

@@ -1,0 +1,315 @@
+<div class="vendor-catalog">
+  <div class="vendor-catalog__header">
+    <button type="button" class="vendor-catalog__back" (click)="goBack()">
+      <i class="pi pi-arrow-right"></i>
+      كل المتاجر
+    </button>
+    <h1 class="vendor-catalog__title">
+      تصنيفات المنتجات: {{ vendorName() || '...' }}
+    </h1>
+    @if (vendorError(); as message) {
+      <p class="vendor-catalog__alert" role="alert">{{ message }}</p>
+    }
+  </div>
+
+  @if (loading()) {
+    <div class="vendor-catalog__loading">جاري تحميل المنتجات...</div>
+  } @else {
+    <div class="vendor-catalog__layout">
+      <aside class="vendor-catalog__sidebar">
+        <div class="vendor-catalog__sidebar-head">
+          <h2 class="vendor-catalog__sidebar-title">تصنيفات المنتجات</h2>
+          <button
+            *ctrlPermission="'catalog.write'"
+            type="button"
+            class="vendor-catalog__add"
+            [disabled]="saving()"
+            (click)="openCreate()"
+          >
+            <i class="pi pi-plus"></i>
+            إضافة
+          </button>
+        </div>
+
+        @if (sectionsError(); as message) {
+          <p class="vendor-catalog__alert" role="alert">{{ message }}</p>
+        }
+
+        @if (sections().length === 0) {
+          <p class="vendor-catalog__empty vendor-catalog__empty--compact">لا توجد تصنيفات بعد.</p>
+        }
+        <ul class="vendor-catalog__sections">
+          @for (section of sectionTree(); track section.id) {
+            <li class="vendor-catalog__branch">
+              <ng-container *ngTemplateOutlet="sectionRow; context: { $implicit: section }" />
+              @if (section.children.length > 0) {
+                <ul class="vendor-catalog__children">
+                  @for (child of section.children; track child.id) {
+                    <li class="vendor-catalog__child">
+                      <ng-container
+                        *ngTemplateOutlet="sectionRow; context: { $implicit: child, nested: true }"
+                      />
+                    </li>
+                  }
+                </ul>
+              }
+            </li>
+          }
+          <li class="vendor-catalog__branch vendor-catalog__uncategorized">
+            <div
+              class="vendor-catalog__section"
+              [class.vendor-catalog__section--active]="selectedSectionId() === uncategorizedSectionId"
+              (click)="selectSection(uncategorizedSectionId)"
+              (keydown.enter)="selectSection(uncategorizedSectionId)"
+              tabindex="0"
+            >
+              <i class="pi pi-box vendor-catalog__section-icon" aria-hidden="true"></i>
+              <span class="vendor-catalog__section-name">منتجات بدون تصنيف</span>
+            </div>
+          </li>
+        </ul>
+
+        <ng-template #sectionRow let-section let-nested="nested">
+            <div
+              class="vendor-catalog__section"
+              [class.vendor-catalog__section--child]="nested"
+              [class.vendor-catalog__section--active]="selectedSectionId() === section.id"
+              (click)="selectSection(section.id)"
+              (keydown.enter)="selectSection(section.id)"
+              tabindex="0"
+            >
+              <span class="vendor-catalog__section-name">{{ section.name }}</span>
+              <span class="vendor-catalog__section-actions">
+                @if (!section.parentId) {
+                  <button
+                    *ctrlPermission="'catalog.write'"
+                    type="button"
+                    class="vendor-catalog__icon-btn vendor-catalog__icon-btn--add"
+                    aria-label="إضافة تصنيف فرعي"
+                    [disabled]="saving()"
+                    (click)="onAddSubCategory(section, $event)"
+                  >
+                    <i class="pi pi-plus"></i>
+                  </button>
+                }
+                <button
+                  *ctrlPermission="'catalog.write'"
+                  type="button"
+                  class="vendor-catalog__icon-btn"
+                  aria-label="تعديل التصنيف"
+                  (click)="openEdit(section, $event)"
+                >
+                  <i class="pi pi-pencil"></i>
+                </button>
+                <button
+                  *ctrlPermission="'catalog.write'"
+                  type="button"
+                  class="vendor-catalog__icon-btn vendor-catalog__icon-btn--danger"
+                  aria-label="حذف التصنيف"
+                  [disabled]="saving()"
+                  (click)="deleteSection(section, $event)"
+                >
+                  <i class="pi pi-trash"></i>
+                </button>
+              </span>
+            </div>
+          </ng-template>
+      </aside>
+
+      <section class="vendor-catalog__main">
+        @if (selectedSectionId(); as sectionId) {
+          <div class="vendor-catalog__main-head">
+            <h2 class="vendor-catalog__main-title">{{ sectionName(sectionId) }}</h2>
+            <button
+              *ctrlPermission="'catalog.write'"
+              type="button"
+              class="vendor-catalog__add vendor-catalog__add--solid"
+              (click)="openAddProduct()"
+            >
+              <i class="pi pi-plus"></i>
+              إضافة منتج
+            </button>
+          </div>
+
+          @if (productsError(); as message) {
+            <p class="vendor-catalog__alert" role="alert">{{ message }}</p>
+          }
+
+          @if (productsLoading()) {
+            <div class="vendor-catalog__placeholder">
+              <i class="pi pi-spin pi-spinner"></i>
+              <p class="vendor-catalog__placeholder-title">جاري تحميل المنتجات...</p>
+            </div>
+          } @else if (products().length === 0) {
+            <div class="vendor-catalog__placeholder">
+              <i class="pi pi-box"></i>
+              <p class="vendor-catalog__placeholder-title">
+                {{
+                  sectionId === uncategorizedSectionId
+                    ? 'لا توجد منتجات بدون تصنيف'
+                    : 'لا توجد منتجات في هذا التصنيف'
+                }}
+              </p>
+              <button
+                *ctrlPermission="'catalog.write'"
+                type="button"
+                class="vendor-catalog__add vendor-catalog__add--solid"
+                (click)="openAddProduct()"
+              >
+                <i class="pi pi-plus"></i>
+                إضافة منتج
+              </button>
+            </div>
+          } @else {
+            <div class="vendor-catalog__products">
+              @for (product of products(); track product.id) {
+                <article
+                  class="vendor-catalog__product"
+                  [class.vendor-catalog__product--unavailable]="!product.isAvailable"
+                >
+                  @if (product.imageUrl) {
+                    <img
+                      class="vendor-catalog__product-img"
+                      [src]="product.imageUrl"
+                      [alt]="product.name"
+                      loading="lazy"
+                    />
+                  } @else {
+                    <div class="vendor-catalog__product-fallback" aria-hidden="true">
+                      <i class="pi pi-image"></i>
+                    </div>
+                  }
+                  <div class="vendor-catalog__product-body">
+                    <div class="vendor-catalog__product-top">
+                      <h3 class="vendor-catalog__product-name">{{ product.name }}</h3>
+                      <span
+                        class="vendor-catalog__product-badge"
+                        [class.vendor-catalog__product-badge--on]="product.isAvailable"
+                        [class.vendor-catalog__product-badge--off]="!product.isAvailable"
+                      >
+                        {{ product.isAvailable ? 'متوفر' : 'غير متوفر' }}
+                      </span>
+                    </div>
+                    @if (product.description) {
+                      <p class="vendor-catalog__product-desc">{{ product.description }}</p>
+                    }
+                    <div class="vendor-catalog__product-footer">
+                      <span class="vendor-catalog__product-price">
+                        {{ product.price | number: '1.0-2' }}
+                        <span class="vendor-catalog__product-currency">{{ currency }}</span>
+                      </span>
+                      <span class="vendor-catalog__product-actions">
+                        <button
+                          *ctrlPermission="'catalog.write'"
+                          type="button"
+                          class="vendor-catalog__icon-btn"
+                          aria-label="تعديل المنتج"
+                          (click)="openEditProduct(product)"
+                        >
+                          <i class="pi pi-pencil"></i>
+                        </button>
+                      </span>
+                    </div>
+                  </div>
+                </article>
+              }
+            </div>
+          }
+        } @else {
+          <div class="vendor-catalog__placeholder">
+            <i class="pi pi-th-large"></i>
+            <p class="vendor-catalog__placeholder-title">
+              قم باختيار تصنيف لعرض وإضافة المنتجات
+            </p>
+          </div>
+        }
+      </section>
+    </div>
+  }
+
+  @if (editor(); as editor) {
+    <div class="vendor-catalog__overlay" role="presentation" (click)="closeEditor()">
+      <form
+        class="vendor-catalog__dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="section-dialog-title"
+        [formGroup]="sectionForm"
+        (click)="$event.stopPropagation()"
+        (ngSubmit)="saveSection()"
+      >
+        <div class="vendor-catalog__dialog-head">
+          <h2 id="section-dialog-title" class="vendor-catalog__dialog-title">
+            @if (editor.mode === 'edit') {
+              تعديل التصنيف
+            } @else if (editor.prefilledParentId) {
+              إضافة تصنيف فرعي
+            } @else {
+              إضافة تصنيف
+            }
+          </h2>
+          <button
+            type="button"
+            class="vendor-catalog__icon-btn"
+            aria-label="إغلاق"
+            (click)="closeEditor()"
+          >
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+
+        <label class="vendor-catalog__label" for="sectionName">
+          اسم التصنيف <span class="vendor-catalog__required">*</span>
+        </label>
+        <input
+          id="sectionName"
+          type="text"
+          class="vendor-catalog__input"
+          formControlName="name"
+          dir="rtl"
+          placeholder="مثال: مشروبات"
+        />
+        @if (sectionForm.controls.name.touched && !sectionForm.controls.name.value.trim()) {
+          <span class="vendor-catalog__field-error">اسم التصنيف مطلوب</span>
+        }
+
+        <label class="vendor-catalog__label" for="sectionParent">
+          التصنيف الرئيسي (اختياري)
+        </label>
+        <select
+          id="sectionParent"
+          class="vendor-catalog__input"
+          formControlName="parentId"
+          dir="rtl"
+        >
+          <option value="">بدون تصنيف رئيسي</option>
+          @for (parent of parentOptions(); track parent.id) {
+            <option [value]="parent.id">{{ parent.name }}</option>
+          }
+        </select>
+        @if (editor.mode === 'create' && editor.prefilledParentId) {
+          <span class="vendor-catalog__hint">سيُضاف هذا التصنيف تحت التصنيف الرئيسي المحدد.</span>
+        } @else if (!canAssignParent()) {
+          <span class="vendor-catalog__hint">لا يمكن نقل تصنيف يحتوي على تصنيفات فرعية.</span>
+        }
+        @if (actionError(); as message) {
+          <p class="vendor-catalog__alert" role="alert">{{ message }}</p>
+        }
+
+        <div class="vendor-catalog__dialog-actions">
+          <button type="button" class="vendor-catalog__btn vendor-catalog__btn--ghost" (click)="closeEditor()">
+            إلغاء
+          </button>
+          <button
+            type="submit"
+            class="vendor-catalog__btn vendor-catalog__btn--primary"
+            [disabled]="saving()"
+          >
+            {{ saving() ? 'جاري الحفظ...' : 'حفظ' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+
+</div>

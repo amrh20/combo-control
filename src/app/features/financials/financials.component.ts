@@ -1,5 +1,6 @@
 import { Component, computed, signal } from '@angular/core';
 import { CurrencyPipe, DatePipe } from '@angular/common';
+import { PermissionDirective } from '../../core/directives/permission.directive';
 import {
   slicePage,
   TablePagerComponent,
@@ -91,7 +92,7 @@ const LEDGER_ENTRIES: LedgerEntry[] = [
 @Component({
   selector: 'ctrl-financials',
   standalone: true,
-  imports: [CurrencyPipe, DatePipe, TablePagerComponent],
+  imports: [CurrencyPipe, DatePipe, PermissionDirective, TablePagerComponent],
   templateUrl: './financials.component.html',
   styleUrl: './financials.component.scss',
 })

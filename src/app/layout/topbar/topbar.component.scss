@@ -72,18 +72,85 @@
     justify-content: center;
   }
 
+  &__user-wrap {
+    position: relative;
+    flex-shrink: 0;
+  }
+
   // ── User chip ─────────────────────────────────────
   &__user {
     display: flex;
     align-items: center;
     gap: 8px;
     padding: 6px 10px;
+    border: none;
+    background: none;
+    font: inherit;
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.15s;
-    flex-shrink: 0;
 
     &:hover { background-color: var(--Combo-bg-background-neutral-100); }
+  }
+
+  &__chevron {
+    font-size: 11px;
+    transition: transform 0.15s;
+
+    &--open { transform: rotate(180deg); }
+  }
+
+  &__menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    inset-inline-end: 0;
+    z-index: 30;
+    min-width: 220px;
+    padding: 6px;
+    background-color: var(--Combo-bg-background-white);
+    border: 1px solid var(--Combo-border-border-neutral-secondary);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 8%);
+  }
+
+  &__menu-identity {
+    padding: 8px 10px 10px;
+    border-bottom: 1px solid var(--Combo-border-border-neutral-secondary);
+  }
+
+  &__menu-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--Combo-text-text-display);
+  }
+
+  &__menu-email {
+    margin-top: 2px;
+    font-size: 12px;
+    color: var(--Combo-text-text-primary-paragraph);
+    text-align: end;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__logout {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 4px;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--Combo-text-text-error);
+    cursor: pointer;
+    text-align: start;
+
+    &:hover { background-color: var(--Combo-bg-background-error-25); }
   }
 
   &__avatar {

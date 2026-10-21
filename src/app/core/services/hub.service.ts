@@ -1,36 +1,19 @@
+import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Hub, HubInput } from '../models/hub.model';
-import { rectanglePolygon } from '../models/zone.model';
+import { Observable, catchError, defer, map, of, tap } from 'rxjs';
+import { API_BASE_URL } from '../api-config';
+import { GeometryInvalidError, mapGeometryError } from '../models/geometry-error';
+import { Hub, HubApiRecord, HubInput } from '../models/hub.model';
+import { ZonePolygon, normalizeZonePolygon } from '../models/zone.model';
 import { SubZoneService } from './sub-zone.service';
 
-const HUBS_SEED: Hub[] = [
-  {
-    id: 'HB-001',
-    name: 'شارع ١٣',
-    geometry: rectanglePolygon(31.2548, 29.9602, 31.2596, 29.9608),
-    servingSubZoneIds: ['SZ-001'],
-    isActive: true,
-  },
-  {
-    id: 'HB-002',
-    name: 'شارع ٩',
-    geometry: rectanglePolygon(31.2472, 29.9579, 31.252, 29.9585),
-    servingSubZoneIds: ['SZ-001', 'SZ-002'],
-    isActive: true,
-  },
-  {
-    id: 'HB-003',
-    name: 'عباس العقاد',
-    geometry: rectanglePolygon(31.3382, 30.052, 31.3394, 30.0608),
-    servingSubZoneIds: ['SZ-003'],
-    isActive: true,
-  },
-];
+const HUBS_URL = `${API_BASE_URL}/v1/hubs`;
 
 @Injectable({ providedIn: 'root' })
 export class HubService {
+  private readonly http = inject(HttpClient);
   private readonly subZones = inject(SubZoneService);
-  private readonly hubsSignal = signal<Hub[]>(structuredClone(HUBS_SEED));
+  private readonly hubsSignal = signal<Hub[]>([]);
 
   readonly hubs = this.hubsSignal.asReadonly();
 
@@ -38,6 +21,7 @@ export class HubService {
     this.hubsSignal().filter((hub) => hub.isActive),
   );
 
+  /** Reads the cache. Drivers and vendors still call this synchronously. */
   getById(id: string): Hub | null {
     return this.hubsSignal().find((hub) => hub.id === id) ?? null;
   }
@@ -54,42 +38,86 @@ export class HubService {
     return names.length > 0 ? names.join('، ') : '—';
   }
 
-  add(data: HubInput): Hub {
-    const next: Hub = {
-      id: this.nextId(),
-      name: data.name.trim(),
-      geometry: structuredClone(data.geometry),
-      servingSubZoneIds: [...data.servingSubZoneIds],
-      isActive: data.isActive,
-    };
-    this.hubsSignal.update((list) => [...list, next]);
-    return next;
-  }
-
-  update(id: string, patch: Partial<HubInput>): void {
-    this.hubsSignal.update((list) =>
-      list.map((hub) => {
-        if (hub.id !== id) {
-          return hub;
-        }
-        return {
-          ...hub,
-          ...patch,
-          ...(patch.name !== undefined ? { name: patch.name.trim() } : {}),
-          ...(patch.geometry !== undefined ? { geometry: structuredClone(patch.geometry) } : {}),
-          ...(patch.servingSubZoneIds !== undefined
-            ? { servingSubZoneIds: [...patch.servingSubZoneIds] }
-            : {}),
-        };
-      }),
+  /** `GET /v1/hubs` */
+  getHubs(): Observable<Hub[]> {
+    return this.http.get<HubApiRecord[]>(HUBS_URL).pipe(
+      map((rows) => rows.map(toHub)),
+      tap((hubs) => this.hubsSignal.set(hubs)),
     );
   }
 
-  private nextId(): string {
-    const max = this.hubsSignal().reduce((acc, hub) => {
-      const n = Number.parseInt(hub.id.replace(/\D/g, ''), 10);
-      return Number.isFinite(n) ? Math.max(acc, n) : acc;
-    }, 0);
-    return `HB-${String(max + 1).padStart(3, '0')}`;
+  /** Cached row, otherwise `GET /v1/hubs/{id}`. */
+  getHubById(id: string): Observable<Hub> {
+    const cached = this.getById(id);
+    if (cached) {
+      return of(cached);
+    }
+    return this.http.get<HubApiRecord>(`${HUBS_URL}/${id}`).pipe(
+      map(toHub),
+      tap((hub) => this.upsert(hub)),
+    );
   }
+
+  /** `POST /v1/hubs`. There is no delete; pass `isActive: false` to retire a hub. */
+  createHub(payload: HubInput): Observable<Hub> {
+    return this.write(() => this.http.post<HubApiRecord>(HUBS_URL, toHubBody(payload)));
+  }
+
+  /** `PATCH /v1/hubs/{id}` */
+  updateHub(id: string, payload: HubInput): Observable<Hub> {
+    return this.write(() => this.http.patch<HubApiRecord>(`${HUBS_URL}/${id}`, toHubBody(payload)));
+  }
+
+  private write(request: () => Observable<HubApiRecord>): Observable<Hub> {
+    return defer(request).pipe(
+      map(toHub),
+      tap((hub) => this.upsert(hub)),
+      catchError(mapGeometryError),
+    );
+  }
+
+  private upsert(hub: Hub): void {
+    this.hubsSignal.update((list) => {
+      const index = list.findIndex((item) => item.id === hub.id);
+      if (index === -1) {
+        return [...list, hub];
+      }
+      return list.map((item) => (item.id === hub.id ? hub : item));
+    });
+  }
+}
+
+function toHub(row: HubApiRecord): Hub {
+  return {
+    id: row.id,
+    name: row.name,
+    geometry: row.geometry,
+    servingSubZoneIds: row.servingSubZoneIds ?? [],
+    isActive: row.isActive,
+  };
+}
+
+function toHubBody(payload: HubInput): {
+  name: string;
+  address: null;
+  geometry: ZonePolygon;
+  servingSubZoneIds: string[];
+  isActive: boolean;
+} {
+  return {
+    name: payload.name.trim(),
+    address: null,
+    geometry: requirePolygon(payload.geometry),
+    servingSubZoneIds: [...payload.servingSubZoneIds],
+    isActive: payload.isActive,
+  };
+}
+
+/** Closed GeoJSON ring in `[lng, lat]` order. Does not swap axes. */
+function requirePolygon(geometry: ZonePolygon): ZonePolygon {
+  const normalized = normalizeZonePolygon(geometry);
+  if (!normalized) {
+    throw new GeometryInvalidError('NOT_A_POLYGON');
+  }
+  return normalized;
 }

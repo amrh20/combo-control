@@ -41,7 +41,7 @@
   </ng-template>
 
   <ul class="sidebar__nav">
-    @for (item of navItems; track item.label) {
+    @for (item of visibleNav(); track item.label) {
       @if (item.kind === 'group') {
         @if (collapsed()) {
           <!-- Icon-only rail: there is no room for an accordion, so children render flat. -->

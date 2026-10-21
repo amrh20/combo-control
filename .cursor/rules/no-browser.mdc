@@ -1,0 +1,10 @@
+---
+description: Do not open or drive the browser. The user verifies the UI.
+alwaysApply: true
+---
+
+# No browser automation
+
+Do not use browser tools in this project. Do not list, open, or select tabs, and do not navigate, click, type, snapshot, or lock the browser.
+
+Finish the code change, then say what the user should check. The user verifies the UI in the browser.

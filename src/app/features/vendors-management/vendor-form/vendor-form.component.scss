@@ -154,23 +154,15 @@
 
   &__map {
     position: relative;
-    height: 420px;
+    height: 520px;
     border-radius: 12px;
     overflow: hidden;
     border: 1px solid var(--Combo-controls-control-border);
     background: var(--Combo-bg-background-neutral-100);
-  }
 
-  &__map-canvas {
-    position: absolute;
-    inset: 0;
-    /* Leaflet positions tiles and controls on the physical axes. */
-    direction: ltr;
-    cursor: default;
-  }
-
-  &__map--ready &__map-canvas {
-    cursor: crosshair;
+    combo-map {
+      height: 100%;
+    }
   }
 
   &__map-mask {
@@ -204,7 +196,13 @@
     color: var(--Combo-text-text-success);
   }
 
+  &__field-error {
+    font-size: 12px;
+    color: var(--Combo-text-text-error);
+  }
+
   &__logo-placeholder {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -219,14 +217,61 @@
     color: var(--Combo-text-text-secondary-paragraph);
     font-family: 'Alexandria', sans-serif;
     font-size: 13px;
-    cursor: pointer;
+    cursor: default;
     overflow: hidden;
 
     .pi { font-size: 24px; color: var(--Combo-icon-icon-neutral); }
 
     &--filled {
-      padding: 0;
-      border-style: solid;
+      padding: 16px;
+    }
+  }
+
+  &__logo-remove {
+    position: absolute;
+    top: 8px;
+    inset-inline-end: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.62);
+    color: #fff;
+    cursor: pointer;
+
+    .pi { font-size: 10px; color: #fff; }
+
+    &:hover { background: rgba(0, 0, 0, 0.8); }
+  }
+
+  &__upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-family: 'Alexandria', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--Combo-text-text-primary);
+    background: var(--Combo-bg-background-card);
+    border: 1px solid var(--Combo-border-border-neutral-primary);
+    cursor: pointer;
+
+    .pi { font-size: 13px; color: inherit; }
+
+    &:hover:not(:disabled) {
+      background: var(--Combo-bg-background-primary-50);
+      border-color: var(--Combo-border-border-primary-light);
+    }
+
+    &:disabled {
+      opacity: 0.65;
+      cursor: progress;
     }
   }
 
@@ -421,6 +466,8 @@
       padding: 10px 14px !important;
       box-shadow: none !important;
       outline: none !important;
+      direction: ltr;
+      text-align: right;
 
       &:focus {
         border-color: var(--Combo-border-border-primary) !important;

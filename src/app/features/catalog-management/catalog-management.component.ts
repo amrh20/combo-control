@@ -1,87 +1,100 @@
-import { DecimalPipe } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { DecimalPipe, NgTemplateOutlet } from '@angular/common';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
-import { CatalogService, Product } from '../../core/services/catalog.service';
-import { VendorService } from '../../core/services/vendor.service';
-
-type ModalMode = 'add' | 'edit';
+import { EMPTY, catchError, expand, forkJoin, of, reduce } from 'rxjs';
+import { PermissionDirective } from '../../core/directives/permission.directive';
+import { VendorListItem } from '../../core/models/vendor.model';
+import { AuthService } from '../../core/services/auth.service';
+import { CatalogSection, VendorCatalogService } from '../../core/services/catalog.service';
+import { Product, ProductService } from '../../core/services/product.service';
+import { categoryIconSrc } from '../../core/services/vendor-category.service';
+import { vendorErrorMessage, VendorService } from '../../core/services/vendor.service';
 
 @Component({
   selector: 'ctrl-catalog-management',
   standalone: true,
   imports: [
     FormsModule,
-    ReactiveFormsModule,
     SelectModule,
     ToggleSwitchModule,
-    InputTextModule,
     DecimalPipe,
+    NgTemplateOutlet,
+    PermissionDirective,
   ],
   templateUrl: './catalog-management.component.html',
   styleUrl: './catalog-management.component.scss',
 })
 export class CatalogManagementComponent implements OnInit {
-  private readonly catalog = inject(CatalogService);
+  readonly auth = inject(AuthService);
+  private readonly productsApi = inject(ProductService);
+  private readonly catalog = inject(VendorCatalogService);
   private readonly vendorService = inject(VendorService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly fb = inject(FormBuilder);
+  private readonly destroyRef = inject(DestroyRef);
+  private loadSeq = 0;
 
   /** Ecosystem standard — Arabic abbreviation for EGP */
   readonly currency = 'ج.م';
-  readonly vendors = this.vendorService.vendors;
 
-  readonly vendorOptions = computed(() =>
-    this.vendors().map(v => ({
-      label: `${v.name} (${v.id})`,
-      value: v.id,
-    })),
-  );
-
+  readonly vendors = signal<VendorListItem[]>([]);
+  readonly sections = signal<CatalogSection[]>([]);
+  readonly products = signal<Product[]>([]);
+  readonly vendorsLoading = signal(true);
+  readonly vendorsError = signal<string | null>(null);
+  readonly productsLoading = signal(false);
+  readonly productsError = signal<string | null>(null);
   readonly selectedShopId = signal<string | null>(null);
-  readonly modalOpen = signal(false);
-  readonly modalMode = signal<ModalMode>('add');
-  private readonly editingId = signal<string | null>(null);
 
   readonly selectedVendor = computed(() => {
     const id = this.selectedShopId();
-    return id ? this.vendors().find(v => v.id === id) ?? null : null;
-  });
-
-  readonly products = computed(() => {
-    const id = this.selectedShopId();
-    if (!id) return [];
-    return this.catalog.products().filter(p => p.shopId === id);
+    return id ? this.vendors().find((vendor) => vendor.id === id) ?? null : null;
   });
 
   readonly availableCount = computed(
-    () => this.products().filter(p => p.isAvailable).length,
+    () => this.products().filter((product) => product.isAvailable).length,
   );
-
-  readonly modalTitle = computed(() =>
-    this.modalMode() === 'edit' ? 'تعديل المنتج' : 'إضافة منتج جديد',
-  );
-
-  readonly form = this.fb.nonNullable.group({
-    name: ['', Validators.required],
-    description: [''],
-    price: [0, [Validators.required, Validators.min(0)]],
-    category: ['', Validators.required],
-  });
 
   ngOnInit(): void {
-    this.route.queryParamMap.subscribe(params => {
-      const shopId = params.get('shopId');
-      const valid =
-        shopId && this.vendors().some(v => v.id === shopId) ? shopId : null;
-      if (this.selectedShopId() !== valid) {
-        this.selectedShopId.set(valid);
-      }
-    });
+    this.vendorService
+      .getVendors({ limit: 100 })
+      .pipe(
+        expand((page) =>
+          page.nextCursor ? this.vendorService.getVendors({ limit: 100, cursor: page.nextCursor }) : EMPTY,
+        ),
+        reduce((all, page) => [...all, ...page.items], [] as VendorListItem[]),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (items) => {
+          this.vendors.set(items.filter((vendor) => vendor.id.trim() && vendor.name.trim()));
+          this.vendorsLoading.set(false);
+          this.applyShopFromRoute();
+        },
+        error: (error: unknown) => {
+          this.vendorsLoading.set(false);
+          this.vendorsError.set(vendorErrorMessage(error, 'تعذر تحميل المتاجر.'));
+        },
+      });
+  }
+
+  logoSrc(url: string): string {
+    return categoryIconSrc(url);
+  }
+
+  vendorSubtitle(vendor: VendorListItem): string {
+    return vendor.hubName.trim() || vendor.categoryName.trim();
+  }
+
+  sectionLabel(product: Product): string {
+    if (product.sectionName) {
+      return product.sectionName;
+    }
+    return this.sections().find((section) => section.id === product.sectionId)?.name ?? '';
   }
 
   onVendorChange(shopId: string | null): void {
@@ -91,80 +104,88 @@ export class CatalogManagementComponent implements OnInit {
       queryParams: shopId ? { shopId } : {},
       replaceUrl: true,
     });
+    if (shopId) {
+      this.loadVendorProducts(shopId);
+      return;
+    }
+    this.loadSeq += 1;
+    this.products.set([]);
+    this.sections.set([]);
+    this.productsError.set(null);
+    this.productsLoading.set(false);
   }
 
   onAvailabilityToggle(product: Product, isAvailable: boolean): void {
-    this.catalog.setAvailability(product.id, isAvailable);
-  }
-
-  onDeleteProduct(product: Product): void {
-    if (!confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
+    const vendorId = this.selectedShopId();
+    if (!vendorId) {
       return;
     }
-    this.catalog.deleteProduct(product.id);
+    this.productsApi
+      .updateProduct(product.id, { isAvailable })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => this.loadVendorProducts(vendorId),
+        error: (error: unknown) => {
+          this.productsError.set(vendorErrorMessage(error, 'تعذر تحديث التوفر.'));
+          this.loadVendorProducts(vendorId);
+        },
+      });
   }
 
   openAddModal(): void {
-    if (!this.selectedShopId()) return;
-    this.modalMode.set('add');
-    this.editingId.set(null);
-    this.form.reset({
-      name: '',
-      description: '',
-      price: 0,
-      category: '',
-    });
-    this.modalOpen.set(true);
+    const vendorId = this.selectedShopId();
+    if (!vendorId) {
+      return;
+    }
+    void this.router.navigate(['/catalog/create'], { queryParams: { shopId: vendorId } });
   }
 
   openEditModal(product: Product): void {
-    this.modalMode.set('edit');
-    this.editingId.set(product.id);
-    this.form.reset({
-      name: product.name,
-      description: product.description,
-      price: product.price,
-      category: product.category,
-    });
-    this.modalOpen.set(true);
-  }
-
-  closeModal(): void {
-    this.modalOpen.set(false);
-    this.editingId.set(null);
-    this.form.reset();
-  }
-
-  saveProduct(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
+    const vendorId = this.selectedShopId();
+    if (!vendorId) {
       return;
     }
+    void this.router.navigate(['/catalog', product.id, 'edit'], {
+      queryParams: { shopId: vendorId },
+    });
+  }
 
-    const value = this.form.getRawValue();
-    const patch = {
-      name: value.name.trim(),
-      description: value.description.trim(),
-      price: Number(value.price),
-      category: value.category.trim(),
-    };
-
-    if (this.modalMode() === 'edit') {
-      const id = this.editingId();
-      if (id) {
-        this.catalog.updateProduct(id, patch);
-      }
-    } else {
-      const shopId = this.selectedShopId();
-      if (!shopId) return;
-      this.catalog.addProduct({
-        ...patch,
-        shopId,
-        imageUrl: 'https://placehold.co/400x300/ECEFF1/37474F?text=%D9%85%D9%86%D8%AA%D8%AC',
-        isAvailable: true,
-      });
+  private applyShopFromRoute(): void {
+    const shopId = this.route.snapshot.queryParamMap.get('shopId');
+    const valid = shopId && this.vendors().some((vendor) => vendor.id === shopId) ? shopId : null;
+    this.selectedShopId.set(valid);
+    if (valid) {
+      this.loadVendorProducts(valid);
     }
+  }
 
-    this.closeModal();
+  private loadVendorProducts(vendorId: string): void {
+    const seq = ++this.loadSeq;
+    this.productsLoading.set(true);
+    this.productsError.set(null);
+    forkJoin({
+      products: this.productsApi.getProducts({ vendorId }),
+      sections: this.catalog.getSections(vendorId).pipe(catchError(() => of([] as CatalogSection[]))),
+    })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: ({ products, sections }) => {
+          if (seq !== this.loadSeq || this.selectedShopId() !== vendorId) {
+            return;
+          }
+          this.products.set(products);
+          this.sections.set(sections);
+          this.productsLoading.set(false);
+        },
+        error: (error: unknown) => {
+          if (seq !== this.loadSeq || this.selectedShopId() !== vendorId) {
+            return;
+          }
+          this.products.set([]);
+          this.sections.set([]);
+          this.productsLoading.set(false);
+          this.productsError.set(vendorErrorMessage(error, 'تعذر تحميل المنتجات.'));
+        },
+      });
   }
 }

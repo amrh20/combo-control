@@ -1,3 +1,5 @@
+import { VendorDiscountBadge } from '../../../core/models/vendor.model';
+
 export type LiveStatus = 'open' | 'busy' | 'closed';
 export type LiveStatusOverride = 'auto' | 'force_busy' | 'force_closed';
 export type SystemStatus = 'active' | 'inactive';
@@ -42,8 +44,18 @@ export interface VendorProfile {
   /** Cart value floor. Delivery price is calculated separately. */
   minOrder: number;
   discountPercent: number;
+  /** Percent derived from `commissionBp` (`commissionBp / 100`). */
   commissionRate: number;
+  /** Integer basis points from `GET /v1/vendors/{id}`. `1500` is 15%. */
+  commissionBp: number;
+  /** Integer piastres from `GET /v1/vendors/{id}`. Divide by 100 for EGP. */
   walletBalance: number;
+  /** `null` when the vendor has no ratings yet. */
+  ratingsScore: number | null;
+  ratingsCount: number;
+  completedOrders: number;
+  /** `null` hides the storefront discount chip. */
+  discountBadge: VendorDiscountBadge | null;
   stats: VendorStats;
 }
 
@@ -73,7 +85,7 @@ const DEFAULT_SETTINGS: VendorSettings = {
   autoAccept:  false,
 };
 
-export const VENDORS_DATA: VendorProfile[] = [
+const VENDOR_DRAFTS: VendorDraft[] = [
   {
     id: 'SH-013', name: 'سوق الأمل', phone: '+20 10 1234 5678', contactPerson: 'أمل حسن',
     category: 'VC-001', hubId: 'HB-001', hubName: 'شارع ١٣',
@@ -205,6 +217,26 @@ export const VENDORS_DATA: VendorProfile[] = [
     stats: { rating: 3.9, totalReviews: 28, totalCompletedOrders: 156 },
   },
 ];
+
+type VendorDraft = Omit<
+  VendorProfile,
+  'ratingsScore' | 'ratingsCount' | 'completedOrders' | 'commissionBp' | 'discountBadge'
+>;
+
+/** Local drafts store `walletBalance` in EGP. API profiles store piastres. */
+export const VENDORS_DATA: VendorProfile[] = VENDOR_DRAFTS.map((draft) => {
+  const discountBp = Math.round(draft.discountPercent * 100);
+  return {
+    ...draft,
+    walletBalance: Math.round(draft.walletBalance * 100),
+    ratingsScore: draft.stats.rating,
+    ratingsCount: draft.stats.totalReviews,
+    completedOrders: draft.stats.totalCompletedOrders,
+    commissionBp: Math.round(draft.commissionRate * 100),
+    discountBadge:
+      draft.discountPercent > 0 ? { discountBp, label: `-${draft.discountPercent}%` } : null,
+  };
+});
 
 export function getVendorInitials(name: string): string {
   const parts = name.trim().split(/\s+/);

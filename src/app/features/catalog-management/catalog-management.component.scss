@@ -44,7 +44,67 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
-    min-width: 260px;
+    min-width: 320px;
+  }
+
+  &__vendor-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  &__vendor-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--Combo-bg-background-neutral-100);
+    border: 1px solid var(--Combo-border-border-neutral-secondary);
+    color: var(--Combo-icon-icon-neutral);
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .pi {
+      font-size: 14px;
+    }
+  }
+
+  &__vendor-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+  }
+
+  &__vendor-name {
+    font-family: 'Alexandria', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--Combo-text-text-default);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__vendor-subtitle {
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.35;
+    color: var(--Combo-text-text-secondary-paragraph);
+    white-space: normal;
   }
 
   &__vendor-label {
@@ -98,20 +158,9 @@
     gap: 10px;
   }
 
-  &__context-name {
+  &__context-vendor .catalog__vendor-name {
     font-size: 15px;
     font-weight: 700;
-    color: var(--Combo-text-text-default);
-  }
-
-  &__context-id {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--Combo-text-text-primary);
-    background: var(--Combo-bg-background-card);
-    padding: 2px 7px;
-    border-radius: 4px;
-    border: 1px solid var(--Combo-border-border-neutral-secondary);
   }
 
   &__context-meta {
@@ -157,11 +206,31 @@
     overflow: hidden;
   }
 
-  &__card-img {
+  &__card-img,
+  &__card-fallback {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
+  }
+
+  &__card-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--Combo-icon-icon-neutral);
+
+    .pi { font-size: 28px; }
+  }
+
+  &__alert {
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--Combo-text-text-error);
+    background: var(--Combo-bg-background-error-50);
+    border: 1px solid var(--Combo-border-border-error-light);
   }
 
   &__avail-badge {
@@ -355,162 +424,11 @@
     color: var(--Combo-text-text-secondary-paragraph);
   }
 
-  // ── Add / Edit Modal ────────────────────────────────────────────
-  &__modal-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 1100;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-  }
-
-  &__modal {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    max-width: 28rem;
-    max-height: calc(100dvh - 48px);
-    padding: 24px;
-    overflow: hidden;
-    background: var(--Combo-bg-background-card);
-    border: 1px solid var(--Combo-border-border-neutral-secondary);
-    border-radius: 12px;
-    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.16);
-  }
-
-  &__modal-header {
-    display: flex;
-    flex-shrink: 0;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-
-  &__modal-title {
-    margin: 0;
-    font-family: 'Alexandria', sans-serif;
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--Combo-text-text-display);
-  }
-
-  &__modal-close {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    border: none;
-    border-radius: 8px;
-    background: transparent;
-    color: var(--Combo-text-text-secondary-paragraph);
-    cursor: pointer;
-    transition: background-color 0.15s ease, color 0.15s ease;
-
-    .pi { font-size: 14px; }
-
-    &:hover {
-      background: var(--Combo-bg-background-neutral-100);
-      color: var(--Combo-text-text-display);
-    }
-  }
-
-  &__modal-body {
-    display: flex;
-    flex: 1 1 auto;
-    flex-direction: column;
-    gap: 16px;
-    min-height: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
-
-  &__field {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  &__label {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--Combo-text-text-primary-paragraph);
-  }
-
-  &__required {
-    color: var(--Combo-text-text-error);
-  }
-
-  &__field-error {
-    font-size: 12px;
-    color: var(--Combo-text-text-error);
-  }
-
-  &__input {
-    width: 100%;
-  }
-
-  &__modal-footer {
-    position: sticky;
-    bottom: 0;
-    z-index: 2;
-    display: flex;
-    flex-shrink: 0;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 10px;
-    margin-top: 8px;
-    padding-top: 16px;
-    background: var(--Combo-bg-background-card);
-    border-top: 1px solid var(--Combo-border-border-neutral-secondary);
-  }
-
-  &__btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 9px 18px;
-    border-radius: 8px;
-    font-family: 'Alexandria', sans-serif;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease;
-
-    &--primary {
-      color: var(--Combo-text-text-oncolor-primary);
-      background: var(--Combo-button-button-background-primary-default);
-      border: 1px solid var(--Combo-button-button-background-primary-default);
-
-      &:hover {
-        background: var(--Combo-button-button-background-primary-hovered);
-        border-color: var(--Combo-button-button-background-primary-hovered);
-      }
-    }
-
-    &--ghost {
-      color: var(--Combo-text-text-primary-paragraph);
-      background: transparent;
-      border: 1px solid var(--Combo-border-border-neutral-primary);
-
-      &:hover {
-        background: var(--Combo-bg-background-neutral-100);
-      }
-    }
-  }
 }
 
 :host ::ng-deep {
   .catalog__vendor-select {
-    min-width: 260px;
+    min-width: 320px;
 
     &.p-select {
       background: var(--Combo-bg-background-card) !important;
@@ -520,11 +438,60 @@
     }
 
     .p-select-label {
+      display: flex;
+      align-items: center;
       font-family: 'Alexandria', sans-serif;
       font-size: 13px;
       font-weight: 500;
       color: var(--Combo-text-text-default) !important;
+      padding: 6px 12px !important;
+    }
+
+    .p-select-label.p-placeholder {
+      color: var(--Combo-text-text-secondary-paragraph) !important;
+    }
+  }
+
+  .catalog__vendor-panel.p-select-overlay {
+    background: var(--Combo-bg-background-card) !important;
+    border: 1px solid var(--Combo-border-border-neutral-primary) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+    direction: rtl;
+    min-width: 320px;
+
+    .p-select-header {
+      padding: 8px;
+    }
+
+    .p-iconfield,
+    .p-select-filter {
+      width: 100%;
+    }
+
+    .p-select-filter {
+      font-family: 'Alexandria', sans-serif;
+      font-size: 13px;
+    }
+
+    .p-select-option {
+      font-family: 'Alexandria', sans-serif;
+      font-size: 13px;
+      color: var(--Combo-text-text-default);
       padding: 8px 12px !important;
+
+      &:hover,
+      &.p-focus,
+      &.p-select-option-selected {
+        background: var(--Combo-bg-background-primary-50) !important;
+      }
+    }
+
+    .p-select-empty-message {
+      font-family: 'Alexandria', sans-serif;
+      font-size: 13px;
+      padding: 10px 12px;
+      color: var(--Combo-text-text-secondary-paragraph);
     }
   }
 
@@ -544,8 +511,7 @@
       font-size: 18px;
     }
 
-    &__vendor-select-wrap,
-    :host ::ng-deep .catalog__vendor-select {
+    &__vendor-select-wrap {
       min-width: 100%;
       width: 100%;
     }

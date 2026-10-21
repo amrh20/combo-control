@@ -1,4 +1,5 @@
 <div class="sub-zone-list">
+  <p-toast position="top-center" />
 
   <div class="sub-zone-list__header">
     <div class="sub-zone-list__header-text">
@@ -9,12 +10,17 @@
     </div>
 
     <p-button
+      *ctrlPermission="'zones.write'"
       label="إضافة منطقة فرعية"
       icon="pi pi-plus"
       styleClass="sub-zone-list__create-btn"
       [routerLink]="['/sub-zones/create']"
     />
   </div>
+
+  @if (loadError(); as loadError) {
+    <p role="alert">{{ loadError }}</p>
+  }
 
   <div class="sub-zone-list__toolbar">
     <label class="sub-zone-list__search">
@@ -126,7 +132,7 @@
             </span>
           </td>
           <td>
-            <div class="sub-zone-list__actions">
+            <div *ctrlPermission="'zones.write'" class="sub-zone-list__actions">
               <a
                 [routerLink]="['/sub-zones/edit', subZone.id]"
                 class="sub-zone-list__action-btn"

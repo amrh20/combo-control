@@ -9,16 +9,39 @@ export interface Zone {
   id: string;
   name: string;
   polygon: ZonePolygon;
+  /** Pounds, same value as `minOrderEGP`. Templates already bind this field. */
   minOrder: number;
+  /** `minOrderPiastres / 100` from the API. */
+  minOrderEGP: number;
   isActive: boolean;
 }
 
-export type ZoneInput = Omit<Zone, 'id'>;
+/** `GET` / `POST` / `PATCH /v1/zones` body. Positions are `[lng, lat]`. */
+export interface ZoneApiRecord {
+  id: string;
+  name: string;
+  minOrderPiastres: number;
+  isActive: boolean;
+  geometry: ZonePolygon;
+  subZoneCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** 1 EGP = 100 piastres. The API stores integers. */
+export function egpToPiastres(egp: number): number {
+  return Math.round(egp * 100);
+}
+
+export function piastresToEgp(piastres: number): number {
+  return piastres / 100;
+}
+
+export type ZoneInput = Omit<Zone, 'id' | 'minOrderEGP'>;
 
 /** Payload the zone builder sends to ZoneService. Stored zones keep `polygon`. */
 export interface ZoneWritePayload {
   name: string;
-  minOrder: number;
   isActive: boolean;
   geometry: ZonePolygon;
 }

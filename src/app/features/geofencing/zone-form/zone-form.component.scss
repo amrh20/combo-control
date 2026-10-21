@@ -217,6 +217,8 @@
       border-radius: 8px !important;
       padding: 10px 14px !important;
       box-shadow: none !important;
+      direction: ltr;
+      text-align: right;
 
       &:focus {
         border-color: var(--Combo-border-border-primary) !important;

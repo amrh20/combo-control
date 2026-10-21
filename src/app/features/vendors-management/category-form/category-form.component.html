@@ -1,0 +1,202 @@
+<p-toast position="top-center" />
+
+<div
+  class="category-form__overlay"
+  role="presentation"
+  (click)="closeOnBackdrop($event)"
+>
+  <div
+    class="category-form__dialog"
+    dir="rtl"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="vendor-category-modal-title"
+    (click)="$event.stopPropagation()"
+  >
+    <div class="category-form__header">
+      <h2 id="vendor-category-modal-title" class="category-form__title">
+        {{ title }}
+      </h2>
+      <button
+        type="button"
+        class="category-form__close"
+        aria-label="إغلاق"
+        (click)="close()"
+      >
+        <i class="pi pi-times"></i>
+      </button>
+    </div>
+
+    <form class="category-form__body" [formGroup]="form" (ngSubmit)="saveCategory()">
+      <input type="hidden" formControlName="icon" />
+
+      <div
+        class="category-form__preview"
+        [style.background-color]="safeColor(form.controls.backgroundColor.value)"
+      >
+        @if (isImageIcon(form.controls.icon.value)) {
+          <img
+            class="category-form__preview-image"
+            [src]="iconSrc(form.controls.icon.value)"
+            alt=""
+          />
+        } @else {
+          <span class="category-form__preview-emoji">
+            {{ form.controls.icon.value || '🏷️' }}
+          </span>
+        }
+        <span
+          class="category-form__preview-name"
+          [style.color]="textColor(form.controls.backgroundColor.value)"
+        >
+          {{ form.controls.name.value.trim() || 'اسم الفئة' }}
+        </span>
+      </div>
+
+      <div class="category-form__field">
+        <label class="category-form__label" for="categoryName">
+          اسم الفئة <span class="category-form__required">*</span>
+        </label>
+        <input
+          id="categoryName"
+          type="text"
+          pInputText
+          formControlName="name"
+          class="category-form__input"
+          placeholder="مثال: بقالة وسوبرماركت"
+          dir="rtl"
+        />
+        @if (form.controls.name.touched && form.controls.name.invalid) {
+          <span class="category-form__field-error">اسم الفئة مطلوب</span>
+        }
+      </div>
+
+      <div class="category-form__field">
+        <span class="category-form__label" id="categoryIconLabel">
+          الأيقونة / الصورة <span class="category-form__required">*</span>
+        </span>
+        <div
+          class="category-form__upload"
+          [style.background-color]="safeColor(form.controls.backgroundColor.value)"
+        >
+          <input
+            #iconInput
+            id="categoryIcon"
+            type="file"
+            accept="image/png, image/jpeg, image/webp, image/svg+xml"
+            class="category-form__file-input"
+            aria-labelledby="categoryIconLabel"
+            (change)="onFileSelected($event)"
+          />
+          @if (isUploading()) {
+            <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+          } @else if (isImageIcon(form.controls.icon.value)) {
+            <img
+              class="category-form__upload-image"
+              [src]="iconSrc(form.controls.icon.value)"
+              alt=""
+            />
+            <button
+              type="button"
+              class="category-form__upload-remove"
+              aria-label="إزالة الصورة"
+              (click)="clearIcon(iconInput)"
+            >
+              <i class="pi pi-times"></i>
+            </button>
+          } @else {
+            <i class="pi pi-image" aria-hidden="true"></i>
+          }
+          <button
+            type="button"
+            class="category-form__upload-btn"
+            [disabled]="isUploading()"
+            (click)="iconInput.click()"
+          >
+            @if (isUploading()) {
+              <i class="pi pi-spin pi-spinner"></i>
+              جاري الرفع
+            } @else {
+              <i class="pi pi-upload"></i>
+              رفع صورة
+            }
+          </button>
+        </div>
+        @if (iconError()) {
+          <span class="category-form__field-error">{{ iconError() }}</span>
+        } @else if (form.controls.icon.touched && form.controls.icon.invalid) {
+          <span class="category-form__field-error">الصورة مطلوبة</span>
+        }
+      </div>
+
+      <div class="category-form__field">
+        <label class="category-form__label" for="categoryColor">
+          لون الخلفية <span class="category-form__required">*</span>
+        </label>
+        <div class="category-form__swatches" role="listbox" aria-label="ألوان جاهزة">
+          @for (color of swatches; track color) {
+            <button
+              type="button"
+              class="category-form__swatch"
+              [class.category-form__swatch--selected]="isSelectedSwatch(color)"
+              [style.background-color]="color"
+              [attr.aria-label]="color"
+              [attr.aria-selected]="isSelectedSwatch(color)"
+              role="option"
+              (click)="selectSwatch(color)"
+            ></button>
+          }
+        </div>
+        <div class="category-form__color-row">
+          <input
+            id="categoryColor"
+            type="text"
+            pInputText
+            formControlName="backgroundColor"
+            class="category-form__input category-form__input--color"
+            placeholder="rgba(231, 246, 238, 0.5)"
+            dir="ltr"
+            spellcheck="false"
+            autocomplete="off"
+          />
+          <span
+            class="category-form__color-preview"
+            [style.background-color]="safeColor(form.controls.backgroundColor.value)"
+            aria-hidden="true"
+          ></span>
+        </div>
+        @if (form.controls.backgroundColor.touched && form.controls.backgroundColor.invalid) {
+          <span class="category-form__field-error">أدخل لوناً بصيغة rgba(r, g, b, a)</span>
+        }
+      </div>
+
+      <div class="category-form__field">
+        <label class="category-form__label" for="categoryActive">حالة الظهور</label>
+        <div class="category-form__toggle-row">
+          <p-toggleswitch formControlName="isActive" inputId="categoryActive" />
+          <span class="category-form__toggle-hint">
+            {{ form.controls.isActive.value ? 'نشطة في تطبيق العميل' : 'مخفية من تطبيق العميل' }}
+          </span>
+        </div>
+      </div>
+
+      <div class="category-form__footer">
+        <button
+          type="submit"
+          class="category-form__btn category-form__btn--primary"
+          [disabled]="isUploading() || saving()"
+        >
+          <i class="pi pi-check"></i>
+          {{ saving() ? 'جاري الحفظ' : 'حفظ' }}
+        </button>
+        <button
+          type="button"
+          class="category-form__btn category-form__btn--ghost"
+          (click)="close()"
+        >
+          إلغاء
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

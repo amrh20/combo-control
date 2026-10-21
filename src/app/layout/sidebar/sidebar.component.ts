@@ -3,12 +3,16 @@ import { NgClass, NgTemplateOutlet } from '@angular/common';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { filter, map } from 'rxjs';
+import { Permission } from '../../core/models/permission.model';
+import { AuthService } from '../../core/services/auth.service';
 
 interface NavLink {
   kind: 'link';
   label: string;
   icon: string;
   route: string;
+  /** Grant required to see this page. */
+  permission: string;
   /** Exact match so a parent path does not stay active on sibling routes. */
   exact?: boolean;
 }
@@ -27,12 +31,14 @@ const link = (
   label: string,
   icon: string,
   route: string,
+  permission: string,
   options?: { exact?: boolean },
 ): NavLink => ({
   kind: 'link',
   label,
   icon,
   route,
+  permission,
   exact: options?.exact,
 });
 
@@ -45,6 +51,7 @@ const link = (
 })
 export class SidebarComponent {
   private readonly router = inject(Router);
+  private readonly auth = inject(AuthService);
 
   collapsed = input(false);
   mobile = input(false);
@@ -53,16 +60,16 @@ export class SidebarComponent {
   navigate = output<void>();
 
   readonly navItems: NavEntry[] = [
-    link('التحليلات', 'pi-chart-line', '/analytics'),
+    link('التحليلات', 'pi-chart-line', '/analytics', Permission.AnalyticsRead),
     {
       kind: 'group',
       id: 'zones',
       label: 'إدارة المناطق',
       icon: 'pi-map',
       children: [
-        link('المناطق', 'pi-map-marker', '/zones'),
-        link('المناطق الفرعية', 'pi-clone', '/sub-zones'),
-        link('الشوارع ومراكز الانطلاق', 'pi-sitemap', '/hubs'),
+        link('المناطق', 'pi-map-marker', '/zones', Permission.ZonesRead),
+        link('المناطق الفرعية', 'pi-clone', '/sub-zones', Permission.ZonesRead),
+        link('الشوارع ومراكز الانطلاق', 'pi-sitemap', '/hubs', Permission.ZonesRead),
       ],
     },
     {
@@ -71,26 +78,41 @@ export class SidebarComponent {
       label: 'إدارة المتاجر',
       icon: 'pi-building',
       children: [
-        link('المتاجر', 'pi-shop', '/vendors'),
-        link('فئات المتاجر', 'pi-th-large', '/vendor-categories'),
+        link('المتاجر', 'pi-shop', '/vendors', Permission.VendorsRead),
+        link('فئات المتاجر', 'pi-th-large', '/vendor-categories', Permission.VendorsRead),
       ],
     },
-    link('المنتجات', 'pi-tag', '/catalog'),
+    link('المنتجات', 'pi-tag', '/catalog', Permission.CatalogRead),
     {
       kind: 'group',
       id: 'orders',
       label: 'الطلبات',
       icon: 'pi-list',
       children: [
-        link('الطلبات المباشرة', 'pi-bolt', '/orders', { exact: true }),
-        link('إنشاء طلب جديد', 'pi-plus', '/orders/create'),
-        link('سجل الطلبات', 'pi-history', '/orders/history'),
+        link('الطلبات المباشرة', 'pi-bolt', '/orders', Permission.OrdersRead, { exact: true }),
+        link('إنشاء طلب جديد', 'pi-plus', '/orders/create', Permission.OrdersUpdate),
+        link('سجل الطلبات', 'pi-history', '/orders/history', Permission.OrdersRead),
       ],
     },
-    link('الكباتن', 'pi-car', '/drivers'),
-    link('الماليات', 'pi-wallet', '/financials'),
-    link('العملاء', 'pi-users', '/customers'),
+    link('الكباتن', 'pi-car', '/drivers', Permission.DriversRead),
+    link('الماليات', 'pi-wallet', '/financials', Permission.FinancialsRead),
+    link('الموظفين', 'pi-shield', '/staff', Permission.StaffRead),
+    link('الأدوار والصلاحيات', 'pi-key', '/roles', Permission.StaffRead),
+    link('العملاء', 'pi-users', '/customers', Permission.CustomersRead),
+    link('سجل التعديلات', 'pi-clock', '/audit-log', Permission.AuditRead),
   ];
+
+  /** Sidebar entries the signed-in user is allowed to open. */
+  readonly visibleNav = computed(() => {
+    const allow = (permission: string) => this.auth.hasPermission(permission);
+    return this.navItems.flatMap((entry): NavEntry[] => {
+      if (entry.kind === 'link') {
+        return allow(entry.permission) ? [entry] : [];
+      }
+      const children = entry.children.filter((child) => allow(child.permission));
+      return children.length === 0 ? [] : [{ ...entry, children }];
+    });
+  });
 
   private readonly currentUrl = toSignal(
     this.router.events.pipe(
@@ -106,7 +128,7 @@ export class SidebarComponent {
   readonly activeGroups = computed(() => {
     const path = this.currentUrl().split(/[?#]/)[0];
     const active = new Set<string>();
-    for (const entry of this.navItems) {
+    for (const entry of this.visibleNav()) {
       if (
         entry.kind === 'group' &&
         entry.children.some((child) => path === child.route || path.startsWith(`${child.route}/`))

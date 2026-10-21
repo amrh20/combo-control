@@ -1,22 +1,27 @@
+<p-toast position="top-center" />
+
 <div class="order-details">
 
-  @if (!order()) {
+  @if (loading() && !order()) {
+    <div class="order-details__not-found">
+      <i class="pi pi-spin pi-spinner"></i>
+      <p>جاري تحميل الطلب...</p>
+    </div>
+  } @else if (loadError(); as message) {
     <div class="order-details__not-found">
       <i class="pi pi-exclamation-circle"></i>
-      <p>الطلب غير موجود.</p>
-      <p class="order-details__not-found-hint">
-        بيانات المرحلة 0:
-        <a [routerLink]="['/orders', seedOrderId]">{{ seedOrderId }}</a>
-      </p>
-      <button type="button" class="order-details__ghost-btn" (click)="goBack()">
-        العودة إلى الطلبات
-      </button>
+      <p>{{ message }}</p>
+      <button type="button" class="order-details__ghost-btn" (click)="retry()">إعادة المحاولة</button>
+      @if (!embedded()) {
+        <button type="button" class="order-details__ghost-btn" (click)="goBack()">
+          العودة إلى الطلبات
+        </button>
+      }
     </div>
   }
 
   @if (order(); as o) {
 
-    <!-- ── Header ─────────────────────────────────────────── -->
     <div class="order-details__header">
       @if (!embedded()) {
         <button type="button" class="order-details__back" (click)="goBack()">
@@ -27,27 +32,19 @@
 
       <div class="order-details__header-main">
         <div class="order-details__header-identity">
-          <div class="order-details__icon" aria-hidden="true">
-            <i class="pi pi-inbox"></i>
-          </div>
           <div>
-            <div class="order-details__eyebrow">الطلب الأساسي · للعرض فقط</div>
-            <h1 class="order-details__title">{{ o.orderNumber }}</h1>
+            <div class="order-details__title-row">
+              <span class="order-details__eyebrow">طلب</span>
+              <h1 class="order-details__title">{{ o.orderNumber }}</h1>
+            </div>
             <div class="order-details__meta">
-              <code class="order-details__id-pill">{{ o.id }}</code>
               <span class="order-details__meta-item">
-                <i class="pi pi-calendar"></i>
-                {{ o.timestamps.placedAt | date: 'd MMM y, h:mm a' }}
+                <i class="pi pi-clock"></i>
+                {{ o.placedAt | date: 'd MMM, h:mm a' }}
               </span>
-              @if (o.zoneName) {
-                <span class="order-details__meta-item">
-                  <i class="pi pi-map-marker"></i>
-                  <span>{{ o.zoneName }}</span>
-                </span>
-              }
               <span class="order-details__meta-item">
-                <i class="pi pi-shopping-bag"></i>
-                {{ o.subOrders.length }} متاجر · {{ itemCount() }} منتجات
+                <i class="pi pi-building"></i>
+                {{ o.hub.name }}
               </span>
             </div>
           </div>
@@ -63,78 +60,165 @@
       </div>
     </div>
 
-    <!-- ── Action Bar: Dispatch ───────────────────────────── -->
-    @if (canAssignDriver()) {
-      <div class="order-details__action-bar">
-        <div class="order-details__action-bar-copy">
-          <span class="order-details__action-bar-label">الخطوة التالية</span>
-          <p class="order-details__action-bar-hint">
-            الطلب جاهز في الهب — عيّن كابتن لبدء التوصيل.
-          </p>
+    @if (priority(); as next) {
+      <section class="order-details__priority" [ngClass]="'order-details__priority--' + next.tone">
+        <div class="order-details__priority-icon" aria-hidden="true">
+          <i class="pi" [ngClass]="next.icon"></i>
         </div>
+        <div class="order-details__priority-copy">
+          <span class="order-details__priority-kicker">الأولوية الآن</span>
+          <strong>{{ next.title }}</strong>
+          <span>{{ next.hint }}</span>
+        </div>
+        <div class="order-details__priority-actions">
+          @if (canOfferCaptain()) {
+            <button
+              type="button"
+              class="order-details__primary-btn"
+              *ctrlPermission="'orders.assign'"
+              [disabled]="pending()"
+              (click)="openAssign()"
+            >
+              <i class="pi pi-user-plus"></i>
+              تعيين كابتن
+            </button>
+          } @else if (next.section === 'shops' && o.subOrders.length) {
+            <button type="button" class="order-details__focus-btn" (click)="toggleShopDetails()">
+              {{ shopDetailsOpen() ? 'إخفاء التفاصيل' : 'عرض التفاصيل' }}
+              <i class="pi" [class.pi-chevron-up]="shopDetailsOpen()" [class.pi-chevron-down]="!shopDetailsOpen()"></i>
+            </button>
+          } @else if (activeSection() !== next.section) {
+            <button type="button" class="order-details__focus-btn" (click)="showSection(next.section)">
+              عرض القسم
+              <i class="pi pi-arrow-left"></i>
+            </button>
+          }
+          @if (canCancelOrder() && !showCancel()) {
+            <button
+              type="button"
+              class="order-details__quiet-danger-btn"
+              *ctrlPermission="'orders.cancel'"
+              [disabled]="pending()"
+              (click)="openCancel()"
+            >
+              <i class="pi pi-times-circle"></i>
+              إلغاء
+            </button>
+          }
+        </div>
+      </section>
+    }
 
-        <div class="order-details__action-bar-controls">
-          <button
-            type="button"
-            class="order-details__primary-btn"
-            (click)="openDriverModal()"
-          >
-            <i class="pi pi-user-plus"></i>
-            تعيين كابتن
+    @if (showCancel()) {
+      <div class="order-details__cancel-form" *ctrlPermission="'orders.cancel'">
+        <div class="order-details__inline-edit">
+          <div class="order-details__inline-field order-details__inline-field--grow">
+            <label class="order-details__inline-label" for="cancel-reason">سبب الإلغاء</label>
+            <input
+              id="cancel-reason"
+              class="order-details__inline-input order-details__inline-input--text"
+              maxlength="300"
+              [(ngModel)]="cancelReason"
+              placeholder="سبب الإلغاء"
+            />
+          </div>
+          <label class="order-details__check">
+            <input type="checkbox" [(ngModel)]="chargeFee" [disabled]="pending()" />
+            <span>احتساب رسوم الإلغاء</span>
+          </label>
+          <button type="button" class="order-details__danger-btn" [disabled]="pending()" (click)="confirmCancel()">
+            تأكيد الإلغاء
+          </button>
+          <button type="button" class="order-details__cancel-btn" [disabled]="pending()" (click)="closeCancel()">
+            رجوع
           </button>
         </div>
       </div>
     }
 
-    <!-- ── Driver Info (after assignment) ─────────────────── -->
-    @if (hasAssignedDriver()) {
-      <section class="order-details__card order-details__card--driver">
+    <div class="order-details__snapshot" aria-label="ملخص الطلب">
+      <div class="order-details__snapshot-item">
+        <span>الإجمالي</span>
+        <strong>{{ displayTotal() | number: '1.0-2' }} {{ currency }}</strong>
+      </div>
+      <div class="order-details__snapshot-item">
+        <span>المتاجر والمنتجات</span>
+        <strong>{{ o.subOrders.length }} متاجر · {{ itemCount() }} منتجات</strong>
+      </div>
+      <div class="order-details__snapshot-item">
+        <span>العميل</span>
+        <strong>{{ o.customer.name }}</strong>
+      </div>
+      <div class="order-details__snapshot-item">
+        <span>المنطقة</span>
+        <strong>{{ o.deliveryAddress.area }}</strong>
+      </div>
+    </div>
+
+    <nav class="order-details__tabs" aria-label="أقسام الطلب">
+      <button type="button" [class.is-active]="activeSection() === 'shops'" (click)="showSection('shops')">
+        <i class="pi pi-shopping-cart"></i>
+        المتاجر
+        <span>{{ o.subOrders.length }}</span>
+      </button>
+      <button type="button" [class.is-active]="activeSection() === 'delivery'" (click)="showSection('delivery')">
+        <i class="pi pi-map-marker"></i>
+        العميل والتوصيل
+      </button>
+      <button type="button" [class.is-active]="activeSection() === 'trips'" (click)="showSection('trips')">
+        <i class="pi pi-car"></i>
+        الرحلات
+        <span>{{ o.trips.length }}</span>
+      </button>
+      <button type="button" [class.is-active]="activeSection() === 'finance'" (click)="showSection('finance')">
+        <i class="pi pi-wallet"></i>
+        المالية
+      </button>
+      <button type="button" [class.is-active]="activeSection() === 'history'" (click)="showSection('history')">
+        <i class="pi pi-history"></i>
+        السجل
+      </button>
+    </nav>
+
+    @if (activeSection() === 'delivery') {
+    @if (o.cancellationReason) {
+      <section class="order-details__card">
         <div class="order-details__card-head">
           <h2 class="order-details__card-title">
-            <i class="pi pi-car"></i>
-            بيانات السائق
+            <i class="pi pi-ban"></i>
+            الإلغاء
           </h2>
-          <span class="order-details__chip order-details__chip--success">
-            {{ dispatchOfferConfig[o.dispatch.offerStatus].labelAr }}
-          </span>
         </div>
-
         <div class="order-details__grid">
-          <div class="order-details__field">
-            <span class="order-details__label">اسم السائق</span>
-            <span class="order-details__value">{{ o.dispatch.assignedDriverName }}</span>
+          <div class="order-details__field order-details__field--wide">
+            <span class="order-details__label">السبب</span>
+            <span class="order-details__value">{{ o.cancellationReason }}</span>
           </div>
           <div class="order-details__field">
-            <span class="order-details__label">رقم الهاتف</span>
-            <span class="order-details__value" >
-              {{ o.dispatch.assignedDriverPhone || '—' }}
-            </span>
-          </div>
-          <div class="order-details__field">
-            <span class="order-details__label">معرّف السائق</span>
-            <code class="order-details__mono">{{ o.dispatch.assignedDriverId }}</code>
-          </div>
-          <div class="order-details__field">
-            <span class="order-details__label">وقت التعيين</span>
+            <span class="order-details__label">الرسوم</span>
             <span class="order-details__value">
-              @if (o.timestamps.assignedAt) {
-                {{ o.timestamps.assignedAt | date: 'd MMM y, h:mm a' }}
-              } @else {
-                —
-              }
+              {{ egp(o.cancellationFee) | number: '1.0-2' }} {{ currency }}
             </span>
           </div>
+          @if (o.cancelledAt) {
+            <div class="order-details__field">
+              <span class="order-details__label">وقت الإلغاء</span>
+              <span class="order-details__value">{{ o.cancelledAt | date: 'd MMM y, h:mm a' }}</span>
+            </div>
+          }
         </div>
       </section>
     }
 
-    <!-- ── Section 1: Customer ─────────────────────────────── -->
     <section class="order-details__card">
       <div class="order-details__card-head">
         <h2 class="order-details__card-title">
           <i class="pi pi-user"></i>
           العميل وعنوان التوصيل
         </h2>
+        @if (phoneMasked()) {
+          <span class="order-details__chip order-details__chip--neutral">الرقم مخفي حسب الصلاحية</span>
+        }
       </div>
 
       <div class="order-details__grid">
@@ -144,142 +228,104 @@
         </div>
         <div class="order-details__field">
           <span class="order-details__label">رقم الهاتف</span>
-          <span class="order-details__value">{{ o.customer.phone }}</span>
+          <span class="order-details__value" dir="ltr">{{ o.customer.phone }}</span>
         </div>
-        <div class="order-details__field">
-          <span class="order-details__label">معرّف العميل</span>
-          <code class="order-details__mono">{{ o.customer.customerId }}</code>
-        </div>
-        <div class="order-details__field">
-          <span class="order-details__label">تسمية العنوان</span>
-          <span class="order-details__value">{{ o.customer.address.label }}</span>
-        </div>
-        <div class="order-details__field order-details__field--wide">
-          <span class="order-details__label">العنوان التفصيلي</span>
-          <span class="order-details__value">{{ formatAddress(o) }}</span>
-        </div>
-        @if (o.customer.address.landmark) {
+        @if (o.deliveryAddress.label) {
           <div class="order-details__field">
-            <span class="order-details__label">علامة مميزة</span>
-            <span class="order-details__value">{{ o.customer.address.landmark }}</span>
+            <span class="order-details__label">تسمية العنوان</span>
+            <span class="order-details__value">{{ o.deliveryAddress.label }}</span>
           </div>
         }
-        @if (o.customer.address.notes) {
+        <div class="order-details__field order-details__field--wide">
+          <span class="order-details__label">العنوان</span>
+          <span class="order-details__value">{{ addressText(o.deliveryAddress) }}</span>
+        </div>
+        @if (o.deliveryAddress.landmark) {
           <div class="order-details__field">
-            <span class="order-details__label">ملاحظات التوصيل</span>
-            <span class="order-details__value">{{ o.customer.address.notes }}</span>
+            <span class="order-details__label">علامة مميزة</span>
+            <span class="order-details__value">{{ o.deliveryAddress.landmark }}</span>
+          </div>
+        }
+        @if (o.deliveryAddress.deliveryInstructions) {
+          <div class="order-details__field">
+            <span class="order-details__label">تعليمات التوصيل</span>
+            <span class="order-details__value">{{ o.deliveryAddress.deliveryInstructions }}</span>
           </div>
         }
         <div class="order-details__field">
           <span class="order-details__label">الإحداثيات</span>
-          <span class="order-details__value order-details__value--mono"  >
-            {{ o.customer.address.location.lat | number: '1.4-4' }},
-            {{ o.customer.address.location.lng | number: '1.4-4' }}
+          <span class="order-details__value order-details__value--mono" dir="ltr">
+            {{ o.deliveryAddress.location.lat | number: '1.4-6' }},
+            {{ o.deliveryAddress.location.lng | number: '1.4-6' }}
           </span>
         </div>
+        <div class="order-details__field">
+          <span class="order-details__label">الاتصال قبل التوصيل</span>
+          <span class="order-details__value">{{ o.callBeforeDelivery ? 'نعم' : 'لا' }}</span>
+        </div>
       </div>
+      @if (o.customerNotes) {
+        <div class="order-details__ops-note">
+          <span class="order-details__label">ملاحظات العميل</span>
+          <p>{{ o.customerNotes }}</p>
+        </div>
+      }
     </section>
 
-    <!-- ── Section 2: Hub ─────────────────────────────────── -->
     <section class="order-details__card">
       <div class="order-details__card-head">
         <h2 class="order-details__card-title">
           <i class="pi pi-building"></i>
-          تعيين الهب والتجميع
+          الهب والتجميع
         </h2>
         <span class="order-details__progress-pill">
           {{ consolidationProgress().verified }}/{{ consolidationProgress().total }} تم التحقق
         </span>
       </div>
-
       <div class="order-details__grid">
         <div class="order-details__field">
           <span class="order-details__label">الهب</span>
-          <span class="order-details__value">
-            {{ o.hub.nameAr || o.hub.name }}
-            @if (o.hub.nameAr && o.hub.name) {
-              <span class="order-details__value-ar"  >{{ o.hub.name }}</span>
-            }
-          </span>
+          <span class="order-details__value">{{ o.hub.name }}</span>
         </div>
         <div class="order-details__field">
-          <span class="order-details__label">معرّف الهب</span>
-          <code class="order-details__mono">{{ o.hub.hubId }}</code>
-        </div>
-        @if (o.hub.zoneName) {
-          <div class="order-details__field">
-            <span class="order-details__label">منطقة التغطية</span>
-            <span class="order-details__value">{{ o.hub.zoneName }}</span>
-          </div>
-        }
-        <div class="order-details__field">
-          <span class="order-details__label">إحداثيات الهب</span>
-          <span class="order-details__value order-details__value--mono"  >
-            {{ o.hub.location.lat | number: '1.4-4' }},
-            {{ o.hub.location.lng | number: '1.4-4' }}
-          </span>
-        </div>
-        <div class="order-details__field">
-          <span class="order-details__label">جاهز في الهب</span>
-          <span class="order-details__value">
-            @if (o.timestamps.readyAtHubAt) {
-              {{ o.timestamps.readyAtHubAt | date: 'd MMM y, h:mm a' }}
-            } @else {
-              —
-            }
-          </span>
-        </div>
-        <div class="order-details__field">
-          <span class="order-details__label">عرض الإسناد</span>
-          <span
-            class="order-details__chip"
-            [ngClass]="'order-details__chip--' + dispatchOfferConfig[o.dispatch.offerStatus].tone"
-          >
-            {{ dispatchOfferConfig[o.dispatch.offerStatus].labelAr }}
-          </span>
+          <span class="order-details__label">المنطقة</span>
+          <span class="order-details__value">{{ o.deliveryAddress.area }}</span>
         </div>
       </div>
-
       <div class="order-details__bar" aria-hidden="true">
-        <div
-          class="order-details__bar-fill"
-          [style.width.%]="consolidationProgress().percent"
-        ></div>
+        <div class="order-details__bar-fill" [style.width.%]="consolidationProgress().percent"></div>
       </div>
     </section>
+    }
 
-    <!-- ── Section 3: Sub-orders (interactive cart) ───────── -->
+    @if (activeSection() === 'shops') {
     <section class="order-details__card">
       <div class="order-details__card-head">
         <h2 class="order-details__card-title">
           <i class="pi pi-shopping-cart"></i>
-          طلبات المتاجر الفرعية
+          طلبات المتاجر
         </h2>
       </div>
 
-      @if (o.subOrders.length === 0) {
-        <div class="order-details__cart-empty">
-          <i class="pi pi-shopping-bag"></i>
-          <p>تمت إزالة جميع طلبات المتاجر من هذا الطلب.</p>
-        </div>
-      }
-
-      <div class="order-details__suborders">
+      <div class="order-details__suborders" #shopDetails>
         @for (sub of o.subOrders; track sub.id) {
-          <article class="order-details__suborder">
-            <div class="order-details__suborder-head">
+          <details
+            class="order-details__suborder order-details__suborder--collapsible"
+            [open]="isShopOpen(sub.id)"
+            (toggle)="onShopToggle(sub.id, $event)"
+          >
+            <summary class="order-details__suborder-head order-details__suborder-summary">
               <div>
                 <h3 class="order-details__suborder-name">
                   <i class="pi pi-shop"></i>
-                  {{ sub.shopNameAr || sub.shopName }}
-                  @if (sub.shopNameAr && sub.shopName) {
-                    <span   class="order-details__item-ar">· {{ sub.shopName }}</span>
-                  }
+                  {{ sub.vendorName }}
                 </h3>
-                <div class="order-details__suborder-meta">
-                  <code class="order-details__mono">{{ sub.id }}</code>
-                  <span class="order-details__muted">{{ sub.shopId }}</span>
-                </div>
+                @if (sub.rejectionReason) {
+                  <p class="order-details__note">سبب الرفض: {{ sub.rejectionReason }}</p>
+                }
+                @if (sub.shopNotes) {
+                  <p class="order-details__note">{{ sub.shopNotes }}</p>
+                }
               </div>
               <span
                 class="order-details__chip"
@@ -287,94 +333,111 @@
               >
                 {{ subOrderStatusConfig[sub.status].labelAr }}
               </span>
-            </div>
+            </summary>
 
-            @if (sub.items.length === 0) {
-              <div class="order-details__cart-empty order-details__cart-empty--compact">
-                <p>لا توجد منتجات متبقية في هذا المتجر.</p>
-                <button
-                  type="button"
-                  class="order-details__tool-btn order-details__tool-btn--delete"
-                  (click)="dropSubOrder(sub.shopId)"
-                >
-                  <i class="pi pi-trash"></i>
-                  إزالة طلب المتجر
+            @if (shopActions(sub.status).length) {
+              <div class="order-details__shop-actions">
+                @for (action of shopActions(sub.status); track action.status) {
+                  <button
+                    type="button"
+                    class="order-details__tool-btn"
+                    [class.order-details__tool-btn--delete]="action.needsReason"
+                    [class.order-details__tool-btn--edit]="!action.needsReason"
+                    *ctrlPermission="action.permission"
+                    [disabled]="pending()"
+                    (click)="runShopAction(sub, action)"
+                  >
+                    {{ action.label }}
+                  </button>
+                }
+              </div>
+            }
+
+            @if (rejectingSubOrderId() === sub.id) {
+              <div class="order-details__inline-edit">
+                <div class="order-details__inline-field order-details__inline-field--grow">
+                  <label class="order-details__inline-label" [attr.for]="'reject-' + sub.id">سبب الرفض</label>
+                  <input
+                    [id]="'reject-' + sub.id"
+                    class="order-details__inline-input order-details__inline-input--text"
+                    maxlength="300"
+                    [(ngModel)]="rejectReason"
+                  />
+                </div>
+                <button type="button" class="order-details__danger-btn" [disabled]="pending()" (click)="confirmReject(sub)">
+                  تأكيد الرفض
+                </button>
+                <button type="button" class="order-details__cancel-btn" [disabled]="pending()" (click)="cancelReject()">
+                  رجوع
                 </button>
               </div>
-            } @else {
-              <ul class="order-details__item-list">
-                @for (item of sub.items; track item.id) {
-                  <li
-                    class="order-details__cart-item"
-                    [class.order-details__cart-item--editing]="isEditing(item.id)"
-                  >
-                    <div class="order-details__cart-item-main">
-                      <div class="order-details__item-name">
-                        {{ item.nameAr || item.name }}
-                        @if (item.nameAr && item.name) {
-                          <span   class="order-details__item-ar">{{ item.name }}</span>
-                        }
-                      </div>
+            }
 
-                      @if (isEditing(item.id)) {
-                        <div class="order-details__inline-edit">
-                          <div class="order-details__inline-field">
-                            <label class="order-details__inline-label" [attr.for]="'qty-' + item.id">
-                              الكمية
-                            </label>
-                            <input
-                              [id]="'qty-' + item.id"
-                              type="number"
-                              class="order-details__inline-input"
-                              min="1"
-                              step="1"
-                              [(ngModel)]="editQuantity"
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            class="order-details__save-btn"
-                            (click)="saveEdit(sub.shopId, item.id)"
-                          >
-                            <i class="pi pi-check"></i>
-                            حفظ
-                          </button>
-                          <button
-                            type="button"
-                            class="order-details__cancel-btn"
-                            (click)="cancelEdit()"
-                          >
-                            إلغاء
-                          </button>
-                        </div>
-                      } @else {
-                        <span class="order-details__item-meta">
-                          {{ item.quantity }} × {{ item.unitPrice | number: '1.0-2' }}
-                          {{ o.financials.currency }}
-                        </span>
-                        @if (item.modifiers?.length) {
-                          <div class="order-details__item-mods">
-                            {{ item.modifiers!.join(' · ') }}
-                          </div>
-                        }
-                        @if (item.notes) {
-                          <div class="order-details__item-mods">{{ item.notes }}</div>
-                        }
+            <ul class="order-details__item-list">
+              @for (item of sub.items; track item.id) {
+                <li
+                  class="order-details__cart-item"
+                  [class.order-details__cart-item--editing]="isEditing(item.id)"
+                  [class.order-details__cart-item--removed]="item.isRemoved"
+                >
+                  <div class="order-details__cart-item-main">
+                    <div class="order-details__item-name">
+                      {{ item.name }}
+                      @if (item.isRemoved) {
+                        <span class="order-details__item-ar">تمت الإزالة</span>
                       }
                     </div>
-
-                    <div class="order-details__cart-item-side">
-                      <span class="order-details__item-total">
-                        {{ item.lineTotal | number: '1.0-2' }}
-                        <span class="order-details__currency">{{ o.financials.currency }}</span>
+                    @if (isEditing(item.id)) {
+                      <div class="order-details__inline-edit">
+                        <div class="order-details__inline-field">
+                          <label class="order-details__inline-label" [attr.for]="'qty-' + item.id">الكمية</label>
+                          <input
+                            [id]="'qty-' + item.id"
+                            type="number"
+                            class="order-details__inline-input"
+                            min="1"
+                            max="50"
+                            step="1"
+                            [(ngModel)]="editQuantity"
+                          />
+                        </div>
+                        <button type="button" class="order-details__save-btn" [disabled]="pending()" (click)="saveEdit(item)">
+                          حفظ
+                        </button>
+                        <button type="button" class="order-details__cancel-btn" [disabled]="pending()" (click)="cancelEdit()">
+                          إلغاء
+                        </button>
+                      </div>
+                    } @else {
+                      <span class="order-details__item-meta">
+                        {{ item.quantity }} × {{ egp(item.unitPrice) | number: '1.0-2' }} {{ currency }}
                       </span>
-
-                      @if (!isEditing(item.id)) {
-                        <div class="order-details__item-toolbar">
+                      @if (optionLabels(item)) {
+                        <div class="order-details__item-mods">{{ optionLabels(item) }}</div>
+                      }
+                    }
+                  </div>
+                  <div class="order-details__cart-item-side">
+                    <span class="order-details__item-total">
+                      {{ egp(lineTotal(item)) | number: '1.0-2' }}
+                      <span class="order-details__currency">{{ currency }}</span>
+                    </span>
+                    @if (canEditItems(sub.status) && !isEditing(item.id)) {
+                      <div class="order-details__item-toolbar" *ctrlPermission="'orders.update'">
+                        @if (item.isRemoved) {
                           <button
                             type="button"
                             class="order-details__tool-btn order-details__tool-btn--edit"
-                            title="تعديل الكمية"
+                            [disabled]="pending()"
+                            (click)="restoreItem(item)"
+                          >
+                            استعادة
+                          </button>
+                        } @else {
+                          <button
+                            type="button"
+                            class="order-details__tool-btn order-details__tool-btn--edit"
+                            [disabled]="pending()"
                             (click)="startEdit(item)"
                           >
                             <i class="pi pi-pencil"></i>
@@ -383,238 +446,222 @@
                           <button
                             type="button"
                             class="order-details__tool-btn order-details__tool-btn--delete"
-                            title="إزالة المنتج"
-                            (click)="removeItem(sub.shopId, item.id)"
+                            [disabled]="pending()"
+                            (click)="removeItem(item)"
                           >
                             <i class="pi pi-trash"></i>
                             إزالة
                           </button>
-                        </div>
-                      }
-                    </div>
-                  </li>
-                }
-              </ul>
-            }
+                        }
+                      </div>
+                    }
+                  </div>
+                </li>
+              }
+            </ul>
 
             <div class="order-details__suborder-foot">
               <span class="order-details__shop-subtotal">
                 إجمالي المتجر:
-                <strong>
-                  {{ sub.itemsSubtotal | number: '1.0-2' }}
-                  {{ o.financials.currency }}
-                </strong>
+                <strong>{{ egp(shopTotal(sub)) | number: '1.0-2' }} {{ currency }}</strong>
               </span>
-              @if (sub.verifiedAt) {
-                <span class="order-details__muted">
-                  تم التحقق {{ sub.verifiedAt | date: 'h:mm a' }}
-                </span>
-              }
-              @if (sub.notes) {
-                <span class="order-details__note">{{ sub.notes }}</span>
-              }
+              <span class="order-details__muted">
+                آخر تحديث {{ sub.statusChangedAt | date: 'd MMM, h:mm a' }}
+              </span>
             </div>
+          </details>
+        }
+      </div>
+    </section>
+    }
+
+    @if (activeSection() === 'trips') {
+    <section class="order-details__card">
+      <div class="order-details__card-head">
+        <h2 class="order-details__card-title">
+          <i class="pi pi-car"></i>
+          الرحلات
+        </h2>
+      </div>
+      @if (o.trips.length === 0) {
+        <p class="order-details__muted">لا توجد رحلات بعد.</p>
+      }
+      <div class="order-details__trips">
+        @for (trip of o.trips; track trip.id) {
+          <article
+            class="order-details__trip"
+            [class.order-details__trip--active]="tripIsActive(trip)"
+            [class.order-details__trip--declined]="tripDeclined(trip)"
+          >
+            <div class="order-details__suborder-head">
+              <div>
+                <h3 class="order-details__suborder-name">{{ modeLabel(trip.mode) }}</h3>
+                <div class="order-details__suborder-meta">
+                  @if (trip.isRoleOverride) {
+                    <span class="order-details__muted">رحلة كاملة</span>
+                  }
+                  <span class="order-details__muted">{{ trip.createdAt | date: 'd MMM y, h:mm a' }}</span>
+                </div>
+              </div>
+              <span
+                class="order-details__chip"
+                [ngClass]="'order-details__chip--' + taskStatusConfig[trip.status].tone"
+              >
+                {{ taskStatusConfig[trip.status].labelAr }}
+              </span>
+            </div>
+            <div class="order-details__grid">
+              <div class="order-details__field">
+                <span class="order-details__label">الكابتن</span>
+                <span class="order-details__value">{{ captainLabel(trip) }}</span>
+              </div>
+              <div class="order-details__field">
+                <span class="order-details__label">الهاتف</span>
+                <span class="order-details__value" dir="ltr">{{ trip.captain?.phone || '—' }}</span>
+              </div>
+            </div>
+            @if (declineReason(trip); as reason) {
+              <p class="order-details__decline" role="status">سبب الرفض: {{ reason }}</p>
+            } @else if (tripDeclined(trip)) {
+              <p class="order-details__decline" role="status">رفض الكابتن العرض.</p>
+            }
+            @if (canReassign(trip) || tripIsActive(trip)) {
+              <div class="order-details__shop-actions" *ctrlPermission="'orders.assign'">
+                @if (canReassign(trip)) {
+                  <button type="button" class="order-details__tool-btn order-details__tool-btn--edit" [disabled]="pending()" (click)="openReassign(trip)">
+                    إعادة تعيين
+                  </button>
+                }
+                @if (tripIsActive(trip)) {
+                  <button type="button" class="order-details__tool-btn order-details__tool-btn--delete" [disabled]="pending()" (click)="startCancelTrip(trip)">
+                    إلغاء الرحلة
+                  </button>
+                }
+              </div>
+            }
+            @if (cancellingTaskId() === trip.id) {
+              <div class="order-details__inline-edit">
+                <div class="order-details__inline-field order-details__inline-field--grow">
+                  <label class="order-details__inline-label" [attr.for]="'task-cancel-' + trip.id">سبب الإلغاء</label>
+                  <input
+                    [id]="'task-cancel-' + trip.id"
+                    class="order-details__inline-input order-details__inline-input--text"
+                    maxlength="500"
+                    [(ngModel)]="taskCancelReason"
+                  />
+                </div>
+                <button type="button" class="order-details__danger-btn" [disabled]="pending()" (click)="confirmCancelTrip(trip)">
+                  تأكيد
+                </button>
+                <button type="button" class="order-details__cancel-btn" [disabled]="pending()" (click)="closeCancelTrip()">
+                  رجوع
+                </button>
+              </div>
+            }
           </article>
         }
       </div>
     </section>
+    }
 
-    <!-- ── Section 4: Financials ───────────────────────────── -->
+    @if (activeSection() === 'finance') {
     <section class="order-details__card">
       <div class="order-details__card-head">
         <h2 class="order-details__card-title">
           <i class="pi pi-wallet"></i>
           التفصيل المالي
         </h2>
-        <span class="order-details__payment-pill">{{ paymentMethodLabel(o.financials.paymentMethod) }}</span>
+        <span class="order-details__payment-pill">{{ payLabel(o.paymentMethod) }}</span>
       </div>
-
-      <div class="order-details__finance">
-        <div class="order-details__finance-col">
-          <h3 class="order-details__finance-heading">يدفع العميل</h3>
-          <dl class="order-details__dl">
-            <div class="order-details__dl-row">
-              <dt>إجمالي المنتجات</dt>
-              <dd>{{ o.financials.itemsSubtotal | number: '1.0-2' }} {{ o.financials.currency }}</dd>
-            </div>
-            <div class="order-details__dl-row">
-              <dt>رسوم التوصيل</dt>
-              <dd>{{ o.financials.deliveryFee | number: '1.0-2' }} {{ o.financials.currency }}</dd>
-            </div>
-            <div class="order-details__dl-row">
-              <dt>الضريبة</dt>
-              <dd>{{ o.financials.tax | number: '1.0-2' }} {{ o.financials.currency }}</dd>
-            </div>
-            <div class="order-details__dl-row">
-              <dt>الخصم</dt>
-              <dd class="order-details__dd--discount">
-                −{{ o.financials.discount | number: '1.0-2' }} {{ o.financials.currency }}
-              </dd>
-            </div>
-            <div class="order-details__dl-row order-details__dl-row--total">
-              <dt>الإجمالي النهائي</dt>
-              <dd>
-                {{ o.financials.customerGrandTotal | number: '1.0-2' }}
-                {{ o.financials.currency }}
-              </dd>
-            </div>
-            <div class="order-details__dl-row order-details__dl-row--cash">
-              <dt>المبلغ المطلوب تحصيله (كاش)</dt>
-              <dd>
-                {{ o.financials.finalCashToCollect | number: '1.0-2' }}
-                {{ o.financials.currency }}
-              </dd>
-            </div>
-          </dl>
+      <dl class="order-details__dl">
+        <div class="order-details__dl-row">
+          <dt>إجمالي المنتجات</dt>
+          <dd>{{ egp(o.itemsSubtotal) | number: '1.0-2' }} {{ currency }}</dd>
         </div>
-
-        <div class="order-details__finance-col order-details__finance-col--payout">
-          <h3 class="order-details__finance-heading">المدفوعات والمنصة</h3>
-          <dl class="order-details__dl">
-            <div class="order-details__dl-row">
-              <dt>مستحقات المتاجر</dt>
-              <dd>{{ o.financials.vendorPayable | number: '1.0-2' }} {{ o.financials.currency }}</dd>
-            </div>
-            <div class="order-details__dl-row">
-              <dt>أرباح السائق</dt>
-              <dd>{{ o.financials.driverEarnings | number: '1.0-2' }} {{ o.financials.currency }}</dd>
-            </div>
-            <div class="order-details__dl-row">
-              <dt>عمولة المنصة</dt>
-              <dd>
-                {{ o.financials.platformCommission | number: '1.0-2' }}
-                {{ o.financials.currency }}
-              </dd>
-            </div>
-          </dl>
+        <div class="order-details__dl-row">
+          <dt>رسوم التوصيل</dt>
+          <dd>{{ egp(o.deliveryFee) | number: '1.0-2' }} {{ currency }}</dd>
         </div>
+        <div class="order-details__dl-row">
+          <dt>الخصم</dt>
+          <dd class="order-details__dd--discount">−{{ egp(o.discount) | number: '1.0-2' }} {{ currency }}</dd>
+        </div>
+        @if (o.previousFees > 0) {
+          <div class="order-details__dl-row">
+            <dt>رسوم سابقة</dt>
+            <dd>{{ egp(o.previousFees) | number: '1.0-2' }} {{ currency }}</dd>
+          </div>
+        }
+        <div class="order-details__dl-row">
+          <dt>الإجمالي التقديري</dt>
+          <dd>{{ egp(o.estimatedTotal) | number: '1.0-2' }} {{ currency }}</dd>
+        </div>
+        <div class="order-details__dl-row order-details__dl-row--total">
+          <dt>الإجمالي النهائي</dt>
+          <dd>
+            @if (o.finalTotal === null) {
+              يُحدد بعد تأكيد المتاجر
+            } @else {
+              {{ egp(o.finalTotal) | number: '1.0-2' }} {{ currency }}
+            }
+          </dd>
+        </div>
+        @if (o.paymentMethod === 'COD') {
+          <div class="order-details__dl-row order-details__dl-row--cash">
+            <dt>المطلوب تحصيله</dt>
+            <dd>{{ displayTotal() | number: '1.0-2' }} {{ currency }}</dd>
+          </div>
+        }
+      </dl>
+    </section>
+    }
+
+    @if (activeSection() === 'history') {
+    <section class="order-details__card">
+      <div class="order-details__card-head">
+        <h2 class="order-details__card-title">
+          <i class="pi pi-history"></i>
+          سجل الأحداث
+        </h2>
       </div>
-
-      @if (o.notes) {
-        <div class="order-details__ops-note">
-          <span class="order-details__label">ملاحظات العمليات</span>
-          <p>{{ o.notes }}</p>
-        </div>
+      @if (o.events.length === 0) {
+        <p class="order-details__muted">لا توجد أحداث.</p>
+      } @else {
+        <ol class="order-details__events">
+          @for (event of o.events; track event.id) {
+            <li class="order-details__event">
+              <time class="order-details__muted">{{ event.at | date: 'd MMM y, h:mm a' }}</time>
+              <strong>{{ eventLabel(event.type) }}</strong>
+              @if (event.fromStatus || event.toStatus) {
+                <span class="order-details__muted">
+                  @if (event.fromStatus) {
+                    من {{ statusLabel(event.fromStatus) }}
+                  }
+                  @if (event.toStatus) {
+                    إلى {{ statusLabel(event.toStatus) }}
+                  }
+                </span>
+              }
+              @if (noteLabel(event)) {
+                <span>{{ noteLabel(event) }}</span>
+              }
+              @if (actorLabel(event.actorType)) {
+                <span class="order-details__chip order-details__chip--neutral">{{ actorLabel(event.actorType) }}</span>
+              }
+            </li>
+          }
+        </ol>
       }
     </section>
+    }
 
   }
 </div>
 
-@if (isDriverModalOpen()) {
-  <div
-    class="order-details__modal-overlay"
-    role="presentation"
-    (click)="closeDriverModal()"
-  >
-    <div
-      class="order-details__modal"
-      dir="rtl"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="driver-modal-title"
-      (click)="$event.stopPropagation()"
-    >
-      <div class="order-details__modal-header">
-        <h2 id="driver-modal-title" class="order-details__modal-title">
-          اختر كابتن متاح
-        </h2>
-        <button
-          type="button"
-          class="order-details__modal-close"
-          aria-label="إغلاق"
-          (click)="closeDriverModal()"
-        >
-          <i class="pi pi-times"></i>
-        </button>
-      </div>
-
-      <div class="order-details__modal-body">
-        <ul class="order-details__modal-driver-list" role="listbox" aria-label="الكباتن المتاحون">
-          @for (driver of availableDrivers; track driver.id) {
-            <li>
-              <div
-                class="order-details__modal-driver-card"
-                [class.order-details__modal-driver-card--expanded]="isCaptainSelected(driver.id)"
-              >
-                <button
-                  type="button"
-                  class="order-details__modal-driver-select"
-                  role="option"
-                  [attr.aria-selected]="isCaptainSelected(driver.id)"
-                  [attr.aria-expanded]="isCaptainSelected(driver.id)"
-                  (click)="selectCaptain(driver)"
-                >
-                  <span class="order-details__modal-driver-icon" aria-hidden="true">
-                    <i class="pi pi-user"></i>
-                  </span>
-                  <span class="order-details__modal-driver-info">
-                    <span class="flex min-w-0 flex-wrap items-center gap-2">
-                      <span class="order-details__modal-driver-name">{{ driver.name }}</span>
-                      @switch (driver.role) {
-                        @case ('COLLECTOR') {
-                          <span class="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold leading-none text-blue-700">
-                            مُجمّع طلبات
-                          </span>
-                        }
-                        @case ('DELIVERY') {
-                          <span class="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold leading-none text-emerald-700">
-                            طيار توصيل
-                          </span>
-                        }
-                        @case ('BOTH') {
-                          <span class="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold leading-none text-blue-700">
-                            مُجمّع طلبات
-                          </span>
-                          <span class="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold leading-none text-emerald-700">
-                            طيار توصيل
-                          </span>
-                        }
-                      }
-                    </span>
-                    <span class="order-details__modal-driver-phone"  >{{ driver.phone }}</span>
-                  </span>
-                </button>
-
-                @if (isCaptainSelected(driver.id)) {
-                  <div class="order-details__captain-panel">
-                    @if (driver.role === 'COLLECTOR') {
-                      <label class="order-details__captain-override">
-                        <input type="checkbox" [(ngModel)]="assignAsBoth" />
-                        <span>تفويض الكابتن بتوصيل الطلب للعميل (الرحلة كاملة)</span>
-                      </label>
-                    }
-                    @if (driver.role === 'DELIVERY') {
-                      <label class="order-details__captain-override">
-                        <input type="checkbox" [(ngModel)]="assignAsBoth" />
-                        <span>تفويض الكابتن بتجميع الطلب من المتاجر (الرحلة كاملة)</span>
-                      </label>
-                    }
-                    <button
-                      type="button"
-                      class="order-details__primary-btn order-details__captain-confirm"
-                      (click)="confirmAssignment(driver)"
-                    >
-                      <i class="pi pi-check"></i>
-                      تأكيد التعيين
-                    </button>
-                  </div>
-                }
-              </div>
-            </li>
-          }
-        </ul>
-      </div>
-
-      <div class="order-details__modal-footer">
-        <button
-          type="button"
-          class="order-details__modal-cancel"
-          (click)="closeDriverModal()"
-        >
-          إلغاء
-        </button>
-      </div>
-    </div>
-  </div>
-}
+<ctrl-assign-captain-modal
+  [orderId]="resolvedOrderId() ?? ''"
+  [taskId]="reassignTaskId()"
+  [open]="isDriverModalOpen()"
+  (closed)="closeDriverModal()"
+  (assigned)="onCaptainAssigned()"
+/>

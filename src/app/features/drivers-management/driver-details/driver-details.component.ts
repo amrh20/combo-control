@@ -1,21 +1,26 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { NgClass, DecimalPipe } from '@angular/common';
+import { DecimalPipe, NgClass } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { TableModule } from 'primeng/table';
-import { SelectModule } from 'primeng/select';
+import { MessageService } from 'primeng/api';
 import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
+import { TableModule } from 'primeng/table';
+import { ToastModule } from 'primeng/toast';
+import { Captain } from '../../../core/models/captain.model';
+import { PermissionDirective } from '../../../core/directives/permission.directive';
+import { CaptainService, captainErrorMessage } from '../../../core/services/captain.service';
+import { HubService } from '../../../core/services/hub.service';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
 import {
-  slicePage,
   TablePagerComponent,
+  slicePage,
 } from '../../../shared/components/table-pager/table-pager.component';
-import { DriverService } from '../../../core/services/driver.service';
-import { HubService } from '../../../core/services/hub.service';
 import {
-  AVAILABILITY_CONFIG,
   ACCOUNT_STATUS_CONFIG,
+  AVAILABILITY_CONFIG,
   CaptainProfile,
   CaptainRole,
   CaptainVehicleType,
@@ -38,9 +43,12 @@ import {
     TableModule,
     SelectModule,
     InputTextModule,
+    ToastModule,
     StatCardComponent,
     TablePagerComponent,
+    PermissionDirective,
   ],
+  providers: [MessageService],
   templateUrl: './driver-details.component.html',
   styleUrl: './driver-details.component.scss',
 })
@@ -48,8 +56,10 @@ export class DriverDetailsComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly driverService = inject(DriverService);
+  private readonly captainService = inject(CaptainService);
   private readonly hubService = inject(HubService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly messages = inject(MessageService);
 
   readonly availabilityConfig = AVAILABILITY_CONFIG;
   readonly accountStatusConfig = ACCOUNT_STATUS_CONFIG;
@@ -61,14 +71,19 @@ export class DriverDetailsComponent implements OnInit {
   readonly vehicleOptions = VEHICLE_OPTIONS;
   readonly activeHubs = this.hubService.activeHubs;
   readonly showVehicle = signal(true);
+  readonly loading = signal(true);
+  readonly loadError = signal<string | null>(null);
+  readonly saving = signal(false);
 
-  private readonly driverId = signal<string | null>(null);
+  private readonly captain = signal<Captain | null>(null);
 
-  /** Live from DriverService — updates when list/modal edits the same record. */
+  /** Profile fields the captains API returns, plus empty operational history. */
   readonly driver = computed(() => {
-    const id = this.driverId();
-    if (!id) return null;
-    return this.driverService.drivers().find((d) => d.id === id) ?? null;
+    const current = this.captain();
+    if (!current) {
+      return null;
+    }
+    return toProfile(current, this.hubService.nameOf(current.hubId));
   });
 
   readonly isEditing = signal(false);
@@ -88,12 +103,12 @@ export class DriverDetailsComponent implements OnInit {
   );
 
   readonly profileForm = this.fb.nonNullable.group({
-    name:          ['', Validators.required],
-    phone:         ['', Validators.required],
-    role:          ['DELIVERY' as CaptainRole, Validators.required],
-    hubId:         ['', Validators.required],
-    vehicleType:   ['' as CaptainVehicleType | ''],
-    licenseExpiry: ['', Validators.required],
+    name: ['', Validators.required],
+    phone: ['', Validators.required],
+    role: ['DELIVERY' as CaptainRole, Validators.required],
+    hubId: ['', Validators.required],
+    vehicleType: ['' as CaptainVehicleType | ''],
+    licenseExpiry: [''],
   });
 
   constructor() {
@@ -108,7 +123,28 @@ export class DriverDetailsComponent implements OnInit {
       this.router.navigate(['/drivers']);
       return;
     }
-    this.driverId.set(id);
+
+    this.hubService
+      .getHubs()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({ error: () => undefined });
+
+    this.captainService
+      .getCaptain(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (captain) => {
+          this.captain.set(captain);
+          this.loading.set(false);
+        },
+        error: (error: unknown) => {
+          this.loading.set(false);
+          if (error instanceof HttpErrorResponse && error.status === 404) {
+            return;
+          }
+          this.loadError.set('تعذر تحميل بيانات الكابتن.');
+        },
+      });
   }
 
   getInitials(name: string): string {
@@ -117,75 +153,108 @@ export class DriverDetailsComponent implements OnInit {
 
   vehicleLabel(type: CaptainVehicleType | ''): string {
     if (!type) return '—';
-    return this.vehicleOptions.find(v => v.value === type)?.label ?? type;
+    return this.vehicleOptions.find((option) => option.value === type)?.label ?? type;
   }
 
   startEdit(): void {
-    const d = this.driver();
-    if (!d) return;
-    this.profileForm.patchValue({
-      name:          d.name,
-      phone:         d.phone,
-      role:          d.role,
-      hubId:         d.hubId,
-      vehicleType:   d.role === 'DELIVERY' ? d.vehicleType : '',
-      licenseExpiry: d.licenseExpiry,
-    }, { emitEvent: false });
-    this.syncVehicleControl(d.role);
+    const current = this.driver();
+    if (!current) return;
+    this.profileForm.patchValue(
+      {
+        name: current.name,
+        phone: current.phone,
+        role: current.role,
+        hubId: current.hubId,
+        vehicleType: '',
+        licenseExpiry: '',
+      },
+      { emitEvent: false },
+    );
+    this.profileForm.controls.phone.disable({ emitEvent: false });
+    this.syncVehicleControl(current.role);
     this.isEditing.set(true);
   }
 
   cancelEdit(): void {
     this.isEditing.set(false);
     this.profileForm.reset();
+    this.profileForm.controls.phone.enable({ emitEvent: false });
   }
 
   saveProfile(): void {
-    if (this.profileForm.invalid) {
+    if (this.profileForm.invalid || this.saving()) {
       this.profileForm.markAllAsTouched();
       return;
     }
 
-    const d = this.driver();
-    if (!d) return;
+    const current = this.captain();
+    if (!current) return;
 
-    const v = this.profileForm.getRawValue();
-    const hub = this.hubService.getById(v.hubId);
-    const isCollector = v.role === 'COLLECTOR';
-
-    const patch: Partial<CaptainProfile> = {
-      name:          v.name,
-      phone:         v.phone,
-      role:          v.role,
-      hubId:         v.hubId,
-      hubName:       hub?.name ?? d.hubName,
-      vehicleType:   isCollector ? '' : v.vehicleType,
-      licenseExpiry: v.licenseExpiry,
-    };
-
-    this.driverService.updateDriver(d.id, patch);
-    this.isEditing.set(false);
+    const value = this.profileForm.getRawValue();
+    this.saving.set(true);
+    this.captainService
+      .updateCaptain(current.id, {
+        fullName: value.name.trim(),
+        role: value.role,
+        hubId: value.hubId,
+      })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (updated) => {
+          this.captain.set(updated);
+          this.saving.set(false);
+          this.isEditing.set(false);
+          this.profileForm.controls.phone.enable({ emitEvent: false });
+        },
+        error: (error: unknown) => {
+          this.saving.set(false);
+          this.messages.add({
+            severity: 'error',
+            summary: 'تعذر الحفظ',
+            detail: captainErrorMessage(error, 'تعذر حفظ بيانات الكابتن.'),
+            life: 6000,
+          });
+        },
+      });
   }
 
+  /** Vehicle stays visible for delivery duties, and is not sent to the API. */
   private syncVehicleControl(role: CaptainRole): void {
     const vehicle = this.profileForm.controls.vehicleType;
-    const isDelivery = role === 'DELIVERY';
-    this.showVehicle.set(isDelivery);
-
-    if (isDelivery) {
-      vehicle.setValidators(Validators.required);
-      if (!vehicle.value) {
-        vehicle.markAsTouched();
-      }
-    } else {
-      vehicle.clearValidators();
+    const show = role !== 'COLLECTOR';
+    this.showVehicle.set(show);
+    vehicle.clearValidators();
+    if (!show) {
       vehicle.setValue('', { emitEvent: false });
     }
-
     vehicle.updateValueAndValidity();
   }
 
   goBack(): void {
     this.router.navigate(['/drivers']);
   }
+}
+
+function toProfile(captain: Captain, hubName: string): CaptainProfile {
+  return {
+    id: captain.id,
+    name: captain.fullName,
+    phone: captain.phone,
+    role: captain.role,
+    hubId: captain.hubId,
+    hubName: hubName || '—',
+    availability: 'available',
+    accountStatus: captain.status === 'ACTIVE' ? 'active' : 'inactive',
+    vehicleType: '',
+    licenseExpiry: '',
+    stats: {
+      totalCompletedOrders: 0,
+      totalCashCollected: 0,
+      acceptanceRate: 0,
+      customerRating: 0,
+      avgDeliveryTimeMins: 0,
+    },
+    deliveredOrders: [],
+    complaints: [],
+  };
 }

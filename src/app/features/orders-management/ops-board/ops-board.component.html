@@ -1,10 +1,20 @@
 <div class="ops-board">
 
-  <!-- ── Start (right in RTL): Active Orders List ───────────── -->
   <aside class="ops-board__list-panel">
     <div class="ops-board__list-header">
-      <h2 class="ops-board__list-title">الطلبات الحالية</h2>
-      <span class="ops-board__list-count">{{ filteredActiveOrders().length }}</span>
+      <h2 class="ops-board__list-title">{{ listTitle() }}</h2>
+      <div class="ops-board__list-tools">
+        <span class="ops-board__list-count">{{ visibleRows().length }}</span>
+        <button
+          type="button"
+          class="ops-board__refresh"
+          title="تحديث"
+          [disabled]="loading()"
+          (click)="refresh()"
+        >
+          <i class="pi pi-refresh" [class.pi-spin]="loading()"></i>
+        </button>
+      </div>
     </div>
 
     <div class="ops-board__search">
@@ -12,7 +22,7 @@
         inputId="orderSearch"
         type="search"
         icon="pi-search"
-        placeholder="رقم الطلب، اسم العميل، أو الهاتف..."
+        placeholder="رقم الطلب، اسم العميل، أو المنطقة..."
         [value]="searchQuery()"
         (valueChange)="onSearchChange($event)"
       />
@@ -28,14 +38,57 @@
       }
     </div>
 
+    <div class="ops-board__filters">
+      <label class="ops-board__filter">
+        <span class="ops-board__filter-label">الهب</span>
+        <select
+          class="ops-board__select"
+          [value]="hubFilter()"
+          (change)="onHubChange($any($event.target).value)"
+        >
+          <option value="">كل الهبات</option>
+          @for (hub of hubs(); track hub.id) {
+            <option [value]="hub.id">{{ hub.name }}</option>
+          }
+        </select>
+      </label>
+      <label class="ops-board__filter">
+        <span class="ops-board__filter-label">الحالة</span>
+        <select
+          class="ops-board__select"
+          [value]="statusFilter()"
+          (change)="onStatusChange($any($event.target).value)"
+        >
+          @for (option of statusOptions(); track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </label>
+    </div>
+
     <div class="ops-board__list-scroll">
-      @if (groupedOrders().length === 0) {
+      @if (loadError(); as message) {
+        @if (rows().length === 0) {
+          <div class="ops-board__empty">
+            <i class="pi pi-exclamation-circle"></i>
+            <p>{{ message }}</p>
+            <button type="button" class="ops-board__retry" (click)="refresh()">إعادة المحاولة</button>
+          </div>
+        } @else {
+          <p class="ops-board__inline-error">{{ message }}</p>
+        }
+      } @else if (loading() && rows().length === 0) {
+        <div class="ops-board__empty">
+          <i class="pi pi-spin pi-spinner"></i>
+          <p>جاري تحميل الطلبات...</p>
+        </div>
+      } @else if (groupedOrders().length === 0) {
         <div class="ops-board__empty">
           <i class="pi" [class.pi-search]="searchQuery()" [class.pi-inbox]="!searchQuery()"></i>
           @if (searchQuery()) {
-            <p>لا توجد طلبات مطابقة لبحثك.</p>
+            <p>لا توجد طلبات مطابقة لبحثك في الصفحة الحالية.</p>
           } @else {
-            <p>لا توجد طلبات حالية الآن.</p>
+            <p>لا توجد طلبات مطابقة للفلتر.</p>
           }
         </div>
       }
@@ -60,31 +113,26 @@
             >
               <div class="ops-board__order-card-top">
                 <code class="ops-board__order-id">{{ order.orderNumber }}</code>
-                <span class="ops-board__order-age">
-                  {{ formatAge(order.timestamps.placedAt) }}
-                </span>
+                <span class="ops-board__order-age">{{ formatAge(order.placedAt) }}</span>
               </div>
 
-              <span class="ops-board__customer-name">
-                {{ order.customer.name }}
-              </span>
+              <span class="ops-board__customer-name">{{ order.customerName }}</span>
 
               <div class="ops-board__order-meta">
                 <span class="ops-board__zone">
                   <i class="pi pi-map-marker"></i>
-                  <span>{{ order.zoneName }}</span>
+                  <span>{{ order.area || order.hubName }}</span>
                 </span>
                 <span class="ops-board__total">
-                  {{ order.financials.customerGrandTotal | number: '1.0-2' }}
+                  {{ rowTotal(order) | number: '1.0-2' }}
                   {{ currency }}
                 </span>
               </div>
 
               <div class="ops-board__shop-tags">
-                @for (shop of order.subOrders; track shop.id) {
-                  <span class="ops-board__shop-tag">
-                    {{ shop.shopNameAr || shop.shopName }}
-                  </span>
+                <span class="ops-board__shop-tag">{{ order.shopCount }} متاجر</span>
+                @for (status of order.shopStatuses; track $index) {
+                  <span class="ops-board__shop-tag">{{ shopStatusConfig[status].labelAr }}</span>
                 }
               </div>
             </button>
@@ -92,20 +140,56 @@
         </div>
       }
     </div>
+
+    @if (rows().length > 0 && (hasMore() || (!isAggregate() && pageNumber() > 1))) {
+      <div class="ops-board__pager">
+        @if (isAggregate()) {
+          <button
+            type="button"
+            class="ops-board__pager-btn"
+            [disabled]="!hasMore() || loading()"
+            (click)="loadMore()"
+          >
+            {{ loading() ? 'جاري التحميل...' : 'تحميل المزيد' }}
+          </button>
+        } @else {
+          <span class="ops-board__pager-label">الصفحة {{ pageNumber() }}</span>
+          <div class="ops-board__pager-actions">
+            <button
+              type="button"
+              class="ops-board__pager-btn"
+              [disabled]="pageNumber() === 1 || loading()"
+              (click)="goBack()"
+            >
+              السابق
+            </button>
+            <button
+              type="button"
+              class="ops-board__pager-btn"
+              [disabled]="!hasMore() || loading()"
+              (click)="loadMore()"
+            >
+              التالي
+            </button>
+          </div>
+        }
+      </div>
+    }
   </aside>
 
-  <!-- ── End (left in RTL): Canonical Order Details ─────────── -->
   <section class="ops-board__detail-panel">
-    @if (selectedOrder(); as order) {
+    @if (selectedOrderId(); as orderId) {
       <ctrl-order-details
-        [orderId]="order.id"
+        [orderId]="orderId"
         [embedded]="true"
+        [live]="boardMode() === 'live'"
+        (orderChanged)="onOrderChanged($event)"
       />
     } @else {
       <div class="ops-board__detail-empty">
         <i class="pi pi-list-check"></i>
         <h3>اختر طلباً</h3>
-        <p>اختر طلباً حالياً من القائمة لعرض تفاصيل العقد الأساسي.</p>
+        <p>اختر طلباً من القائمة لعرض التفاصيل والإجراءات.</p>
       </div>
     }
   </section>

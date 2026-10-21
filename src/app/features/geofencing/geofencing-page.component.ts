@@ -1,23 +1,23 @@
 import { Component, computed, signal } from '@angular/core';
 import { JsonPipe } from '@angular/common';
 
-import { ZoneMapComponent } from './zone-map/zone-map.component';
+import { MapComponent, type MapPolygonChange } from '../../shared/components/map/map.component';
 import {
   GeofenceZoneFormComponent,
   ZoneFormValue,
 } from './zone-form/zone-form.component';
-import { CreateZonePayload, PolygonChange } from './models/zone.model';
+import { CreateZonePayload } from './models/zone.model';
 
 @Component({
   selector: 'ctrl-geofencing-page',
   standalone: true,
-  imports: [JsonPipe, ZoneMapComponent, GeofenceZoneFormComponent],
+  imports: [JsonPipe, MapComponent, GeofenceZoneFormComponent],
   templateUrl: './geofencing-page.component.html',
   styleUrl: './geofencing-page.component.scss',
 })
 export class GeofencingPageComponent {
   /** Latest geometry extracted from the map (null when no polygon). */
-  private readonly polygon = signal<PolygonChange | null>(null);
+  private readonly polygon = signal<MapPolygonChange | null>(null);
 
   /** Drives the form's Save button + warnings. */
   readonly geometryReady = computed(() => this.polygon() !== null);
@@ -26,7 +26,7 @@ export class GeofencingPageComponent {
   /** The clean payload built on save — shown as a backend-ready preview. */
   readonly lastPayload = signal<CreateZonePayload | null>(null);
 
-  onPolygonChanged(change: PolygonChange | null): void {
+  onPolygonChanged(change: MapPolygonChange | null): void {
     this.polygon.set(change);
   }
 

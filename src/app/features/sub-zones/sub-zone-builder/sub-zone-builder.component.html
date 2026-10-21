@@ -1,6 +1,11 @@
 <div class="sub-zone-builder">
+  <p-toast position="top-center" />
 
-  @if (missing()) {
+  @if (loading()) {
+    <p>جاري التحميل...</p>
+  } @else if (loadError(); as loadError) {
+    <p role="alert">{{ loadError }}</p>
+  } @else if (missing()) {
     <div class="sub-zone-builder__missing">
       <i class="pi pi-exclamation-circle"></i>
       <p>المنطقة الفرعية غير موجودة.</p>
@@ -141,7 +146,7 @@
                         [min]="0"
                         mode="currency"
                         currency="EGP"
-                        locale="ar-EG"
+                        locale="ar-EG-u-nu-latn"
                         styleClass="sub-zone-builder__number"
                         (ngModelChange)="updateMinOrder(draft.layerId, $event)"
                       />
@@ -185,7 +190,7 @@
           <button
             type="submit"
             class="sub-zone-builder__btn sub-zone-builder__btn--primary"
-            [disabled]="!canSave()"
+            [disabled]="saving() || !canSave()"
           >
             <i class="pi pi-check"></i>
             {{ subZoneId() ? 'حفظ التغييرات' : 'حفظ المناطق' }}
@@ -194,11 +199,14 @@
       </aside>
 
       <div class="sub-zone-builder__map">
-        <ctrl-sub-zone-map
-          [parentGeometry]="parentGeometry()"
-          [siblings]="siblings()"
+        <combo-map
+          mode="multi"
+          [drawingEnabled]="!!parentGeometry()"
+          [overlays]="mapOverlays()"
+          [blockedMessage]="parentGeometry() ? '' : 'اختر المنطقة الرئيسية أولاً لعرض حدودها على الخريطة وتفعيل أدوات الرسم.'"
+          [hint]="parentGeometry() && subZones().length === 0 ? 'ارسم أكثر من مضلع داخل الحدود؛ سيُضاف كارت لكل منطقة تلقائياً.' : ''"
           (polygonCreated)="onPolygonCreated($event)"
-          (polygonChanged)="onPolygonChanged($event)"
+          (polygonUpdated)="onPolygonChanged($event)"
           (polygonRemoved)="onPolygonRemoved($event)"
         />
       </div>

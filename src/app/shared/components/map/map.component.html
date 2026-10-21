@@ -1,0 +1,95 @@
+<div class="combo-map" [class.combo-map--polygon]="mode() !== 'marker'">
+  <div class="combo-map__search-wrap" (focusout)="onSearchFocusOut($event)">
+    <label class="combo-map__search">
+      <i class="pi pi-search" aria-hidden="true"></i>
+      <input
+        type="text"
+        placeholder="ابحث عن مكان..."
+        autocomplete="off"
+        [value]="searchQuery()"
+        [disabled]="(!isEditable() && mode() === 'marker') || !!loadError || !!blockedMessage()"
+        (input)="onSearchInput($event)"
+        (focus)="onSearchFocus()"
+        (keydown)="onSearchKeydown($event)"
+      />
+      @if (searchLoading()) {
+        <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+      }
+    </label>
+
+    @if (searchOpen()) {
+      <ul class="combo-map__results" role="listbox">
+        @if (suggestions().length === 0 && !searchLoading()) {
+          <li class="combo-map__empty">لا توجد نتائج</li>
+        }
+        @for (hit of suggestions(); track hit.id) {
+          <li>
+            <button type="button" role="option" (mousedown)="$event.preventDefault()" (click)="selectHit(hit)">
+              <i class="pi pi-map-marker" aria-hidden="true"></i>
+              <span>{{ hit.label }}</span>
+            </button>
+          </li>
+        }
+      </ul>
+    }
+  </div>
+
+  @if (loadError) {
+    <p class="combo-map__error" role="alert">{{ loadError }}</p>
+  }
+
+  <div class="combo-map__stage">
+    <div #map class="combo-map__canvas"></div>
+
+    @if (showDrawToolbar()) {
+      <div class="combo-map__draw-tools">
+        @if (!isDrawing()) {
+          <button type="button" class="combo-map__draw-btn" (click)="startVertexDrawing()">
+            <i class="pi pi-pencil" aria-hidden="true"></i>
+            رسم مضلع
+          </button>
+        } @else {
+          <span class="combo-map__draw-status">
+            {{ drawingVertexCount() }} نقطة — اسحب أي نقطة لتعديلها، أو انقر قرب النقطة الأولى للإغلاق
+          </span>
+          <button
+            type="button"
+            class="combo-map__draw-btn combo-map__draw-btn--primary"
+            [disabled]="drawingVertexCount() < 3"
+            (click)="finishVertexDrawing()"
+          >
+            إنهاء
+          </button>
+          <button type="button" class="combo-map__draw-btn combo-map__draw-btn--ghost" (click)="cancelVertexDrawing()">
+            إلغاء
+          </button>
+        }
+      </div>
+    }
+
+    @if (blockedMessage()) {
+      <div class="combo-map__overlay">
+        <div class="combo-map__overlay-card">
+          <i class="pi pi-map"></i>
+          <p>{{ blockedMessage() }}</p>
+        </div>
+      </div>
+    } @else if (hint() || (mode() === 'polygon' && !readOnly())) {
+      <div class="combo-map__hint">
+        @if (mode() === 'polygon' && !readOnly()) {
+          @if (hasPolygon()) {
+            <i class="pi pi-arrows-alt"></i>
+            اسحب النقاط لتعديل الشكل.
+            <button type="button" class="combo-map__delete" (click)="clearPolygon()">حذف المضلع</button>
+          } @else {
+            <i class="pi pi-pencil"></i>
+            اضغط «رسم مضلع» أعلى الخريطة، ثم انقر لتحديد حدود المنطقة.
+          }
+        } @else {
+          <i class="pi pi-pencil"></i>
+          {{ hint() }}
+        }
+      </div>
+    }
+  </div>
+</div>

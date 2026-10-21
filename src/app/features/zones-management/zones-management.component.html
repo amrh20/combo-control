@@ -9,12 +9,17 @@
     </div>
 
     <p-button
+      *ctrlPermission="'zones.write'"
       label="إنشاء منطقة جديدة"
       icon="pi pi-plus"
       styleClass="zones-management__create-btn"
       [routerLink]="['/zones/create']"
     />
   </div>
+
+  @if (loadError(); as loadError) {
+    <p role="alert">{{ loadError }}</p>
+  }
 
   <div class="zones-management__toolbar">
     <label class="zones-management__search">
@@ -128,6 +133,7 @@
                 <i class="pi pi-eye"></i>
               </a>
               <a
+                *ctrlPermission="'zones.write'"
                 [routerLink]="['/zones/edit', zone.id]"
                 class="zones-management__action-btn zones-management__action-btn--edit"
                 title="تعديل المنطقة"
@@ -155,6 +161,7 @@
                       <span class="zones-management__detail-count">{{ children.length }}</span>
                     </h3>
                     <a
+                      *ctrlPermission="'zones.write'"
                       class="zones-management__add-sub-btn"
                       [routerLink]="['/sub-zones/create']"
                       [queryParams]="{ parentId: zone.id }"
@@ -206,6 +213,7 @@
                             <td>
                               <div class="zones-management__actions">
                                 <a
+                                  *ctrlPermission="'zones.write'"
                                   [routerLink]="['/sub-zones/edit', subZone.id]"
                                   class="zones-management__action-btn zones-management__action-btn--edit"
                                   title="تعديل المنطقة الفرعية"

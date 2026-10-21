@@ -1,10 +1,12 @@
 import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { OpsBoardComponent } from '../../orders-management/ops-board/ops-board.component';
 
 @Component({
   selector: 'ctrl-order-history',
   standalone: true,
-  imports: [RouterLink],
+  imports: [OpsBoardComponent],
   templateUrl: './order-history.component.html',
 })
-export class OrderHistoryComponent {}
+export class OrderHistoryComponent {
+  /** Closed orders from `GET /v1/orders` (delivered, cancelled, failed). */
+}

@@ -1,0 +1,183 @@
+<p-toast position="top-center" [baseZIndex]="1300" />
+
+<div class="drivers-list">
+  <div
+    #captainDialog
+    class="drivers-list__modal-overlay"
+    role="presentation"
+    (click)="closeOnBackdrop($event)"
+  >
+    <div
+      class="drivers-list__modal"
+      dir="rtl"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="captain-form-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="drivers-list__modal-header">
+        <h2 id="captain-form-title" class="drivers-list__modal-title">
+          {{ creating ? 'إضافة كابتن جديد' : 'تعديل بيانات الكابتن' }}
+        </h2>
+        <button
+          type="button"
+          class="drivers-list__modal-close"
+          aria-label="إغلاق"
+          (click)="close()"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <form class="drivers-list__modal-body" [formGroup]="form" (ngSubmit)="save()">
+        <div class="drivers-list__field">
+          <label class="drivers-list__label" for="captainRole">
+            دور الكابتن <span class="drivers-list__required">*</span>
+          </label>
+          <p-select
+            inputId="captainRole"
+            [options]="roleOptions"
+            optionLabel="label"
+            optionValue="value"
+            formControlName="role"
+            placeholder="اختر الدور..."
+            styleClass="drivers-list__select"
+            panelStyleClass="drivers-list__select-panel"
+            [appendTo]="captainDialog"
+          />
+          @if (form.controls.role.touched && form.controls.role.invalid) {
+            <span class="drivers-list__field-error">دور الكابتن مطلوب</span>
+          }
+        </div>
+
+        <div class="drivers-list__field">
+          <label class="drivers-list__label" for="captainName">
+            الاسم <span class="drivers-list__required">*</span>
+          </label>
+          <input
+            id="captainName"
+            type="text"
+            pInputText
+            formControlName="fullName"
+            class="drivers-list__input"
+            placeholder="مثال: محمد العتيبي"
+            dir="rtl"
+          />
+          @if (form.controls.fullName.touched && form.controls.fullName.invalid) {
+            <span class="drivers-list__field-error">الاسم مطلوب</span>
+          }
+        </div>
+
+        <div class="drivers-list__field">
+          <label class="drivers-list__label" for="captainPhone">
+            رقم الهاتف <span class="drivers-list__required">*</span>
+          </label>
+          <input
+            id="captainPhone"
+            type="text"
+            pInputText
+            formControlName="phone"
+            class="drivers-list__input"
+            placeholder="+20 10 0000 0000"
+            dir="ltr"
+          />
+          @if (form.controls.phone.touched && form.controls.phone.invalid) {
+            <span class="drivers-list__field-error">رقم الهاتف مطلوب</span>
+          }
+        </div>
+
+        <div class="drivers-list__field">
+          <label class="drivers-list__label" for="captainPassword">
+            كلمة المرور
+            @if (creating) {
+              <span class="drivers-list__required">*</span>
+            }
+          </label>
+          <input
+            id="captainPassword"
+            type="password"
+            pInputText
+            formControlName="password"
+            class="drivers-list__input"
+            autocomplete="new-password"
+            placeholder="••••••••"
+            dir="ltr"
+          />
+          <span class="drivers-list__field-hint">
+            @if (creating) {
+              كلمة المرور المبدئية لدخول الكابتن
+            } @else {
+              اتركه فارغاً إذا لم ترد تغيير كلمة المرور
+            }
+          </span>
+          @if (form.controls.password.touched && form.controls.password.invalid) {
+            <span class="drivers-list__field-error">كلمة المرور مطلوبة</span>
+          }
+        </div>
+
+        <div class="drivers-list__field">
+          <label class="drivers-list__label" for="captainHub">
+            مركز الانطلاق <span class="drivers-list__required">*</span>
+          </label>
+          <p-select
+            inputId="captainHub"
+            [options]="hubOptions()"
+            optionLabel="name"
+            optionValue="id"
+            formControlName="hubId"
+            placeholder="اختر مركز الانطلاق..."
+            styleClass="drivers-list__select"
+            panelStyleClass="drivers-list__select-panel"
+            [appendTo]="captainDialog"
+          />
+          @if (hubsError(); as message) {
+            <span class="drivers-list__field-error">{{ message }}</span>
+          }
+          @if (form.controls.hubId.touched && form.controls.hubId.invalid) {
+            <span class="drivers-list__field-error">مركز الانطلاق مطلوب</span>
+          }
+        </div>
+
+        @if (showVehicle()) {
+          <div class="drivers-list__field">
+            <label class="drivers-list__label" for="captainVehicle">
+              المركبة <span class="drivers-list__required">*</span>
+            </label>
+            <p-select
+              inputId="captainVehicle"
+              [options]="vehicleOptions"
+              optionLabel="label"
+              optionValue="value"
+              formControlName="vehicleType"
+              placeholder="اختر نوع المركبة..."
+              styleClass="drivers-list__select"
+              panelStyleClass="drivers-list__select-panel"
+              [appendTo]="captainDialog"
+            />
+            @if (form.controls.vehicleType.touched && form.controls.vehicleType.invalid) {
+              <span class="drivers-list__field-error">نوع المركبة مطلوب</span>
+            }
+          </div>
+        }
+
+        <div class="drivers-list__modal-footer">
+          <button
+            type="submit"
+            class="drivers-list__btn drivers-list__btn--primary"
+            [disabled]="form.invalid || saving()"
+          >
+            <i class="pi pi-check"></i>
+            {{ saving() ? 'جاري الحفظ...' : 'حفظ' }}
+          </button>
+          <button
+            type="button"
+            class="drivers-list__btn drivers-list__btn--ghost"
+            (click)="close()"
+          >
+            إلغاء
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

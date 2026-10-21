@@ -7,23 +7,23 @@
         إدارة ملفات المتاجر والحالة التشغيلية المباشرة والظهور في تطبيق العميل.
       </p>
     </div>
-    <a [routerLink]="['/vendors/create']" class="vendors-list__add-btn">
+    <a *ctrlPermission="'vendors.write'" [routerLink]="['/vendors/create']" class="vendors-list__add-btn">
       <i class="pi pi-plus"></i>
       إضافة متجر جديد
     </a>
   </div>
 
-  <div class="vendors-list__toolbar">
+  <div class="vendors-list__filters" [formGroup]="filterForm">
     <div class="vendors-list__search-wrap">
       <combo-input
         inputId="vendorSearch"
         type="search"
         icon="pi-search"
-        placeholder="ابحث بالاسم أو الفئة أو نقطة التجميع أو الهاتف..."
-        [value]="searchQuery()"
-        (valueChange)="onSearchChange($event)"
+        placeholder="ابحث باسم المتجر..."
+        [value]="filterForm.controls.search.value"
+        (valueChange)="filterForm.controls.search.setValue($event)"
       />
-      @if (searchQuery()) {
+      @if (filterForm.controls.search.value) {
         <button
           type="button"
           class="vendors-list__search-clear"
@@ -33,79 +33,101 @@
           <i class="pi pi-times"></i>
         </button>
       }
-    </div>
-
-    <div class="vendors-list__filters">
-      <p-select
-        inputId="categoryFilter"
-        [options]="categoryFilterOptions()"
-        optionLabel="label"
-        optionValue="value"
-        [ngModel]="categoryFilter()"
-        (ngModelChange)="onCategoryFilterChange($event)"
-        placeholder="الفئة"
-        styleClass="vendors-list__filter-select"
-      />
-      <p-select
-        inputId="hubFilter"
-        [options]="hubFilterOptions()"
-        optionLabel="label"
-        optionValue="value"
-        [ngModel]="hubFilter()"
-        (ngModelChange)="onHubFilterChange($event)"
-        placeholder="نقطة التجميع"
-        styleClass="vendors-list__filter-select"
-      />
-      <p-select
-        inputId="liveStatusFilter"
-        [options]="liveStatusFilterOptions"
-        optionLabel="label"
-        optionValue="value"
-        [ngModel]="liveStatusFilter()"
-        (ngModelChange)="onLiveStatusFilterChange($event)"
-        placeholder="الحالة المباشرة"
-        styleClass="vendors-list__filter-select"
-      />
-      @if (hasActiveFilters()) {
-        <button type="button" class="vendors-list__clear-filters" (click)="clearFilters()">
-          مسح الفلاتر
-        </button>
+      @if (searchTooShort()) {
+        <p class="vendors-list__search-hint">اكتب حرفين على الأقل للبحث.</p>
       }
     </div>
+
+    <p-select
+      inputId="categoryFilter"
+      formControlName="categoryId"
+      [options]="categoryFilterOptions()"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="الفئة"
+      appendTo="body"
+      styleClass="vendors-list__filter-select"
+    />
+    <p-select
+      inputId="hubFilter"
+      formControlName="hubId"
+      [options]="hubFilterOptions()"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="نقطة التجميع"
+      appendTo="body"
+      styleClass="vendors-list__filter-select"
+    />
+    <p-select
+      inputId="liveStatusFilter"
+      formControlName="liveStatus"
+      [options]="liveStatusFilterOptions"
+      optionLabel="label"
+      optionValue="value"
+      placeholder="الحالة المباشرة"
+      appendTo="body"
+      styleClass="vendors-list__filter-select"
+    />
+    @if (hasActiveFilters()) {
+      <button type="button" class="vendors-list__clear-filters" (click)="clearFilters()">
+        مسح الفلاتر
+      </button>
+    }
   </div>
 
   <div class="vendors-list__meta">
     <span class="vendors-list__result-count">
-      {{ filteredVendors().length }} متجر
+      {{ items().length }} متجر · الصفحة {{ pageNumber() }}
     </span>
   </div>
 
+  @if (loadError(); as message) {
+    <div class="vendors-list__alert" role="alert">
+      <span>{{ message }}</span>
+      <button type="button" class="vendors-list__retry" (click)="reload()">إعادة المحاولة</button>
+    </div>
+  }
+
+  @if (actionError(); as message) {
+    <p class="vendors-list__alert" role="alert">{{ message }}</p>
+  }
+
   <div class="vendors-list__card">
     <p-table
-      [value]="filteredVendors()"
-      [paginator]="true"
-      [rows]="10"
-      [rowsPerPageOptions]="[10, 25, 50]"
-      [tableStyle]="{ 'min-width': '76rem' }"
+      [value]="items()"
+      [loading]="loading()"
+      [tableStyle]="{ width: '100%', 'table-layout': 'fixed' }"
       sortMode="single"
     >
+      <ng-template pTemplate="colgroup">
+        <colgroup>
+          <col class="vendors-list__col vendors-list__col--logo" />
+          <col class="vendors-list__col vendors-list__col--name" />
+          <col class="vendors-list__col vendors-list__col--category" />
+          <col class="vendors-list__col vendors-list__col--hub" />
+          <col class="vendors-list__col vendors-list__col--status" />
+          <col class="vendors-list__col vendors-list__col--active" />
+          <col class="vendors-list__col vendors-list__col--actions" />
+        </colgroup>
+      </ng-template>
+
       <ng-template pTemplate="header">
         <tr>
-          <th class="vendors-list__th" style="width: 72px">الشعار</th>
-          <th pSortableColumn="name" class="vendors-list__th">
+          <th class="vendors-list__th vendors-list__th--center vendors-list__th--logo">الشعار</th>
+          <th pSortableColumn="name" class="vendors-list__th vendors-list__th--name">
             اسم المتجر <p-sortIcon field="name" />
           </th>
-          <th pSortableColumn="category" class="vendors-list__th" style="width: 210px">
-            الفئة <p-sortIcon field="category" />
+          <th pSortableColumn="categoryName" class="vendors-list__th vendors-list__th--category">
+            الفئة <p-sortIcon field="categoryName" />
           </th>
-          <th pSortableColumn="hubName" class="vendors-list__th">
+          <th pSortableColumn="hubName" class="vendors-list__th vendors-list__th--hub">
             نقطة التجميع <p-sortIcon field="hubName" />
           </th>
-          <th class="vendors-list__th" style="width: 160px">الحالة المباشرة</th>
-          <th class="vendors-list__th vendors-list__th--center" style="width: 110px">
+          <th class="vendors-list__th vendors-list__th--status">الحالة المباشرة</th>
+          <th class="vendors-list__th vendors-list__th--center vendors-list__th--active">
             مفعّل
           </th>
-          <th class="vendors-list__th vendors-list__th--center" style="width: 190px">
+          <th class="vendors-list__th vendors-list__th--center vendors-list__th--actions">
             الإجراءات
           </th>
         </tr>
@@ -113,80 +135,92 @@
 
       <ng-template pTemplate="body" let-vendor>
         <tr
-          [class.vendors-list__row--inactive]="vendor.systemStatus === 'inactive'"
-          [class.vendors-list__row--closed]="getLiveStatus(vendor) === 'closed'"
+          [class.vendors-list__row--inactive]="!vendor.isActive"
+          [class.vendors-list__row--closed]="vendor.liveStatus === 'CLOSED'"
         >
-          <td>
+          <td class="vendors-list__td--center">
             @if (vendor.logoUrl) {
-              <img [src]="vendor.logoUrl" [alt]="vendor.name" class="vendors-list__logo" />
+              <img [src]="logoSrc(vendor.logoUrl)" [alt]="vendor.name" class="vendors-list__logo" />
             } @else {
               <span class="vendors-list__initials">{{ getInitials(vendor) }}</span>
             }
           </td>
-          <td>
+          <td class="vendors-list__td--clip">
             <div class="vendors-list__name-cell">
-              <a [routerLink]="['/vendors', vendor.id]" class="vendors-list__shop-name">
+              <a
+                [routerLink]="['/vendors', vendor.id]"
+                class="vendors-list__shop-name"
+                [attr.title]="vendor.name"
+              >
                 {{ vendor.name }}
               </a>
-              <code class="vendors-list__id-pill">{{ vendor.id }}</code>
+              <code class="vendors-list__id-pill">#{{ vendor.id.slice(0, 6) }}</code>
             </div>
           </td>
-          <td>
-            @if (categoryOf(vendor); as category) {
+          <td class="vendors-list__td--clip">
+            @if (categoryVisual(vendor); as category) {
               <span
                 class="vendors-list__category"
-                [style.background-color]="category.backgroundColor"
-                [style.color]="categoryText(category.backgroundColor)"
+                [class.vendors-list__category--plain]="!category.backgroundColor"
+                [style.backgroundColor]="category.backgroundColor || null"
+                [style.color]="category.backgroundColor ? categoryText(category.backgroundColor) : null"
               >
-                @if (isImageIcon(category.iconUrl)) {
+                @if (category.icon && isImageIcon(category.icon)) {
                   <img
                     class="vendors-list__category-icon"
-                    [src]="category.iconUrl"
+                    [src]="iconSrc(category.icon)"
                     alt=""
                   />
-                } @else {
-                  <span class="vendors-list__category-emoji">{{ category.iconUrl }}</span>
+                } @else if (category.icon) {
+                  <span class="vendors-list__category-emoji">{{ category.icon }}</span>
                 }
-                <span>{{ category.name }}</span>
+                <span class="vendors-list__category-label" [attr.title]="category.name || null">{{ category.name || '—' }}</span>
               </span>
             } @else {
               <span class="vendors-list__category vendors-list__category--missing">—</span>
             }
           </td>
-          <td>
+          <td class="vendors-list__td--clip">
             <span class="vendors-list__zone">
               <i class="pi pi-map-marker"></i>
-              <span>{{ vendor.hubName }}</span>
+              <span class="vendors-list__zone-name" [attr.title]="vendor.hubName || null">{{ vendor.hubName || '—' }}</span>
             </span>
           </td>
           <td>
             <span
               class="vendors-list__live-badge"
-              [class]="'vendors-list__live-badge--' + getLiveStatus(vendor)"
+              [class.vendors-list__live-badge--open]="vendor.liveStatus === 'OPEN'"
+              [class.vendors-list__live-badge--busy]="vendor.liveStatus === 'BUSY'"
+              [class.vendors-list__live-badge--closed]="vendor.liveStatus === 'CLOSED'"
             >
               <span class="vendors-list__live-dot"></span>
-              {{ liveStatusConfig[getLiveStatus(vendor)].labelAr }}
+              {{ liveStatusLabel(vendor.liveStatus) }}
             </span>
-            @if (getLiveStatus(vendor) === 'closed' && vendor.nextOpeningTime) {
-              <span class="vendors-list__opens-at">يفتح {{ vendor.nextOpeningTime }}</span>
+            @if (vendor.liveStatus === 'CLOSED' && vendor.nextOpenAt) {
+              <span class="vendors-list__opens-at">يفتح {{ formatNextOpen(vendor.nextOpenAt) }}</span>
             }
           </td>
           <td class="vendors-list__td--center">
             <p-toggleswitch
-              [ngModel]="isSystemActive(vendor)"
-              (ngModelChange)="onSystemToggle(vendor.id, $event)"
+              [ngModel]="vendor.isActive"
+              (ngModelChange)="onActiveToggle(vendor, $event)"
+              [disabled]="!auth.hasPermission('vendors.write') || pendingId() !== null"
               [inputId]="'sys-' + vendor.id"
             />
           </td>
           <td class="vendors-list__td--center">
-            <a
-              [routerLink]="['/catalog']"
-              [queryParams]="{ shopId: vendor.id }"
-              class="vendors-list__manage-btn"
+            <button
+              type="button"
+              class="vendors-list__menu-trigger"
+              [class.vendors-list__menu-trigger--open]="actionsVendor()?.id === vendor.id"
+              [attr.aria-expanded]="actionsVendor()?.id === vendor.id ? 'true' : 'false'"
+              aria-haspopup="menu"
+              aria-controls="vendor-actions-menu"
+              [attr.aria-label]="'إجراءات ' + vendor.name"
+              (click)="toggleActions(vendor, $event)"
             >
-              <i class="pi pi-tags"></i>
-              إدارة الكتالوج
-            </a>
+              <i class="pi pi-ellipsis-v" aria-hidden="true"></i>
+            </button>
           </td>
         </tr>
       </ng-template>
@@ -194,7 +228,9 @@
       <ng-template pTemplate="emptymessage">
         <tr>
           <td colspan="7" class="vendors-list__empty">
-            @if (hasActiveFilters()) {
+            @if (loading()) {
+              جاري تحميل المتاجر...
+            } @else if (hasActiveFilters()) {
               لا توجد متاجر مطابقة للفلاتر.
             } @else {
               لا توجد متاجر.
@@ -203,6 +239,71 @@
         </tr>
       </ng-template>
     </p-table>
+
+    <div class="vendors-list__pager">
+      <span class="vendors-list__pager-label">الصفحة {{ pageNumber() }}</span>
+      <div class="vendors-list__pager-actions">
+        <button
+          type="button"
+          class="vendors-list__pager-btn"
+          [disabled]="backStack().length === 0 || loading()"
+          (click)="goBack()"
+        >
+          <i class="pi pi-chevron-right" aria-hidden="true"></i>
+          السابق
+        </button>
+        <button
+          type="button"
+          class="vendors-list__pager-btn"
+          [disabled]="!nextCursor() || loading()"
+          (click)="goNext()"
+        >
+          التالي
+          <i class="pi pi-chevron-left" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div
+    #actionsMenu
+    id="vendor-actions-menu"
+    class="vendors-list__menu"
+    popover="manual"
+    role="menu"
+    (toggle)="onActionsToggle($event)"
+  >
+    @if (actionsVendor(); as vendor) {
+      <a
+        role="menuitem"
+        class="vendors-list__menu-item"
+        [routerLink]="['/vendors', vendor.id]"
+        (click)="closeActions()"
+      >
+        <i class="pi pi-eye" aria-hidden="true"></i>
+        عرض التفاصيل
+      </a>
+      <a
+        *ctrlPermission="'vendors.write'"
+        role="menuitem"
+        class="vendors-list__menu-item"
+        [routerLink]="['/vendors/edit', vendor.id]"
+        (click)="closeActions()"
+      >
+        <i class="pi pi-pencil" aria-hidden="true"></i>
+        تعديل المتجر
+      </a>
+      <a
+        *ctrlPermission="'catalog.read'"
+        role="menuitem"
+        class="vendors-list__menu-item"
+        [routerLink]="['/vendors', vendor.id, 'catalog']"
+        (click)="closeActions()"
+      >
+        <i class="pi pi-box" aria-hidden="true"></i>
+        تصنيفات المنتجات 
+      </a>
+    }
   </div>
 
 </div>

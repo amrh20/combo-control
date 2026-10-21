@@ -1,20 +1,25 @@
 import {
-  AfterViewInit,
   Component,
+  DestroyRef,
   OnInit,
   computed,
   effect,
   inject,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { DecimalPipe, NgClass } from '@angular/common';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { MessageService } from 'primeng/api';
 import { InputTextModule } from 'primeng/inputtext';
 import { InputNumberModule } from 'primeng/inputnumber';
+import { ToastModule } from 'primeng/toast';
+import { forkJoin, map } from 'rxjs';
 import * as turf from '@turf/turf';
+import { GeometryInvalidError, GeometryOverlapError } from '../../../core/models/geometry-error';
 
 import { ZoneService } from '../../../core/services/zone.service';
 import { SubZoneService } from '../../../core/services/sub-zone.service';
@@ -25,10 +30,10 @@ import {
   type SubZone,
 } from '../../../core/models/sub-zone.model';
 import {
-  SubZoneMapComponent,
-  type MapPolygonChanged,
-  type MapPolygonCreated,
-} from '../sub-zone-map/sub-zone-map.component';
+  MapComponent,
+  type MapOverlay,
+  type MapPolygonEvent,
+} from '../../../shared/components/map/map.component';
 
 interface SubZoneDraft {
   layerId: number;
@@ -49,26 +54,35 @@ interface SubZoneDraft {
     ReactiveFormsModule,
     InputTextModule,
     InputNumberModule,
-    SubZoneMapComponent,
+    ToastModule,
+    MapComponent,
   ],
+  providers: [MessageService],
   templateUrl: './sub-zone-builder.component.html',
   styleUrl: './sub-zone-builder.component.scss',
 })
-export class SubZoneBuilderComponent implements OnInit, AfterViewInit {
+export class SubZoneBuilderComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly zoneService = inject(ZoneService);
   private readonly subZoneService = inject(SubZoneService);
-  private readonly map = viewChild(SubZoneMapComponent);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly messages = inject(MessageService);
+  private readonly map = viewChild(MapComponent);
+  private editPainted = false;
 
   readonly colorPresets = SUB_ZONE_COLOR_PRESETS;
   readonly zones = this.zoneService.zones;
 
   readonly subZoneId = signal<string | null>(null);
+  readonly loading = signal(true);
+  readonly saving = signal(false);
   readonly missing = signal(false);
+  readonly loadError = signal<string | null>(null);
   readonly submitted = signal(false);
+  readonly overlap = signal<ZonePolygon | null>(null);
   readonly subZones = signal<SubZoneDraft[]>([]);
-  private existingForEdit: SubZone | null = null;
+  private readonly editTarget = signal<SubZone | null>(null);
 
   readonly subZoneForm = new FormGroup({
     parentZoneId: new FormControl('', {
@@ -99,6 +113,42 @@ export class SubZoneBuilderComponent implements OnInit, AfterViewInit {
     return id ? this.zones().find((zone) => zone.id === id) ?? null : null;
   });
   readonly parentGeometry = computed(() => this.parentZone()?.polygon ?? null);
+
+  readonly mapOverlays = computed<MapOverlay[]>(() => {
+    const overlays: MapOverlay[] = [];
+    const parent = this.parentGeometry();
+    if (parent) {
+      overlays.push({
+        id: 'parent',
+        geometry: parent,
+        strokeColor: '#71717a',
+        fillColor: '#71717a',
+        fillOpacity: 0.08,
+        strokeWeight: 2,
+      });
+    }
+    for (const sibling of this.siblings()) {
+      overlays.push({
+        id: sibling.id,
+        geometry: sibling.geometry,
+        strokeColor: sibling.color,
+        fillColor: sibling.color,
+        fillOpacity: 0.08,
+        strokeWeight: 1,
+      });
+    }
+    const overlap = this.overlap();
+    if (overlap) {
+      overlays.push({
+        id: 'overlap',
+        geometry: overlap,
+        strokeColor: '#dc2626',
+        fillColor: '#dc2626',
+        fillOpacity: 0.35,
+      });
+    }
+    return overlays;
+  });
 
   readonly siblings = computed(() => {
     const parentId = this.parentZoneId();
@@ -172,46 +222,61 @@ export class SubZoneBuilderComponent implements OnInit, AfterViewInit {
         this.parentZoneIdControl.enable({ emitEvent: false });
       }
     });
+
+    effect(() => {
+      const existing = this.editTarget();
+      const map = this.map();
+      const ready = map?.ready() ?? false;
+      if (!existing || !map || !ready) {
+        return;
+      }
+      untracked(() => this.paintEdit(map, existing));
+    });
   }
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
     this.subZoneId.set(id);
-    if (!id) {
-      this.applyPresetParent(this.route.snapshot.queryParamMap.get('parentId'));
-      return;
-    }
 
-    const existing = this.subZoneService.getById(id);
-    if (!existing) {
-      this.missing.set(true);
-      return;
-    }
+    forkJoin({
+      zones: this.zoneService.getZones(),
+      subZones: this.zoneService.getSubZones(),
+    })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          if (!id) {
+            this.applyPresetParent(this.route.snapshot.queryParamMap.get('parentId'));
+            this.loading.set(false);
+            return;
+          }
 
-    this.parentZoneIdControl.setValue(existing.parentZoneId);
-    this.existingForEdit = existing;
+          const existing = this.subZoneService.getById(id);
+          if (!existing) {
+            this.missing.set(true);
+            this.loading.set(false);
+            return;
+          }
+
+          this.parentZoneIdControl.enable({ emitEvent: false });
+          this.parentZoneIdControl.setValue(existing.parentZoneId);
+          this.parentZoneIdControl.disable({ emitEvent: false });
+          this.editTarget.set(existing);
+          this.loading.set(false);
+        },
+        error: () => {
+          if (id) {
+            this.missing.set(true);
+          } else {
+            this.loadError.set('تعذر تحميل المناطق.');
+          }
+          this.loading.set(false);
+        },
+      });
   }
 
-  ngAfterViewInit(): void {
-    const existing = this.existingForEdit;
-    if (!existing) {
-      return;
-    }
-    queueMicrotask(() => {
-      const created = this.map()?.addPolygon(existing.geometry, existing.color);
-      if (!created) {
-        return;
-      }
-      this.subZones.set([{
-        ...created,
-        name: existing.name,
-        minOrder: existing.minOrder,
-        color: existing.color,
-      }]);
-    });
-  }
-
-  onPolygonCreated(polygon: MapPolygonCreated): void {
+  onPolygonCreated(polygon: MapPolygonEvent): void {
+    this.overlap.set(null);
     const color = this.createDistinctColor();
     this.map()?.updateLayerColor(polygon.layerId, color);
     this.subZones.update((drafts) => [
@@ -225,7 +290,8 @@ export class SubZoneBuilderComponent implements OnInit, AfterViewInit {
     ]);
   }
 
-  onPolygonChanged(polygon: MapPolygonChanged): void {
+  onPolygonChanged(polygon: MapPolygonEvent): void {
+    this.overlap.set(null);
     this.updateDraft(polygon.layerId, {
       geometry: polygon.geometry,
       areaSqKm: polygon.areaSqKm,
@@ -272,13 +338,34 @@ export class SubZoneBuilderComponent implements OnInit, AfterViewInit {
       isActive: true,
     }));
 
-    const id = this.subZoneId();
-    if (id) {
-      this.subZoneService.update(id, { ...payloads[0], parentZoneId });
-    } else {
-      this.subZoneService.createMultipleSubZones(parentZoneId, payloads);
+    const draft = payloads[0];
+    if (!draft) {
+      return;
     }
-    this.router.navigate([this.backRoute()]);
+
+    const id = this.subZoneId();
+    const request = id
+      ? this.zoneService.updateSubZone(id, draft).pipe(map(() => undefined))
+      : this.zoneService.createSubZones(parentZoneId, payloads).pipe(map(() => undefined));
+
+    this.saving.set(true);
+    this.overlap.set(null);
+    request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => this.router.navigate([this.backRoute()]),
+      error: (error: unknown) => {
+        this.saving.set(false);
+        if (error instanceof GeometryOverlapError) {
+          this.overlap.set(error.overlap);
+          return;
+        }
+        this.messages.add({
+          severity: 'error',
+          summary: 'تعذر الحفظ',
+          detail: error instanceof GeometryInvalidError ? error.message : 'تعذر حفظ المنطقة الفرعية.',
+          life: 6000,
+        });
+      },
+    });
   }
 
   cancel(): void {
@@ -294,6 +381,23 @@ export class SubZoneBuilderComponent implements OnInit, AfterViewInit {
     this.presetParentId.set(parentId);
     // Emits valueChanges → parentZoneId signal → parentGeometry → map draws and flies to the boundary.
     this.subZoneForm.patchValue({ parentZoneId: parentId });
+  }
+
+  private paintEdit(map: MapComponent, existing: SubZone): void {
+    if (this.editPainted) {
+      return;
+    }
+    const created = map.addPolygon(existing.geometry, existing.color);
+    if (!created) {
+      return;
+    }
+    this.editPainted = true;
+    this.subZones.set([{
+      ...created,
+      name: existing.name,
+      minOrder: existing.minOrderEGP,
+      color: existing.color,
+    }]);
   }
 
   private updateDraft(layerId: number, patch: Partial<SubZoneDraft>): void {

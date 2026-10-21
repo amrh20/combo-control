@@ -1,6 +1,8 @@
 <div class="zone-details">
 
-  @if (!zone()) {
+  @if (loading()) {
+    <p>جاري التحميل...</p>
+  } @else if (!zone()) {
     <div class="zone-details__not-found">
       <i class="pi pi-exclamation-circle zone-details__not-found-icon"></i>
       <p>المنطقة غير موجودة.</p>
@@ -22,7 +24,11 @@
           <h1 class="zone-details__title">{{ zone.name }}</h1>
           <p class="zone-details__subtitle">{{ zone.id }} · منطقة سكن العملاء</p>
         </div>
-        <a [routerLink]="['/zones/edit', zone.id]" class="zone-details__btn zone-details__btn--primary">
+        <a
+          *ctrlPermission="'zones.write'"
+          [routerLink]="['/zones/edit', zone.id]"
+          class="zone-details__btn zone-details__btn--primary"
+        >
           <i class="pi pi-pencil"></i>
           تعديل المنطقة
         </a>
@@ -64,10 +70,17 @@
           <ul class="zone-details__hub-list">
             @for (hub of servingHubs(); track hub.id) {
               <li>
-                <a [routerLink]="['/hubs/edit', hub.id]" class="zone-details__hub-link">
-                  <code class="zone-details__id-pill">{{ hub.id }}</code>
-                  <span>{{ hub.name }}</span>
-                </a>
+                @if (auth.hasPermission('hubs.write')) {
+                  <a [routerLink]="['/hubs/edit', hub.id]" class="zone-details__hub-link">
+                    <code class="zone-details__id-pill">{{ hub.id }}</code>
+                    <span>{{ hub.name }}</span>
+                  </a>
+                } @else {
+                  <span class="zone-details__hub-link">
+                    <code class="zone-details__id-pill">{{ hub.id }}</code>
+                    <span>{{ hub.name }}</span>
+                  </span>
+                }
               </li>
             }
           </ul>
@@ -81,7 +94,7 @@
         مضلع التوصيل
       </h2>
       <div class="zone-details__map">
-        <ctrl-zone-map [initialGeometry]="zone.polygon" [readOnly]="true" />
+        <combo-map mode="polygon" [polygon]="zone.polygon" [readOnly]="true" [isEditable]="false" />
       </div>
     </div>
 

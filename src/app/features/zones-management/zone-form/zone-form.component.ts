@@ -1,18 +1,20 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgClass } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { MessageService } from 'primeng/api';
 import { InputTextModule } from 'primeng/inputtext';
-import { InputNumberModule } from 'primeng/inputnumber';
+import { ToastModule } from 'primeng/toast';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
+import { GeometryInvalidError, GeometryOverlapError } from '../../../core/models/geometry-error';
 import { ZoneService } from '../../../core/services/zone.service';
 import {
   normalizeZonePolygon,
   type ZonePolygon,
   type ZoneWritePayload,
 } from '../../../core/models/zone.model';
-import { ZoneMapComponent } from '../../geofencing/zone-map/zone-map.component';
-import type { PolygonChange } from '../../geofencing/models/zone.model';
+import { MapComponent, type MapPolygonChange } from '../../../shared/components/map/map.component';
 
 @Component({
   selector: 'ctrl-zone-builder',
@@ -21,10 +23,11 @@ import type { PolygonChange } from '../../geofencing/models/zone.model';
     NgClass,
     ReactiveFormsModule,
     InputTextModule,
-    InputNumberModule,
+    ToastModule,
     ToggleSwitchModule,
-    ZoneMapComponent,
+    MapComponent,
   ],
+  providers: [MessageService],
   templateUrl: './zone-form.component.html',
   styleUrl: './zone-form.component.scss',
 })
@@ -33,8 +36,12 @@ export class ZoneFormComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly zoneService = inject(ZoneService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly messages = inject(MessageService);
 
   readonly zoneId = signal<string | null>(null);
+  readonly loading = signal(this.route.snapshot.paramMap.has('id'));
+  readonly saving = signal(false);
   readonly missing = signal(false);
   /** Latest polygon emitted by the map, before GeoJSON normalization. */
   readonly zoneGeometry = signal<ZonePolygon | null>(null);
@@ -46,7 +53,6 @@ export class ZoneFormComponent implements OnInit {
 
   readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.minLength(2)]],
-    minOrder: [0, [Validators.required, Validators.min(0)]],
     isActive: [true],
   });
 
@@ -57,22 +63,27 @@ export class ZoneFormComponent implements OnInit {
       return;
     }
 
-    const existing = this.zoneService.getById(id);
-    if (!existing) {
-      this.missing.set(true);
-      return;
-    }
-
-    this.form.patchValue({
-      name: existing.name,
-      minOrder: existing.minOrder,
-      isActive: existing.isActive,
-    });
-    this.initialGeometry.set(existing.polygon);
-    this.zoneGeometry.set(existing.polygon);
+    this.zoneService
+      .getZoneById(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (existing) => {
+          this.form.patchValue({
+            name: existing.name,
+            isActive: existing.isActive,
+          });
+          this.initialGeometry.set(existing.polygon);
+          this.zoneGeometry.set(existing.polygon);
+          this.loading.set(false);
+        },
+        error: () => {
+          this.missing.set(true);
+          this.loading.set(false);
+        },
+      });
   }
 
-  onPolygonChanged(change: PolygonChange | null): void {
+  onPolygonChanged(change: MapPolygonChange | null): void {
     this.zoneGeometry.set(change?.geometry ?? null);
     this.areaSqKm.set(change?.areaSqKm ?? null);
     if (this.currentPolygonGeoJSON()) {
@@ -80,7 +91,7 @@ export class ZoneFormComponent implements OnInit {
     }
   }
 
-  invalid(field: 'name' | 'minOrder'): boolean {
+  invalid(field: 'name'): boolean {
     const control = this.form.controls[field];
     return control.invalid && (control.dirty || control.touched);
   }
@@ -99,15 +110,36 @@ export class ZoneFormComponent implements OnInit {
     };
 
     const id = this.zoneId();
-    if (id) {
-      this.zoneService.update(id, zonePayload);
-    } else {
-      this.zoneService.add(zonePayload);
-    }
-    this.router.navigate(['/zones']);
+    const request = id
+      ? this.zoneService.updateZone(id, zonePayload)
+      : this.zoneService.createZone(zonePayload);
+
+    this.saving.set(true);
+    request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => this.router.navigate(['/zones']),
+      error: (error: unknown) => {
+        this.saving.set(false);
+        this.messages.add({
+          severity: 'error',
+          summary: 'تعذر الحفظ',
+          detail: saveErrorDetail(error, 'تعذر حفظ المنطقة.'),
+          life: 6000,
+        });
+      },
+    });
   }
 
   cancel(): void {
     this.router.navigate(['/zones']);
   }
+}
+
+function saveErrorDetail(error: unknown, fallback: string): string {
+  if (error instanceof GeometryInvalidError) {
+    return error.message;
+  }
+  if (error instanceof GeometryOverlapError) {
+    return 'الرسمة تتداخل مع منطقة أخرى.';
+  }
+  return fallback;
 }

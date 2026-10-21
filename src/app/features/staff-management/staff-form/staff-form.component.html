@@ -1,0 +1,264 @@
+<div
+  class="fixed inset-0 z-[1100] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+  role="presentation"
+  (click)="closeOnBackdrop($event)"
+>
+  <div
+    class="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-xl border border-gray-100 bg-white shadow-none"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="staff-form-title"
+    (click)="$event.stopPropagation()"
+  >
+    <header class="flex items-start justify-between gap-3 border-b border-gray-100 px-4 py-3">
+      <div>
+        <p id="staff-form-title" role="heading" aria-level="2" class="m-0 text-[15px] font-semibold leading-snug text-[var(--Combo-text-text-display)]">
+          {{ creating ? 'إضافة موظف جديد' : 'تعديل بيانات الموظف' }}
+        </p>
+        <p class="m-0 mt-0.5 text-[11px] leading-snug text-gray-500">
+          @if (creating) {
+            حدّد بيانات الدخول والدور والنطاق الذي يعمل فيه الموظف.
+          } @else {
+            يمكن تعديل الدور والنطاق فقط. الاسم والبريد والهاتف يبقيان كما أُنشئا.
+          }
+        </p>
+      </div>
+      <button
+        type="button"
+        class="inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-gray-500 hover:bg-gray-50"
+        aria-label="إغلاق"
+        (click)="close()"
+      >
+        <i class="pi pi-times" aria-hidden="true"></i>
+      </button>
+    </header>
+
+    <form class="overflow-y-auto px-4 py-3 text-[12px]" [formGroup]="form" (ngSubmit)="save()">
+      @if (saveError(); as message) {
+        <p class="m-0 mb-3 rounded-md bg-red-50 px-3 py-2 text-[12px] text-red-700" role="alert">
+          {{ message }}
+        </p>
+      }
+      @if (rolesError(); as message) {
+        <p class="m-0 mb-3 rounded-md bg-red-50 px-3 py-2 text-[12px] text-red-700" role="alert">
+          {{ message }}
+        </p>
+      }
+      <div class="grid gap-2.5 sm:grid-cols-2">
+        <label class="block sm:col-span-2">
+          <span class="mb-1 block text-[11px] font-medium text-gray-700">
+            الاسم بالكامل <span class="text-red-600">*</span>
+          </span>
+          <input
+            type="text"
+            formControlName="fullName"
+            autocomplete="name"
+            placeholder="مثال: ليلى عبد المنعم"
+            [readOnly]="!creating"
+            class="h-8 w-full rounded-md border border-gray-200 px-2.5 text-[12px] text-gray-900 outline-none read-only:bg-gray-50 focus:border-[var(--Combo-border-border-primary)]"
+            [class.border-red-400]="showError(form.controls.fullName)"
+          />
+          @if (showError(form.controls.fullName)) {
+            <span class="mt-1 block text-[11px] text-red-600">أدخل الاسم بالكامل (3 أحرف على الأقل).</span>
+          }
+        </label>
+
+        <label class="block">
+          <span class="mb-1 block text-[11px] font-medium text-gray-700">
+            البريد الإلكتروني <span class="text-red-600">*</span>
+          </span>
+          <input
+            type="email"
+            formControlName="email"
+            autocomplete="off"
+            dir="ltr"
+            placeholder="name@combo.app"
+            [readOnly]="!creating"
+            class="h-8 w-full rounded-md border border-gray-200 px-2.5 text-start text-[12px] text-gray-900 outline-none read-only:bg-gray-50 focus:border-[var(--Combo-border-border-primary)]"
+            [class.border-red-400]="showError(form.controls.email)"
+          />
+          @if (showError(form.controls.email)) {
+            <span class="mt-1 block text-[11px] text-red-600">
+              @if (form.controls.email.hasError('emailTaken')) {
+                هذا البريد مستخدم لموظف آخر.
+              } @else {
+                أدخل بريداً إلكترونياً صحيحاً.
+              }
+            </span>
+          }
+        </label>
+
+        <label class="block">
+          <span class="mb-1 block text-[11px] font-medium text-gray-700">
+            رقم الهاتف <span class="text-red-600">*</span>
+          </span>
+          <input
+            type="tel"
+            formControlName="phone"
+            autocomplete="tel"
+            dir="ltr"
+            placeholder="01012345678"
+            [readOnly]="!creating"
+            class="h-8 w-full rounded-md border border-gray-200 px-2.5 text-start text-[12px] text-gray-900 outline-none read-only:bg-gray-50 focus:border-[var(--Combo-border-border-primary)]"
+            [class.border-red-400]="showError(form.controls.phone)"
+          />
+          @if (showError(form.controls.phone)) {
+            <span class="mt-1 block text-[11px] text-red-600">أدخل رقم موبايل مصري صحيح.</span>
+          }
+        </label>
+
+        @if (creating) {
+          <label class="block sm:col-span-2">
+            <span class="mb-1 block text-[11px] font-medium text-gray-700">
+              كلمة المرور <span class="text-red-600">*</span>
+            </span>
+            <input
+              type="password"
+              formControlName="password"
+              autocomplete="new-password"
+              dir="ltr"
+              placeholder="••••••••"
+              class="h-8 w-full rounded-md border border-gray-200 px-2.5 text-start text-[12px] text-gray-900 outline-none focus:border-[var(--Combo-border-border-primary)]"
+              [class.border-red-400]="showError(form.controls.password)"
+            />
+            <span class="mt-1 block text-[11px] text-gray-400">8 أحرف على الأقل، وفيها حرف ورقم.</span>
+            @if (showError(form.controls.password)) {
+              <span class="mt-1 block text-[11px] text-red-600">كلمة المرور لا تطابق الشروط.</span>
+            }
+          </label>
+        }
+      </div>
+
+      <label class="mt-2.5 block">
+        <span class="mb-1 block text-[11px] font-medium text-gray-700">
+          الدور <span class="text-red-600">*</span>
+        </span>
+        <select
+          formControlName="roleKey"
+          class="h-8 w-full rounded-md border border-gray-200 bg-white px-2.5 text-[12px] text-gray-900 outline-none focus:border-[var(--Combo-border-border-primary)]"
+          [class.border-red-400]="showError(form.controls.roleKey)"
+        >
+          <option value="">{{ rolesLoading() ? 'جاري تحميل الأدوار...' : 'اختر الدور' }}</option>
+          @for (role of roleOptions(); track role.key) {
+            <option [value]="role.key">{{ roleLabel(role) }}</option>
+          }
+        </select>
+        @if (showError(form.controls.roleKey)) {
+          <span class="mt-1 block text-[11px] text-red-600">اختر دور الموظف.</span>
+        }
+      </label>
+
+      <div class="mt-2.5">
+        <p class="m-0 mb-1 text-[11px] font-medium text-gray-700">
+          النطاق الجغرافي <span class="text-red-600">*</span>
+        </p>
+        <div class="grid grid-cols-2 gap-1 rounded-md bg-gray-100 p-0.5" role="radiogroup" aria-label="النطاق الجغرافي">
+          <button
+            type="button"
+            role="radio"
+            class="h-7 cursor-pointer rounded border-0 text-[12px] font-medium"
+            [class.bg-white]="form.controls.scopeMode.value === 'all'"
+            [class.text-gray-900]="form.controls.scopeMode.value === 'all'"
+            [class.shadow-sm]="form.controls.scopeMode.value === 'all'"
+            [class.bg-transparent]="form.controls.scopeMode.value !== 'all'"
+            [class.text-gray-500]="form.controls.scopeMode.value !== 'all'"
+            [attr.aria-checked]="form.controls.scopeMode.value === 'all'"
+            (click)="setScope('all')"
+          >
+            كل المناطق
+          </button>
+          <button
+            type="button"
+            role="radio"
+            class="h-7 cursor-pointer rounded border-0 text-[12px] font-medium"
+            [class.bg-white]="form.controls.scopeMode.value === 'hubs'"
+            [class.text-gray-900]="form.controls.scopeMode.value === 'hubs'"
+            [class.shadow-sm]="form.controls.scopeMode.value === 'hubs'"
+            [class.bg-transparent]="form.controls.scopeMode.value !== 'hubs'"
+            [class.text-gray-500]="form.controls.scopeMode.value !== 'hubs'"
+            [attr.aria-checked]="form.controls.scopeMode.value === 'hubs'"
+            (click)="setScope('hubs')"
+          >
+            شوارع محددة
+          </button>
+        </div>
+
+        @if (form.controls.scopeMode.value === 'hubs') {
+          <div #hubPicker class="relative mt-2">
+            @if (selectedHubs().length > 0) {
+              <div class="mb-1.5 flex flex-wrap gap-1">
+                @for (hub of selectedHubs(); track hub.id) {
+                  <button
+                    type="button"
+                    class="inline-flex cursor-pointer items-center gap-1 rounded-full border-0 bg-gray-100 px-2 py-0.5 text-[11px] text-gray-700 hover:bg-gray-200"
+                    (click)="toggleHubId(hub.id)"
+                  >
+                    {{ hub.name }}
+                    <i class="pi pi-times text-[9px] text-gray-400" aria-hidden="true"></i>
+                  </button>
+                }
+              </div>
+            }
+
+            <input
+              type="search"
+              class="h-8 w-full rounded-md border border-gray-200 bg-white px-2.5 text-[12px] text-gray-900 outline-none placeholder:text-gray-400 focus:border-[var(--Combo-border-border-primary)]"
+              placeholder="ابحث عن شارع وأضفه..."
+              aria-label="بحث عن شارع"
+              [value]="hubQuery()"
+              (input)="onHubQuery($event)"
+              (focus)="hubMenuOpen.set(true)"
+            />
+
+            @if (hubMenuOpen()) {
+              <ul class="m-0 mt-1 max-h-36 w-full list-none overflow-y-auto rounded-md border border-gray-200 bg-white p-1">
+                @for (hub of filteredHubs(); track hub.id) {
+                  <li>
+                    <button
+                      type="button"
+                      class="flex w-full cursor-pointer items-center justify-between rounded border-0 bg-transparent px-2 py-1.5 text-start text-[12px] text-gray-800 hover:bg-gray-50"
+                      [class.bg-emerald-50]="isHubChecked(hub.id)"
+                      (click)="toggleHubId(hub.id)"
+                    >
+                      <span>{{ hub.name }}</span>
+                      @if (isHubChecked(hub.id)) {
+                        <i class="pi pi-check text-[10px] text-[#00846A]" aria-hidden="true"></i>
+                      }
+                    </button>
+                  </li>
+                } @empty {
+                  <li class="px-2 py-2 text-[11px] text-gray-500">لا توجد شوارع مطابقة.</li>
+                }
+              </ul>
+            }
+            @if (hubsLoaded() && activeHubs().length === 0 && !hubsMissing()) {
+              <span class="mt-1 block text-[11px] text-gray-500">لا توجد شوارع متاحة لهذا الحساب.</span>
+            }
+            @if (hubsMissing()) {
+              <span class="mt-1 block text-[11px] text-red-600">اختر شارعاً واحداً على الأقل.</span>
+            }
+          </div>
+        }
+      </div>
+
+      <footer class="mt-4 flex items-center justify-end gap-2">
+        <button
+          type="button"
+          class="inline-flex h-8 cursor-pointer items-center rounded-md border border-gray-200 bg-white px-3 text-[12px] font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="saving()"
+          (click)="close()"
+        >
+          إلغاء
+        </button>
+        <button
+          type="submit"
+          class="inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-md border-0 bg-[var(--Combo-button-button-background-primary-default)] px-3 text-[12px] font-semibold text-[var(--Combo-text-text-oncolor-primary)] hover:bg-[var(--Combo-button-button-background-primary-hovered)] disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="saving() || rolesLoading() || !!rolesError()"
+        >
+          <i class="pi pi-check text-xs" aria-hidden="true"></i>
+          {{ saving() ? 'جاري الحفظ...' : 'حفظ' }}
+        </button>
+      </footer>
+    </form>
+  </div>
+</div>

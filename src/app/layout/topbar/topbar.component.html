@@ -13,11 +13,34 @@
       <span class="topbar__badge">3</span>
     </button>
 
-    <!-- User chip -->
-    <div class="topbar__user">
-      <div class="topbar__avatar">م</div>
-      <span class="topbar__username">مسؤول</span>
-      <i class="pi pi-chevron-down" style="font-size: 11px"></i>
+    <div class="topbar__user-wrap" #userMenu>
+      <button
+        type="button"
+        class="topbar__user"
+        (click)="toggleMenu()"
+        [attr.aria-expanded]="menuOpen()"
+        aria-haspopup="menu"
+        aria-label="حساب المستخدم"
+      >
+        <span class="topbar__avatar">{{ avatarInitial() }}</span>
+        <span class="topbar__username">{{ displayName() }}</span>
+        <i class="pi pi-chevron-down topbar__chevron" [class.topbar__chevron--open]="menuOpen()"></i>
+      </button>
+
+      @if (menuOpen()) {
+        <div class="topbar__menu" role="menu">
+          <div class="topbar__menu-identity">
+            <div class="topbar__menu-name">{{ displayName() }}</div>
+            @if (email()) {
+              <div class="topbar__menu-email" dir="ltr">{{ email() }}</div>
+            }
+          </div>
+          <button type="button" class="topbar__logout" role="menuitem" (click)="logout()">
+            <i class="pi pi-sign-out" aria-hidden="true"></i>
+            تسجيل الخروج
+          </button>
+        </div>
+      }
     </div>
   </div>
 </header>

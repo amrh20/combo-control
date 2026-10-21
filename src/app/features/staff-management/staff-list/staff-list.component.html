@@ -1,0 +1,185 @@
+<div class="flex flex-col gap-6">
+  <div>
+    <h1 class="m-0 mb-1 text-[22px] font-bold leading-snug text-[var(--Combo-text-text-display)]">
+      الموظفين
+    </h1>
+    <p class="m-0 text-[13px] text-[var(--Combo-text-text-secondary-paragraph)]">
+      إضافة موظفي لوحة التحكم وتحديد أدوارهم والنطاق الذي يعملون فيه.
+    </p>
+  </div>
+
+  <div class="rounded-xl border border-gray-100 bg-white p-6">
+    <div class="mb-4 flex flex-wrap items-center gap-3">
+      <label class="relative min-w-[220px] flex-1">
+        <i
+          class="pi pi-search pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-sm text-gray-400"
+          aria-hidden="true"
+        ></i>
+        <input
+          type="search"
+          class="h-10 w-full rounded-lg border border-gray-200 bg-white ps-9 pe-3 text-start text-[13px] text-gray-800 outline-none placeholder:text-gray-400 focus:border-gray-400"
+          placeholder="بحث بالاسم أو البريد الإلكتروني..."
+          aria-label="بحث بالاسم أو البريد الإلكتروني"
+          [value]="searchQuery()"
+          (input)="onSearch($event)"
+        />
+      </label>
+
+      <button
+        *ctrlPermission="'staff.manage'"
+        type="button"
+        class="inline-flex h-10 cursor-pointer items-center gap-2 rounded-lg border-0 bg-[var(--Combo-button-button-background-primary-default)] px-4 text-sm font-semibold text-[var(--Combo-text-text-oncolor-primary)] hover:bg-[var(--Combo-button-button-background-primary-hovered)]"
+        (click)="openCreate()"
+      >
+        <i class="pi pi-plus text-xs" aria-hidden="true"></i>
+        إضافة موظف جديد
+      </button>
+    </div>
+
+    @if (loadError(); as message) {
+      <div class="mb-4 flex items-center justify-between gap-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+        <span>{{ message }}</span>
+        <button
+          type="button"
+          class="cursor-pointer rounded-md border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700"
+          (click)="reload()"
+        >
+          إعادة المحاولة
+        </button>
+      </div>
+    }
+    @if (actionError(); as message) {
+      <p class="m-0 mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">{{ message }}</p>
+    }
+
+    <div class="overflow-x-auto">
+      <table class="w-full min-w-[56rem] border-collapse text-start text-sm">
+        <thead>
+          <tr class="border-b border-gray-100 text-[13px] font-semibold text-gray-500">
+            <th class="px-4 py-3 font-semibold">الموظف</th>
+            <th class="px-4 py-3 font-semibold">الدور</th>
+            <th class="px-4 py-3 font-semibold">النطاق</th>
+            <th class="px-4 py-3 font-semibold">الحالة</th>
+            <th class="px-4 py-3 font-semibold">التحقق بخطوتين</th>
+            <th class="px-4 py-3 text-center font-semibold">الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (member of filteredStaff(); track member.id) {
+            <tr class="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
+              <td class="px-4 py-3">
+                <div class="font-semibold text-gray-900">{{ member.fullName }}</div>
+                <div dir="ltr" class="mt-0.5 text-start text-xs text-gray-400">{{ member.email }}</div>
+              </td>
+              <td class="px-4 py-3">
+                <div class="  ">
+                  @for (role of member.roles; track role.key) {
+                    <span
+                      class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold {{ roleBadgeClass(role.key) }}"
+                    >
+                      {{ roleLabel(role) }}
+                    </span>
+                  }
+                </div>
+              </td>
+              <td class="px-4 py-3">
+                <div class="font-medium text-gray-800">{{ scopeLabel(member) }}</div>
+                @if (hubNames(member); as names) {
+                  <div class="mt-0.5 text-xs text-gray-400">{{ names }}</div>
+                }
+              </td>
+              <td class="px-4 py-3">
+                <span class="inline-flex items-center gap-2 text-xs font-semibold text-gray-700">
+                  <span
+                    class="h-2 w-2 rounded-full"
+                    [class.bg-green-500]="member.status === 'ACTIVE'"
+                    [class.bg-gray-400]="member.status === 'BLOCKED'"
+                    aria-hidden="true"
+                  ></span>
+                  {{ member.status === 'ACTIVE' ? 'نشط' : 'محظور' }}
+                </span>
+              </td>
+              <td class="px-4 py-3">
+                <span
+                  class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold"
+                  [class]="member.mfaEnabled ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'"
+                >
+                  {{ member.mfaEnabled ? 'مفعل' : 'غير مفعل' }}
+                </span>
+              </td>
+              <td class="px-4 py-3">
+                <div *ctrlPermission="'staff.manage'" class="flex items-center justify-center gap-1.5">
+                  <button
+                    type="button"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-transparent text-gray-600 hover:bg-gray-50"
+                    [class.cursor-pointer]="!editDisabled(member)"
+                    [class.opacity-30]="editDisabled(member)"
+                    [class.cursor-not-allowed]="editDisabled(member)"
+                    [class.pointer-events-none]="editDisabled(member)"
+                    [disabled]="editDisabled(member)"
+                    [attr.aria-label]="'تعديل ' + member.fullName"
+                    title="تعديل"
+                    (click)="openEdit(member)"
+                  >
+                    <i class="pi pi-pencil text-sm" aria-hidden="true"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-transparent hover:bg-gray-50"
+                    [class.text-red-600]="member.status === 'ACTIVE'"
+                    [class.text-green-700]="member.status === 'BLOCKED'"
+                    [class.cursor-pointer]="!blockDisabled(member)"
+                    [class.opacity-30]="blockDisabled(member)"
+                    [class.cursor-not-allowed]="blockDisabled(member)"
+                    [class.pointer-events-none]="blockDisabled(member)"
+                    [disabled]="blockDisabled(member)"
+                    [attr.aria-label]="(member.status === 'ACTIVE' ? 'حظر ' : 'إلغاء حظر ') + member.fullName"
+                    [title]="member.status === 'ACTIVE' ? 'حظر' : 'إلغاء الحظر'"
+                    (click)="toggleBlock(member)"
+                  >
+                    <i
+                      class="pi text-sm"
+                      [class.pi-ban]="member.status === 'ACTIVE'"
+                      [class.pi-lock-open]="member.status === 'BLOCKED'"
+                      aria-hidden="true"
+                    ></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-transparent text-gray-600 hover:bg-gray-50"
+                    [class.cursor-pointer]="!mfaDisabled(member)"
+                    [class.opacity-30]="mfaDisabled(member)"
+                    [class.cursor-not-allowed]="mfaDisabled(member)"
+                    [class.pointer-events-none]="mfaDisabled(member)"
+                    [disabled]="mfaDisabled(member)"
+                    [attr.aria-label]="'إعادة ضبط التحقق بخطوتين لـ ' + member.fullName"
+                    title="إعادة ضبط التحقق بخطوتين"
+                    (click)="resetMfa(member)"
+                  >
+                    <i class="pi pi-shield text-sm" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="px-4 py-10 text-center text-sm text-gray-500">
+                @if (loading()) {
+                  جاري تحميل الموظفين...
+                } @else if (searchQuery()) {
+                  لا يوجد موظفون مطابقون للبحث.
+                } @else {
+                  لا يوجد موظفون.
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@if (formOpen()) {
+  <ctrl-staff-form [staff]="editing()" (closed)="closeForm()" />
+}

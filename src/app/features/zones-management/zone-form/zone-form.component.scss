@@ -247,22 +247,6 @@
     border-color: var(--Combo-text-text-error) !important;
   }
 
-  .zone-form__number {
-    width: 100%;
-
-    .p-inputnumber-input {
-      width: 100% !important;
-      font-family: 'Alexandria', sans-serif !important;
-      font-size: 14px !important;
-      color: var(--Combo-text-text-default) !important;
-      background-color: var(--Combo-bg-background-card) !important;
-      border: 1px solid var(--Combo-form-field-border-default) !important;
-      border-radius: 8px !important;
-      padding: 10px 14px !important;
-      box-shadow: none !important;
-    }
-  }
-
   // ── Toggle switch ─────────────────────────────────────────────────
   .p-toggleswitch.p-toggleswitch-checked .p-toggleswitch-slider {
     background: var(--Combo-bg-background-success) !important;

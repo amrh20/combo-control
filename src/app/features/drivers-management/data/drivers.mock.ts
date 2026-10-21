@@ -4,7 +4,7 @@ export type DriverAvailability = 'available' | 'busy' | 'offline';
 export type DriverAccountStatus = 'active' | 'inactive';
 export type ComplaintSeverity = 'low' | 'medium' | 'high';
 export type ComplaintResolution = 'pending' | 'resolved';
-export type CaptainRole = 'COLLECTOR' | 'DELIVERY';
+export type CaptainRole = 'COLLECTOR' | 'DELIVERY' | 'BOTH';
 export type CaptainVehicleType = 'Motorcycle' | 'Car' | 'Bicycle';
 
 export interface DriverStats {
@@ -61,7 +61,7 @@ export const AVAILABILITY_CONFIG: Record<string, { label: string; labelAr: strin
 
 export const ACCOUNT_STATUS_CONFIG: Record<string, { label: string; labelAr: string }> = {
   active:   { label: 'Active',   labelAr: 'نشط' },
-  inactive: { label: 'Inactive', labelAr: 'غير نشط' },
+  inactive: { label: 'Blocked', labelAr: 'محظور' },
 };
 
 export const SEVERITY_CONFIG: Record<string, { label: string; labelAr: string }> = {
@@ -83,6 +83,7 @@ export const ROLE_OPTIONS: { label: string; value: CaptainRole }[] = [
 export const ROLE_CONFIG: Record<CaptainRole, { labelAr: string }> = {
   DELIVERY: { labelAr: 'طيار توصيل' },
   COLLECTOR: { labelAr: 'مُجمّع طلبات' },
+  BOTH: { labelAr: 'تجميع وتوصيل' },
 };
 
 export const VEHICLE_OPTIONS: { label: string; value: CaptainVehicleType }[] = [

@@ -5,14 +5,31 @@ export interface SubZone {
   id: string;
   parentZoneId: string;
   name: string;
+  /** Pounds, same value as `minOrderEGP`. Templates already bind this field. */
   minOrder: number;
+  /** Effective minimum in pounds: the sub-zone value, or the parent zone's when unset. */
+  minOrderEGP: number;
   /** Polygon highlight color, `#rrggbb`. */
   color: string;
   isActive: boolean;
   geometry: ZonePolygon;
 }
 
-export type SubZoneInput = Omit<SubZone, 'id'>;
+/** `GET` / `POST` / `PATCH` sub-zone body. `zoneId` is `parentZoneId` in the UI. */
+export interface SubZoneApiRecord {
+  id: string;
+  zoneId: string;
+  name: string;
+  color: string;
+  minOrderPiastres: number | null;
+  effectiveMinOrderPiastres: number;
+  isActive: boolean;
+  geometry: ZonePolygon;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type SubZoneInput = Omit<SubZone, 'id' | 'minOrderEGP'>;
 export type SubZoneBatchItem = Omit<SubZoneInput, 'parentZoneId'>;
 
 export const DEFAULT_SUB_ZONE_COLOR = '#2563eb';

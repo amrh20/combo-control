@@ -23,6 +23,9 @@
         [value]="searchQuery()"
         (input)="onSearch($event)"
       />
+      @if (searchTooShort()) {
+        <span class="mt-1 block text-xs text-gray-500">اكتب حرفين على الأقل للبحث.</span>
+      }
     </label>
 
     <label class="flex items-center gap-2">
@@ -40,8 +43,24 @@
     </label>
   </div>
 
+  @if (loadError(); as message) {
+    <div class="flex items-center justify-between gap-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+      <span>{{ message }}</span>
+      <button
+        type="button"
+        class="cursor-pointer rounded-md border border-red-200 bg-white px-3 py-1.5 text-xs font-semibold text-red-700"
+        (click)="reload()"
+      >
+        إعادة المحاولة
+      </button>
+    </div>
+  }
+  @if (actionError(); as message) {
+    <p class="m-0 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">{{ message }}</p>
+  }
+
   <p class="m-0 text-[13px] text-gray-500">
-    {{ filteredCustomers().length }} عميل
+    {{ customers().length }} عميل
   </p>
 
   <div class="rounded-xl border border-gray-100 bg-white shadow-none">
@@ -58,6 +77,13 @@
         </tr>
       </thead>
       <tbody>
+        @if (loading() && customers().length === 0) {
+          <tr>
+            <td colspan="6" class="px-4 py-10 text-center text-sm text-gray-500">
+              جاري تحميل العملاء...
+            </td>
+          </tr>
+        } @else {
         @for (customer of pagedCustomers(); track customer.id) {
           <tr class="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
             <td class="px-4 py-3">
@@ -68,11 +94,15 @@
               <span dir="ltr" class="inline-block text-gray-800">{{ formatPhone(customer.phone) }}</span>
             </td>
             <td class="px-4 py-3 text-center font-medium text-gray-800">
-              {{ customer.totalOrders }}
+              {{ customer.totalOrders ?? '—' }}
             </td>
             <td class="px-4 py-3 whitespace-nowrap font-semibold text-gray-800">
-              <span dir="ltr" class="inline-block">{{ customer.totalSpent | number: '1.2-2' }}</span>
-              ج.م
+              @if (customer.totalSpent == null) {
+                —
+              } @else {
+                <span dir="ltr" class="inline-block">{{ customer.totalSpent | number: '1.2-2' }}</span>
+                ج.م
+              }
             </td>
             <td class="px-4 py-3">
               <span
@@ -95,11 +125,13 @@
                   <i class="pi pi-eye text-sm" aria-hidden="true"></i>
                 </button>
                 <button
+                  *ctrlPermission="'customers.block'"
                   type="button"
                   class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 bg-transparent hover:bg-gray-50"
                   [class]="customer.status === 'ACTIVE' ? 'text-red-600' : 'text-green-700'"
                   [attr.aria-label]="(customer.status === 'ACTIVE' ? 'حظر ' : 'إلغاء حظر ') + customer.fullName"
                   [title]="customer.status === 'ACTIVE' ? 'حظر' : 'إلغاء الحظر'"
+                  [disabled]="pendingId() === customer.id"
                   (click)="toggleBlock(customer)"
                 >
                   <i
@@ -119,11 +151,12 @@
             </td>
           </tr>
         }
+        }
       </tbody>
     </table>
     </div>
     <ctrl-table-pager
-      [total]="filteredCustomers().length"
+      [total]="customers().length"
       [page]="page()"
       [pageSize]="pageSize()"
       (pageChange)="page.set($event)"

@@ -1,0 +1,360 @@
+<div class="product-form" dir="rtl">
+  <div class="product-form__header">
+    <button type="button" class="product-form__back" (click)="cancel()">
+      <i class="pi pi-arrow-right"></i>
+      {{ backLabel }}
+    </button>
+    <h1 class="product-form__title">{{ title }}</h1>
+    <p class="product-form__subtitle">
+      الاسم والسعر والفئة، مع الصور والاختيارات.
+    </p>
+  </div>
+
+  @if (loading()) {
+    <div class="product-form__state">
+      <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+      <p>جاري تحميل المنتج...</p>
+    </div>
+  } @else if (loadError(); as message) {
+    <p class="product-form__alert" role="alert">{{ message }}</p>
+  } @else {
+    <form class="product-form__card" [formGroup]="form" (ngSubmit)="saveProduct()">
+      <h2 class="product-form__section-title">
+        <i class="pi pi-tag"></i>
+        بيانات المنتج
+      </h2>
+
+      <div class="product-form__grid">
+        <div class="product-form__field">
+          <label class="product-form__label" for="productName">
+            اسم المنتج <span class="product-form__required">*</span>
+          </label>
+          <input
+            id="productName"
+            type="text"
+            pInputText
+            formControlName="name"
+            class="product-form__input"
+            placeholder="مثال: مسحوق غسيل أوتوماتيك"
+            dir="rtl"
+          />
+          @if (form.controls.name.touched && form.controls.name.invalid) {
+            <span class="product-form__field-error">
+              {{ form.controls.name.hasError('minlength') ? 'اسم المنتج حرفان على الأقل' : 'اسم المنتج مطلوب' }}
+            </span>
+          }
+        </div>
+
+        <div class="product-form__field">
+          <label class="product-form__label" for="productSection">الفئة</label>
+          <p-select
+            inputId="productSection"
+            [options]="sectionOptions()"
+            optionLabel="label"
+            optionValue="value"
+            formControlName="sectionId"
+            [showClear]="!sectionLocked()"
+            [placeholder]="sectionsLoading() ? 'جاري تحميل الفئات...' : 'اختر الفئة (اختياري)'"
+            appendTo="body"
+            styleClass="product-form__select"
+            panelStyleClass="product-form__section-panel"
+          />
+          @if (sectionLocked()) {
+            <span class="product-form__hint">الفئة محددة من التصنيف الحالي.</span>
+          }
+          @if (sectionsError(); as message) {
+            <span class="product-form__field-error">{{ message }}</span>
+          }
+        </div>
+
+        <div class="product-form__field">
+          <label class="product-form__label" for="productPrice">
+            السعر (ج.م) <span class="product-form__required">*</span>
+          </label>
+          <input
+            id="productPrice"
+            type="number"
+            pInputText
+            formControlName="price"
+            class="product-form__input"
+            placeholder="0"
+            min="0"
+            step="0.5"
+            dir="ltr"
+          />
+          @if (form.controls.price.touched && form.controls.price.invalid) {
+            <span class="product-form__field-error">أدخل سعراً صالحاً</span>
+          }
+        </div>
+
+        <div class="product-form__field">
+          <label class="product-form__label" for="productOldPrice">السعر السابق (ج.م)</label>
+          <input
+            id="productOldPrice"
+            type="number"
+            pInputText
+            formControlName="oldPrice"
+            class="product-form__input"
+            placeholder="اختياري"
+            min="0"
+            step="0.5"
+            dir="ltr"
+          />
+          <span class="product-form__hint">يظهر للعميل كسعر قبل الخصم.</span>
+          @if (form.controls.oldPrice.touched && form.controls.oldPrice.invalid) {
+            <span class="product-form__field-error">أدخل سعراً صالحاً</span>
+          }
+        </div>
+
+        <div class="product-form__field product-form__span-2">
+          <label class="product-form__label" for="productDescription">الوصف</label>
+          <textarea
+            id="productDescription"
+            pInputText
+            formControlName="description"
+            class="product-form__input product-form__textarea"
+            placeholder="وصف مختصر للمنتج..."
+            rows="3"
+            dir="rtl"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="product-form__media">
+        <section class="product-form__images-panel" aria-labelledby="productImagesLabel">
+          <h3 class="product-form__panel-title" id="productImagesLabel">الصور</h3>
+          <div class="product-form__images">
+            @for (image of images.controls; track $index) {
+              <div class="product-form__thumb">
+                <img [src]="imageSrc(image.value)" alt="" />
+                <button
+                  type="button"
+                  class="product-form__upload-remove"
+                  aria-label="إزالة الصورة"
+                  (click)="removeImage($index)"
+                >
+                  <i class="pi pi-times"></i>
+                </button>
+              </div>
+            }
+            <div class="product-form__upload-stack">
+              <div
+                class="product-form__upload product-form__upload--compact"
+                [class.product-form__upload--active]="imageDragOver()"
+                (dragover)="onImageDragOver($event)"
+                (dragleave)="onImageDragLeave($event)"
+                (drop)="onImageDrop($event)"
+              >
+                <input
+                  #imageInput
+                  id="productImage"
+                  type="file"
+                  accept="image/png, image/jpeg, image/webp, image/svg+xml"
+                  class="product-form__file-input"
+                  aria-label="رفع صورة"
+                  (change)="onFileSelected($event)"
+                />
+                @if (isUploading()) {
+                  <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+                } @else {
+                  <i class="pi pi-image" aria-hidden="true"></i>
+                }
+                <button
+                  type="button"
+                  class="product-form__upload-btn"
+                  [disabled]="isUploading() || images.length >= maxImages"
+                  (click)="imageInput.click()"
+                >
+                  @if (isUploading()) {
+                    <i class="pi pi-spin pi-spinner"></i>
+                    جاري الرفع
+                  } @else {
+                    <i class="pi pi-upload"></i>
+                    رفع صورة
+                  }
+                </button>
+              </div>
+              <span class="product-form__hint">حتى {{ maxImages }} صور. الأولى هي صورة الغلاف.</span>
+              @if (imageError(); as message) {
+                <span class="product-form__field-error">{{ message }}</span>
+              }
+            </div>
+          </div>
+        </section>
+
+        <section class="product-form__status" aria-labelledby="productStatusLabel">
+          <h3 class="product-form__panel-title" id="productStatusLabel">الحالة والإعدادات</h3>
+          <div class="product-form__toggle">
+            <label class="product-form__toggle-label" for="productAvailable">متوفر</label>
+            <p-toggleswitch formControlName="isAvailable" inputId="productAvailable" />
+          </div>
+          <div class="product-form__toggle">
+            <label class="product-form__toggle-label" for="productNew">منتج جديد</label>
+            <p-toggleswitch formControlName="isNew" inputId="productNew" />
+          </div>
+        </section>
+      </div>
+
+      <h2 class="product-form__section-title">
+        <i class="pi pi-list"></i>
+        الاختيارات
+      </h2>
+      <p class="product-form__hint">
+        لكل خيار سعره النهائي بالجنيه. مثال: السعر الأساسي 100 ج.م، وخيار 2 كجم = 190 ج.م.
+        اضغط داخل الحقل لعرض الاقتراحات، أو اكتب اسماً جديداً.
+      </p>
+
+      <div formArrayName="variants" class="product-form__groups">
+        @for (variant of variants.controls; track $index; let vi = $index) {
+          <div class="product-form__group" [formGroupName]="vi">
+            <div class="product-form__group-head">
+              <div class="product-form__field product-form__group-name">
+                <label class="product-form__label" [attr.for]="'variantName' + vi">اسم المجموعة (مثل: الوزن، اللون، الحجم)</label>
+                <p-autoComplete
+                  [inputId]="'variantName' + vi"
+                  formControlName="name"
+                  styleClass="product-form__autocomplete"
+                  inputStyleClass="product-form__input"
+                  panelStyleClass="product-form__suggest"
+                  appendTo="body"
+                  [suggestions]="attributeNameSuggestions"
+                  (completeMethod)="filterAttributeNames($event)"
+                  (onBlur)="onAttributeNameBlur(vi)"
+                  [fluid]="true"
+                  [forceSelection]="false"
+                  [completeOnFocus]="true"
+                  [minLength]="0"
+                  [showEmptyMessage]="false"
+                  [delay]="150"
+                  placeholder="مثال: الوزن"
+                  scrollHeight="240px"
+                />
+              </div>
+              <button
+                type="button"
+                class="product-form__icon-btn product-form__group-delete"
+                aria-label="حذف المجموعة"
+                (click)="removeVariant(vi)"
+              >
+                <i class="pi pi-trash"></i>
+              </button>
+            </div>
+            @if (variant.get('name')?.touched && variant.get('name')?.invalid) {
+              <span class="product-form__field-error product-form__group-error">اسم المجموعة مطلوب</span>
+            }
+
+            <div formArrayName="options" class="product-form__choices">
+              @for (option of variantOptions(vi).controls; track $index; let oi = $index; let first = $first) {
+                <div class="product-form__choice">
+                  <div class="product-form__option" [formGroupName]="oi">
+                    <div class="product-form__choice-field">
+                      @if (first) {
+                        <span class="product-form__label">القيمة (الاسم)</span>
+                      }
+                      <p-autoComplete
+                        formControlName="label"
+                        styleClass="product-form__autocomplete"
+                        inputStyleClass="product-form__input"
+                        panelStyleClass="product-form__suggest"
+                        appendTo="body"
+                        [suggestions]="optionValueSuggestions"
+                        (completeMethod)="filterOptionValues(vi, $event)"
+                        [fluid]="true"
+                        [forceSelection]="false"
+                        [completeOnFocus]="true"
+                        [minLength]="0"
+                        [showEmptyMessage]="false"
+                        [delay]="150"
+                        placeholder="مثال: 1 كجم"
+                        [ariaLabel]="'قيمة ' + (oi + 1)"
+                        scrollHeight="240px"
+                      />
+                    </div>
+                    <div class="product-form__choice-field">
+                      @if (first) {
+                        <span class="product-form__label">السعر النهائي للخيار (ج.م)</span>
+                      }
+                      <input
+                        type="number"
+                        pInputText
+                        formControlName="price"
+                        class="product-form__input"
+                        placeholder="0"
+                        min="0"
+                        step="0.5"
+                        dir="ltr"
+                        aria-label="السعر النهائي للخيار بالجنيه"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      class="product-form__icon-btn product-form__choice-remove"
+                      aria-label="حذف الخيار الفرعي"
+                      [disabled]="variantOptions(vi).length <= 1"
+                      (click)="removeOption(vi, oi)"
+                    >
+                      <i class="pi pi-times"></i>
+                    </button>
+                  </div>
+                  @if (option.get('label')?.touched && option.get('label')?.invalid) {
+                    <span class="product-form__field-error">القيمة مطلوبة</span>
+                  }
+                  @if (option.get('price')?.touched && option.get('price')?.invalid) {
+                    <span class="product-form__field-error">أدخل سعراً صالحاً</span>
+                  }
+                </div>
+              }
+            </div>
+
+            <button
+              type="button"
+              class="product-form__add product-form__add--quiet"
+              [disabled]="variantOptions(vi).length >= 30"
+              (click)="addOption(vi)"
+            >
+              + إضافة خيار فرعي (مثل: 1 كجم، أحمر)
+            </button>
+          </div>
+        } @empty {
+          <p class="product-form__hint product-form__groups-empty">لا توجد مجموعات خيارات. المنتج يُباع بالسعر الأساسي فقط.</p>
+        }
+
+        <button
+          type="button"
+          class="product-form__add product-form__add--group"
+          [disabled]="variants.length >= 10"
+          (click)="addVariant()"
+        >
+          + إضافة مجموعة خيارات جديدة
+        </button>
+      </div>
+
+      <!--
+        المواصفات مخفية مؤقتاً. القيم تبقى في FormArray وتُرسل مع الحفظ
+        حتى لا تُمسح مواصفات منتج موجود.
+      -->
+
+      @if (saveError(); as message) {
+        <p class="product-form__alert" role="alert">{{ message }}</p>
+      }
+
+      <div class="product-form__footer">
+        <button
+          type="submit"
+          class="product-form__btn product-form__btn--primary"
+          [disabled]="saving() || isUploading()"
+        >
+          <i class="pi pi-check"></i>
+          {{ saving() ? 'جاري الحفظ...' : 'حفظ' }}
+        </button>
+        <button
+          type="button"
+          class="product-form__btn product-form__btn--ghost"
+          (click)="cancel()"
+        >
+          إلغاء
+        </button>
+      </div>
+    </form>
+  }
+</div>

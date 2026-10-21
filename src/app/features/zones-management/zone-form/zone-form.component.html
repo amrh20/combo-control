@@ -1,6 +1,9 @@
 <div class="zone-form">
+  <p-toast position="top-center" />
 
-  @if (missing()) {
+  @if (loading()) {
+    <p>جاري التحميل...</p>
+  } @else if (missing()) {
     <div class="zone-form__missing">
       <i class="pi pi-exclamation-circle"></i>
       <p>المنطقة غير موجودة.</p>
@@ -18,9 +21,9 @@
       <h1 class="zone-form__title">{{ zoneId() ? 'تعديل المنطقة' : 'إنشاء منطقة جديدة' }}</h1>
       <p class="zone-form__subtitle">
         @if (zoneId(); as id) {
-          حدّث مضلع سكن العملاء والحد الأدنى للطلب للمنطقة {{ id }}.
+          حدّث مضلع سكن العملاء للمنطقة {{ id }}.
         } @else {
-          ارسم مضلع منطقة سكن العملاء، ثم اضبط الحد الأدنى للطلب.
+          ارسم مضلع منطقة سكن العملاء.
         }
       </p>
       @if (areaSqKm() !== null) {
@@ -54,21 +57,6 @@
         </div>
 
         <div class="zone-form__field">
-          <label class="zone-form__label" for="minOrder">
-            الحد الأدنى للطلب <span class="zone-form__required">*</span>
-          </label>
-          <p-inputnumber
-            inputId="minOrder"
-            formControlName="minOrder"
-            [min]="0"
-            mode="currency"
-            currency="EGP"
-            locale="ar-EG"
-            styleClass="zone-form__number"
-          />
-        </div>
-
-        <div class="zone-form__field">
           <label class="zone-form__label">الحالة</label>
           <div class="zone-form__toggle-row">
             <p-toggleswitch formControlName="isActive" inputId="statusToggle" />
@@ -97,7 +85,7 @@
           <button
             type="submit"
             class="zone-form__btn zone-form__btn--primary"
-            [disabled]="form.invalid || !currentPolygonGeoJSON()"
+            [disabled]="saving() || form.invalid || !currentPolygonGeoJSON()"
           >
             <i class="pi pi-check"></i>
             {{ zoneId() ? 'حفظ التغييرات' : 'إنشاء المنطقة' }}
@@ -106,8 +94,9 @@
       </div>
 
       <div class="zone-form__map">
-        <ctrl-zone-map
-          [initialGeometry]="initialGeometry()"
+        <combo-map
+          mode="polygon"
+          [polygon]="initialGeometry()"
           (polygonChanged)="onPolygonChanged($event)"
         />
       </div>

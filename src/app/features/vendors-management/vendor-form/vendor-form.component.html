@@ -17,7 +17,14 @@
 
   <p-toast position="top-center" />
 
+  @if (optionsError(); as error) {
+    <p class="vendor-form__map-error" role="alert">{{ error }}</p>
+  }
+
   <form [formGroup]="vendorForm" (ngSubmit)="save()">
+    <input type="hidden" formControlName="lat" />
+    <input type="hidden" formControlName="lng" />
+    <input type="hidden" formControlName="logoUrl" />
 
     <div class="vendor-form__card">
       <h2 class="vendor-form__section-title">
@@ -88,6 +95,9 @@
               optionValue="value"
               formControlName="hubId"
               placeholder="اختر نقطة التجميع..."
+              [filter]="true"
+              filterBy="label"
+              filterPlaceholder="ابحث عن نقطة التجميع..."
               styleClass="vendor-form__select"
             />
           </div>
@@ -98,43 +108,62 @@
             <label class="vendor-form__label" for="categorySelect">
               الفئة <span class="vendor-form__required">*</span>
             </label>
-            <select
-              id="categorySelect"
-              formControlName="category"
-              class="vendor-form__input vendor-form__native-select"
-            >
-              <option value="" disabled>اختر فئة...</option>
-              @for (cat of categories(); track cat.id) {
-                <option [value]="cat.id">{{ cat.name }}</option>
-              }
-            </select>
+            <p-select
+              inputId="categorySelect"
+              [options]="categories()"
+              optionLabel="label"
+              optionValue="value"
+              formControlName="categoryId"
+              placeholder="اختر فئة..."
+              styleClass="vendor-form__select"
+            />
           </div>
         </div>
 
         <div class="col-md-6">
           <div class="vendor-form__field">
             <label class="vendor-form__label" for="logoFile">شعار المتجر</label>
-            <button
-              type="button"
+            <div
               class="vendor-form__logo-placeholder"
               [class.vendor-form__logo-placeholder--filled]="!!logoPreview()"
-              (click)="fileInput.click()"
             >
-              @if (logoPreview(); as preview) {
+              <input
+                #fileInput
+                id="logoFile"
+                type="file"
+                accept="image/*"
+                class="hidden"
+                (change)="onFileSelected($event)"
+              />
+              @if (isUploading()) {
+                <i class="pi pi-spin pi-spinner"></i>
+                <span>جاري الرفع</span>
+              } @else if (logoPreview(); as preview) {
                 <img [src]="preview" alt="شعار المتجر" class="vendor-form__logo-preview" />
+                <button
+                  type="button"
+                  class="vendor-form__logo-remove"
+                  aria-label="إزالة الشعار"
+                  (click)="clearLogo(fileInput)"
+                >
+                  <i class="pi pi-times"></i>
+                </button>
               } @else {
                 <i class="pi pi-image"></i>
-                <span>اضغط لرفع الشعار</span>
               }
-            </button>
-            <input
-              #fileInput
-              id="logoFile"
-              type="file"
-              accept="image/*"
-              class="hidden"
-              (change)="onFileSelected($event)"
-            />
+              <button
+                type="button"
+                class="vendor-form__upload-btn"
+                [disabled]="isUploading()"
+                (click)="fileInput.click()"
+              >
+                <i class="pi pi-upload"></i>
+                رفع صورة
+              </button>
+            </div>
+            @if (logoError(); as error) {
+              <span class="vendor-form__field-error">{{ error }}</span>
+            }
           </div>
         </div>
       </div>
@@ -151,7 +180,15 @@
       </p>
 
       <div class="vendor-form__map" [class.vendor-form__map--ready]="!!vendorForm.controls.hubId.value">
-        <div #mapContainer class="vendor-form__map-canvas"></div>
+        <combo-map
+          [isEditable]="!!vendorForm.controls.hubId.value"
+          [constrainTo]="hubGeometry()"
+          [overlays]="mapOverlays()"
+          [pinLat]="pin()?.lat ?? null"
+          [pinLng]="pin()?.lng ?? null"
+          (locationSelected)="onLocationSelected($event)"
+          (locationRejected)="rejectOutsideClick()"
+        />
         @if (!vendorForm.controls.hubId.value) {
           <div class="vendor-form__map-mask">اختر نقطة التجميع لعرض حدود الشارع.</div>
         }
@@ -159,7 +196,7 @@
 
       @if (mapWarning(); as warning) {
         <p class="vendor-form__map-error" role="alert">{{ warning }}</p>
-      } @else if (vendorForm.controls.location.valid && vendorForm.get('location')?.value) {
+      } @else if (vendorForm.controls.lat.value != null && !vendorForm.hasError('outsideHub')) {
         <p class="vendor-form__map-ok">تم تثبيت الموقع داخل حدود نقطة التجميع.</p>
       }
     </div>
@@ -178,7 +215,7 @@
               id="openingTime"
               type="time"
               pInputText
-              formControlName="openingTime"
+              formControlName="opens"
               class="vendor-form__input"
               dir="ltr"
             />
@@ -192,7 +229,7 @@
               id="closingTime"
               type="time"
               pInputText
-              formControlName="closingTime"
+              formControlName="closes"
               class="vendor-form__input"
               dir="ltr"
             />
@@ -222,7 +259,35 @@
               [min]="0"
               mode="currency"
               currency="EGP"
-              locale="ar-EG"
+              locale="ar-EG-u-nu-latn"
+              styleClass="vendor-form__number-input"
+            />
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="vendor-form__field">
+            <label class="vendor-form__label" for="discountPercent">نسبة الخصم (%)</label>
+            <p-inputnumber
+              inputId="discountPercent"
+              formControlName="discountPercent"
+              [min]="0"
+              [max]="100"
+              suffix="%"
+              styleClass="vendor-form__number-input"
+            />
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="vendor-form__field">
+            <label class="vendor-form__label" for="commissionPercent">نسبة العمولة (%)</label>
+            <p-inputnumber
+              inputId="commissionPercent"
+              formControlName="commissionPercent"
+              [min]="0"
+              [max]="100"
+              suffix="%"
               styleClass="vendor-form__number-input"
             />
           </div>
@@ -251,12 +316,7 @@
           <div class="vendor-form__field">
             <label class="vendor-form__label">حالة النظام</label>
             <div class="vendor-form__toggle-row">
-              <p-toggleswitch
-                [ngModel]="vendorForm.get('systemStatus')?.value === 'active'"
-                (ngModelChange)="vendorForm.patchValue({ systemStatus: $event ? 'active' : 'inactive' })"
-                [ngModelOptions]="{ standalone: true }"
-                inputId="systemStatus"
-              />
+              <p-toggleswitch formControlName="isActive" inputId="isActive" />
               <div class="vendor-form__toggle-body">
                 <span class="vendor-form__toggle-hint">
                   المتاجر غير النشطة مخفية من تطبيق العميل.
@@ -274,7 +334,7 @@
         <button
           type="submit"
           class="vendor-form__btn vendor-form__btn--primary"
-          [disabled]="vendorForm.invalid || vendorForm.get('location')?.value == null"
+          [disabled]="vendorForm.invalid || vendorForm.controls.lat.value == null || saving() || isUploading() || loadingVendor()"
         >
           <i class="pi pi-check"></i>
           {{ isEditMode ? 'حفظ التغييرات' : 'إضافة المتجر' }}

@@ -271,6 +271,112 @@ $list-width: 360px;
     }
   }
 
+  &__list-tools {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__refresh,
+  &__retry,
+  &__pager-btn {
+    font-family: 'Alexandria', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--Combo-text-text-primary);
+    background: var(--Combo-bg-background-card);
+    border: 1px solid var(--Combo-border-border-neutral-secondary);
+    border-radius: 8px;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: var(--Combo-bg-background-neutral-100);
+    }
+
+    &:disabled {
+      opacity: 0.55;
+      cursor: default;
+    }
+  }
+
+  &__refresh {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+  }
+
+  &__retry {
+    padding: 6px 12px;
+  }
+
+  &__filters {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 12px;
+    border-bottom: 1px solid var(--Combo-border-border-neutral-secondary);
+  }
+
+  &__filter {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  &__filter-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--Combo-text-text-secondary-paragraph);
+  }
+
+  &__select {
+    width: 100%;
+    min-width: 0;
+    font-family: 'Alexandria', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--Combo-text-text-default);
+    background: var(--Combo-bg-background-card);
+    border: 1px solid var(--Combo-form-field-border-default);
+    border-radius: 8px;
+    padding: 7px 8px;
+  }
+
+  &__inline-error {
+    margin: 0 0 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--Combo-text-text-error);
+  }
+
+  &__pager {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 12px;
+    border-top: 1px solid var(--Combo-border-border-neutral-secondary);
+  }
+
+  &__pager-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--Combo-text-text-secondary-paragraph);
+  }
+
+  &__pager-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  &__pager-btn {
+    padding: 6px 12px;
+  }
+
   &__detail-empty {
     display: flex;
     flex-direction: column;

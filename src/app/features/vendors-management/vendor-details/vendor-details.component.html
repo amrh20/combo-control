@@ -1,9 +1,13 @@
 <div class="vendor-details">
 
-  @if (!vendor()) {
+  @if (loading()) {
+    <div class="vendor-details__not-found">
+      <p>جاري تحميل المتجر...</p>
+    </div>
+  } @else if (!vendor()) {
     <div class="vendor-details__not-found">
       <i class="pi pi-exclamation-circle"></i>
-      <p>المتجر غير موجود.</p>
+      <p>{{ loadError() || 'المتجر غير موجود.' }}</p>
       <button type="button" class="vendor-details__btn vendor-details__btn--ghost" (click)="goBack()">
         العودة إلى المتاجر
       </button>
@@ -25,7 +29,7 @@
             <code class="vendor-details__id-pill">{{ v.id }}</code>
             <span class="vendor-details__meta-item">
               <i class="pi pi-map-marker"></i>
-              <span dir="rtl">{{ hubName(v.hubId) }}</span>
+              <span dir="rtl">{{ v.hubName || hubName(v.hubId) }}</span>
             </span>
             <span class="vendor-details__meta-item">
               {{ categoryName(v.category) }}
@@ -40,24 +44,18 @@
             <span class="vendor-details__live-dot"></span>
             {{ liveStatusConfig[liveStatus()].labelAr }}
           </span>
-          @if (v.systemStatus === 'inactive') {
-            <span class="vendor-details__system-badge">مخفي من التطبيق</span>
-          }
-          <div class="vendor-details__system-toggle">
-            <span class="vendor-details__system-label">مفعّل</span>
-            <p-toggleswitch
-              [ngModel]="isSystemActive()"
-              (ngModelChange)="onSystemToggle($event)"
-              inputId="headerSystemToggle"
-            />
-          </div>
+          <span
+            class="vendor-details__system-badge"
+            [class.vendor-details__system-badge--active]="v.systemStatus === 'active'"
+          >
+            {{ v.systemStatus === 'active' ? 'مفعّل' : 'مخفي من التطبيق' }}
+          </span>
         </div>
       </div>
     </div>
 
-    <form [formGroup]="vendorForm" class="vendor-details__form" (ngSubmit)="saveChanges()">
+    <div class="vendor-details__body">
 
-      <!-- Card A: Basic Information -->
       <div class="vendor-details__card">
         <div class="vendor-details__card-head">
           <h2 class="vendor-details__card-title">
@@ -66,99 +64,43 @@
           </h2>
         </div>
 
-        <div class="row g-4">
-          <div class="col-lg-8">
-            <div class="row g-4">
-              <div class="col-md-6">
-                <div class="vendor-details__field">
-                  <label class="vendor-details__label" for="shopName">اسم المتجر</label>
-                  <input
-                    id="shopName"
-                    type="text"
-                    pInputText
-                    formControlName="name"
-                    class="vendor-details__input"
-                    dir="rtl"
-                  />
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="vendor-details__field">
-                  <label class="vendor-details__label" for="phone">رقم الهاتف</label>
-                  <input
-                    id="phone"
-                    type="text"
-                    pInputText
-                    formControlName="phone"
-                    class="vendor-details__input"
-                    dir="ltr"
-                  />
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="vendor-details__field">
-                  <label class="vendor-details__label" for="contactPerson">جهة الاتصال</label>
-                  <input
-                    id="contactPerson"
-                    type="text"
-                    pInputText
-                    formControlName="contactPerson"
-                    class="vendor-details__input"
-                    dir="rtl"
-                  />
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="vendor-details__field">
-                  <label class="vendor-details__label" for="hubSelect">نقطة التجميع / الشارع التابع له</label>
-                  <p-select
-                    inputId="hubSelect"
-                    [options]="hubOptions()"
-                    optionLabel="label"
-                    optionValue="value"
-                    formControlName="hubId"
-                    placeholder="اختر نقطة التجميع..."
-                    styleClass="vendor-details__select"
-                  />
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="vendor-details__field">
-                  <label class="vendor-details__label" for="categorySelect">الفئة</label>
-                  <p-select
-                    inputId="categorySelect"
-                    [options]="categoryOptions()"
-                    optionLabel="label"
-                    optionValue="value"
-                    formControlName="category"
-                    styleClass="vendor-details__select"
-                  />
-                </div>
-              </div>
+        <div class="vendor-details__basic">
+          <div class="vendor-details__pairs">
+            <div class="vendor-details__pair">
+              <div class="vendor-details__label">اسم المتجر</div>
+              <div >{{ v.name }}</div>
+            </div>
+            <div class="vendor-details__pair">
+              <div class="vendor-details__label">رقم الهاتف</div>
+              <div >{{ v.phone }}</div>
+            </div>
+            <div class="vendor-details__pair">
+              <div class="vendor-details__label">جهة الاتصال</div>
+              <div >{{ v.contactPerson }}</div>
+            </div>
+            <div class="vendor-details__pair">
+              <div class="vendor-details__label">نقطة التجميع / الشارع التابع له</div>
+              <div >{{ v.hubName || hubName(v.hubId) }}</div>
+            </div>
+            <div class="vendor-details__pair">
+              <div class="vendor-details__label">الفئة</div>
+              <div >{{ categoryName(v.category) }}</div>
             </div>
           </div>
 
-          <div class="col-lg-4">
-            <div class="vendor-details__field">
-              <label class="vendor-details__label">شعار المتجر</label>
-              <div class="vendor-details__logo-upload">
-                <div class="vendor-details__logo-preview">
-                  <span>{{ getInitials(v.name) }}</span>
-                </div>
-                <div class="vendor-details__logo-body">
-                  <p class="vendor-details__logo-hint">ارفع شعاراً مربعاً (PNG/JPG، بحد أقصى 2 ميجا)</p>
-                  <button type="button" class="vendor-details__logo-btn" disabled>
-                    <i class="pi pi-upload"></i>
-                    اختر صورة
-                  </button>
-                </div>
+          <div class="vendor-details__logo-frame">
+            <div class="vendor-details__label">شعار المتجر</div>
+            @if (v.logoUrl) {
+              <img class="vendor-details__logo" [src]="logoSrc(v.logoUrl)" [alt]="v.name" />
+            } @else {
+              <div class="vendor-details__logo vendor-details__logo--empty" aria-hidden="true">
+                {{ getInitials(v.name) }}
               </div>
-            </div>
+            }
           </div>
         </div>
       </div>
 
-      <!-- Card B: Operational & Live Status -->
       <div class="vendor-details__card">
         <div class="vendor-details__card-head">
           <h2 class="vendor-details__card-title">
@@ -167,73 +109,38 @@
           </h2>
         </div>
 
-        <div class="row g-4">
-          <div class="col-md-6">
-            <div class="vendor-details__field">
-              <label class="vendor-details__label" for="openingTime">وقت الفتح</label>
-              <p-datepicker
-                inputId="openingTime"
-                formControlName="openingTime"
-                [timeOnly]="true"
-                [showSeconds]="false"
-                hourFormat="12"
-                styleClass="vendor-details__timepicker"
-              />
+        <div class="vendor-details__pairs vendor-details__pairs--ops">
+          <div class="vendor-details__pair">
+            <div class="vendor-details__label">ساعات العمل</div>
+            <div class="vendor-details__value">
+              من {{ v.settings.openingTime }} إلى {{ v.settings.closingTime }}
             </div>
           </div>
-          <div class="col-md-6">
-            <div class="vendor-details__field">
-              <label class="vendor-details__label" for="closingTime">وقت الإغلاق</label>
-              <p-datepicker
-                inputId="closingTime"
-                formControlName="closingTime"
-                [timeOnly]="true"
-                [showSeconds]="false"
-                hourFormat="12"
-                styleClass="vendor-details__timepicker"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div class="vendor-details__divider"></div>
-
-        <div class="vendor-details__field">
-          <label class="vendor-details__label">تجاوز الحالة المباشرة</label>
-          <p class="vendor-details__hint">
-            تجاوز يدوي لحالة المتجر المباشرة. عند التلقائي تتبع الحالة ساعات العمل.
-          </p>
-          <div class="vendor-details__segmented" role="radiogroup" aria-label="تجاوز الحالة المباشرة">
-            @for (opt of overrideOptions; track opt.value) {
-              <label
-                class="vendor-details__segment"
-                [class.vendor-details__segment--active]="vendorForm.get('liveStatusOverride')?.value === opt.value"
-                [class.vendor-details__segment--busy]="opt.value === 'force_busy' && vendorForm.get('liveStatusOverride')?.value === opt.value"
-                [class.vendor-details__segment--closed]="opt.value === 'force_closed' && vendorForm.get('liveStatusOverride')?.value === opt.value"
+          <div class="vendor-details__pair">
+            <div class="vendor-details__label">تجاوز الحالة المباشرة</div>
+            <div class="vendor-details__value vendor-details__value--badge">
+              <span
+                class="vendor-details__override-badge"
+                [ngClass]="'vendor-details__override-badge--' + v.liveStatusOverride"
               >
-                <input
-                  type="radio"
-                  formControlName="liveStatusOverride"
-                  [value]="opt.value"
-                  class="vendor-details__segment-input"
-                />
-                <span class="vendor-details__segment-label">{{ opt.label }}</span>
-                <span class="vendor-details__segment-hint">{{ opt.hint }}</span>
-              </label>
-            }
+                {{ liveOverrideConfig[v.liveStatusOverride].label }}
+              </span>
+              <span class="vendor-details__hint">
+                {{ liveOverrideConfig[v.liveStatusOverride].description }}
+              </span>
+            </div>
           </div>
-          @if (v.nextOpeningTime && liveStatus() === 'closed' && vendorForm.get('liveStatusOverride')?.value === 'auto') {
-            <p class="vendor-details__next-open">
-              <i class="pi pi-clock"></i>
-              يفتح اليوم الساعة {{ v.nextOpeningTime }}
-            </p>
-          }
         </div>
+
+        @if (v.nextOpeningTime && liveStatus() === 'closed' && v.liveStatusOverride === 'auto') {
+          <p class="vendor-details__next-open">
+            <i class="pi pi-clock"></i>
+            يفتح اليوم الساعة {{ v.nextOpeningTime }}
+          </p>
+        }
       </div>
 
-      <!-- Cards C & D side by side on large screens -->
       <div class="vendor-details__grid-2">
-        <!-- Card C: Marketing & Financials -->
         <div class="vendor-details__card">
           <div class="vendor-details__card-head">
             <h2 class="vendor-details__card-title">
@@ -242,56 +149,35 @@
             </h2>
           </div>
 
-          <div class="vendor-details__field">
-            <label class="vendor-details__label" for="discountPercent">شارة الخصم</label>
-            <p class="vendor-details__hint">
-              خصم عام يظهر على بطاقة المتجر. ضع 0 لإخفاء الشارة.
-            </p>
-            <div class="vendor-details__discount-wrap">
-              <p-inputnumber
-                inputId="discountPercent"
-                formControlName="discountPercent"
-                [min]="0"
-                [max]="100"
-                suffix="%"
-                styleClass="vendor-details__number"
-              />
-              @if ((vendorForm.get('discountPercent')?.value ?? 0) > 0) {
-                <span class="vendor-details__discount-preview">
-                  -{{ vendorForm.get('discountPercent')?.value }}%
-                </span>
-              } @else {
-                <span class="vendor-details__discount-hidden">الشارة مخفية</span>
-              }
+          <div class="vendor-details__pairs vendor-details__pairs--stack">
+            <div class="vendor-details__pair">
+              <div class="vendor-details__label">شارة الخصم</div>
+              <div class="vendor-details__value vendor-details__value--badge">
+                @if (v.discountBadge; as badge) {
+                  <span class="vendor-details__discount-preview">{{ badge.label }}</span>
+                } @else {
+                  <span class="vendor-details__discount-hidden">شارة مخفية</span>
+                }
+              </div>
             </div>
-          </div>
-
-          <div class="vendor-details__field">
-            <label class="vendor-details__label" for="commissionRate">نسبة العمولة</label>
-            <p class="vendor-details__hint">نسبة عمولة كومبو من هذا المتجر (للإدارة فقط).</p>
-            <div class="vendor-details__commission-wrap">
-              <p-inputnumber
-                inputId="commissionRate"
-                formControlName="commissionRate"
-                [min]="0"
-                [max]="100"
-                suffix="%"
-                styleClass="vendor-details__number vendor-details__number--readonly"
-              />
-              <i class="pi pi-lock vendor-details__lock-icon"></i>
+            <div class="vendor-details__pair">
+              <div class="vendor-details__label">نسبة العمولة</div>
+              <div class="vendor-details__value">
+                {{ (v.commissionBp / 100) | number:'1.0-2' }}%
+                <i class="pi pi-lock vendor-details__lock-icon"></i>
+              </div>
             </div>
           </div>
 
           <div class="vendor-details__wallet">
             <span class="vendor-details__wallet-label">رصيد المحفظة</span>
             <span class="vendor-details__wallet-value">
-              {{ v.walletBalance | number:'1.2-2' }}
-              <span class="vendor-details__wallet-unit">SAR</span>
+              {{ (v.walletBalance / 100) | number:'1.2-2' }}
+              <span class="vendor-details__wallet-unit">ج.م</span>
             </span>
           </div>
         </div>
 
-        <!-- Card D: Performance Stats -->
         <div class="vendor-details__card">
           <div class="vendor-details__card-head">
             <h2 class="vendor-details__card-title">
@@ -303,36 +189,26 @@
           <div class="vendor-details__stats-grid">
             <ctrl-stat-card
               label="التقييم"
-              [value]="v.stats.rating"
+              [value]="ratingLabel(v.ratingsScore)"
               icon="pi-star-fill"
               variant="warning"
             />
             <ctrl-stat-card
               label="إجمالي التقييمات"
-              [value]="v.stats.totalReviews"
+              [value]="v.ratingsCount"
               icon="pi-comments"
               variant="info"
             />
             <ctrl-stat-card
               label="الطلبات المكتملة"
-              [value]="v.stats.totalCompletedOrders"
+              [value]="v.completedOrders"
               icon="pi-check-circle"
               variant="success"
             />
           </div>
         </div>
       </div>
-
-      <div class="vendor-details__actions">
-        <button type="button" class="vendor-details__btn vendor-details__btn--ghost" (click)="goBack()">
-          إلغاء
-        </button>
-        <button type="submit" class="vendor-details__btn vendor-details__btn--primary">
-          <i class="pi pi-check"></i>
-          حفظ التغييرات
-        </button>
-      </div>
-    </form>
+    </div>
   }
 
 </div>

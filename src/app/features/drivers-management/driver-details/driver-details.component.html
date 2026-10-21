@@ -1,6 +1,19 @@
 <div class="driver-details">
+  <p-toast position="top-center" />
 
-  @if (!driver()) {
+  @if (loading()) {
+    <div class="driver-details__not-found">
+      <p>جاري تحميل بيانات الكابتن...</p>
+    </div>
+  } @else if (loadError(); as message) {
+    <div class="driver-details__not-found">
+      <i class="pi pi-exclamation-circle"></i>
+      <p>{{ message }}</p>
+      <button type="button" class="driver-details__btn driver-details__btn--ghost" (click)="goBack()">
+        العودة إلى الكباتن
+      </button>
+    </div>
+  } @else if (!driver()) {
     <div class="driver-details__not-found">
       <i class="pi pi-exclamation-circle"></i>
       <p>الكابتن غير موجود.</p>
@@ -51,7 +64,12 @@
           المعلومات العامة
         </h2>
         @if (!isEditing()) {
-          <button type="button" class="driver-details__btn driver-details__btn--ghost" (click)="startEdit()">
+          <button
+            *ctrlPermission="'drivers.write'"
+            type="button"
+            class="driver-details__btn driver-details__btn--ghost"
+            (click)="startEdit()"
+          >
             <i class="pi pi-pencil"></i>
             تعديل
           </button>
@@ -69,7 +87,7 @@
           <div class="col-md-6">
             <div class="driver-details__field">
               <span class="driver-details__label">رقم الهاتف</span>
-              <span class="driver-details__value" dir="ltr">{{ d.phone }}</span>
+              <span class="driver-details__value" >{{ d.phone }}</span>
             </div>
           </div>
           <div class="col-md-4">
@@ -84,7 +102,7 @@
               <span class="driver-details__value">{{ d.hubName }}</span>
             </div>
           </div>
-          @if (d.role === 'DELIVERY') {
+          @if (d.role !== 'COLLECTOR') {
             <div class="col-md-4">
               <div class="driver-details__field">
                 <span class="driver-details__label">نوع المركبة</span>
@@ -95,7 +113,7 @@
           <div class="col-md-4">
             <div class="driver-details__field">
               <span class="driver-details__label">انتهاء الرخصة</span>
-              <span class="driver-details__value" dir="ltr">{{ d.licenseExpiry }}</span>
+              <span class="driver-details__value" >{{ d.licenseExpiry || '—' }}</span>
             </div>
           </div>
         </div>
@@ -155,7 +173,7 @@
             <button type="button" class="driver-details__btn driver-details__btn--ghost" (click)="cancelEdit()">
               إلغاء
             </button>
-            <button type="submit" class="driver-details__btn driver-details__btn--primary" [disabled]="profileForm.invalid">
+            <button type="submit" class="driver-details__btn driver-details__btn--primary" [disabled]="profileForm.invalid || saving()">
               <i class="pi pi-check"></i>
               حفظ التغييرات
             </button>
@@ -175,7 +193,7 @@
         <div class="col-md-4">
           <ctrl-stat-card
             label="الطلبات التي سلمها"
-            [value]="d.stats.totalCompletedOrders"
+            value="—"
             icon="pi-box"
             variant="primary"
           />
@@ -183,7 +201,7 @@
         <div class="col-md-4">
           <ctrl-stat-card
             label="الرصيد الكاش المتوفر معه"
-            [value]="(d.stats.totalCashCollected | number:'1.2-2') + ' ' + currency"
+            value="—"
             icon="pi-wallet"
             variant="warning"
           />
@@ -191,7 +209,7 @@
         <div class="col-md-4">
           <ctrl-stat-card
             label="نسبة القبول"
-            [value]="d.stats.acceptanceRate + '%'"
+            value="—"
             icon="pi-check-circle"
             variant="success"
           />
@@ -199,7 +217,7 @@
         <div class="col-md-4">
           <ctrl-stat-card
             label="تقييم العملاء"
-            [value]="d.stats.customerRating + ' ★'"
+            value="—"
             icon="pi-star-fill"
             variant="info"
           />
@@ -207,7 +225,7 @@
         <div class="col-md-4">
           <ctrl-stat-card
             label="متوسط وقت التوصيل"
-            [value]="d.stats.avgDeliveryTimeMins + ' دقيقة'"
+            value="—"
             icon="pi-clock"
             variant="primary"
           />
@@ -249,7 +267,7 @@
         </ng-template>
         <ng-template pTemplate="emptymessage">
           <tr>
-            <td colspan="5" class="driver-details__empty">لا توجد طلبات مسلّمة بعد.</td>
+            <td colspan="5" class="driver-details__empty">سجل الطلبات غير متاح من النظام بعد.</td>
           </tr>
         </ng-template>
       </p-table>
@@ -273,7 +291,7 @@
       @if (d.complaints.length === 0) {
         <div class="driver-details__no-issues">
           <i class="pi pi-check-circle"></i>
-          <p>لا توجد مشاكل مسجّلة لهذا الكابتن.</p>
+          <p>سجل المشاكل غير متاح من النظام بعد.</p>
         </div>
       } @else {
         <p-table
