@@ -8,6 +8,7 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { OpsNotificationService } from '../../core/services/ops-notification.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { TopbarComponent } from '../topbar/topbar.component';
 
@@ -35,6 +36,8 @@ export class AdminLayoutComponent {
   );
 
   constructor() {
+    inject(OpsNotificationService);
+
     this.destroyRef.onDestroy(() => {
       document.body.style.overflow = '';
     });

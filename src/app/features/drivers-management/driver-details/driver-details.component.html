@@ -201,7 +201,7 @@
         <div class="col-md-4">
           <ctrl-stat-card
             label="الرصيد الكاش المتوفر معه"
-            value="—"
+            [value]="cashBalanceLabel()"
             icon="pi-wallet"
             variant="warning"
           />
@@ -231,6 +231,91 @@
           />
         </div>
       </div>
+    </div>
+
+    <!-- ═══ Card: Cash remittance requests ════════════════════ -->
+    <div class="driver-details__card driver-details__card--table driver-details__card--settlements">
+      <h2 class="driver-details__card-title">
+        <i class="pi pi-wallet"></i>
+        طلبات توريد العهدة
+        <span class="driver-details__card-sub">تأكيد استلام الكاش من الكابتن</span>
+      </h2>
+
+      @if (pendingSettlement(); as row) {
+        <ul class="driver-details__pending">
+          <li class="driver-details__pending-row">
+            <div class="driver-details__pending-info">
+              <span class="driver-details__pending-amount" dir="ltr">{{ moneyLabel(row.amountPiastres) }}</span>
+              <span class="driver-details__pending-meta">
+                <code class="driver-details__id-pill driver-details__id-pill--muted">{{ row.id }}</code>
+                @if (row.requestedAt) {
+                  <span dir="ltr">{{ row.requestedAt | date: 'd MMM y, h:mm a' }}</span>
+                }
+              </span>
+            </div>
+            <button
+              type="button"
+              class="driver-details__btn driver-details__btn--confirm"
+              [disabled]="confirmingId() !== null"
+              (click)="confirmSettlement(row)"
+            >
+              <i
+                class="pi"
+                [ngClass]="confirmingId() === row.id ? 'pi-spin pi-spinner' : 'pi-check-circle'"
+              ></i>
+              تأكيد استلام العهدة
+            </button>
+          </li>
+        </ul>
+      } @else {
+        <p class="driver-details__settlements-note">لا توجد طلبات توريد معلّقة.</p>
+      }
+
+      <h3 class="driver-details__section-title">سجل التسويات</h3>
+      <p-table
+        [value]="pagedHistory()"
+        [tableStyle]="{ 'min-width': '48rem' }"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th class="driver-details__th">رقم التسوية</th>
+            <th class="driver-details__th">تاريخ الطلب</th>
+            <th class="driver-details__th">المبلغ</th>
+            <th class="driver-details__th">الحالة</th>
+            <th class="driver-details__th">تاريخ الإجراء</th>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-row>
+          <tr>
+            <td><code class="driver-details__id-pill">{{ row.id }}</code></td>
+            <td dir="ltr">{{ row.requestedAt ? (row.requestedAt | date: 'd MMM y, h:mm a') : '—' }}</td>
+            <td dir="ltr">{{ moneyLabel(row.amountPiastres) }}</td>
+            <td>
+              <span
+                class="driver-details__resolution"
+                [ngClass]="'driver-details__resolution--' + (row.status === 'CONFIRMED' ? 'resolved' : 'rejected')"
+              >
+                {{ settlementStatusLabel(row.status) }}
+              </span>
+            </td>
+            <td dir="ltr">{{ row.resolvedAt ? (row.resolvedAt | date: 'd MMM y, h:mm a') : '—' }}</td>
+          </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="5" class="driver-details__empty">
+              لا توجد تسويات مؤكدة أو مرفوضة لهذا الكابتن.
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+      <ctrl-table-pager
+        [total]="settlementHistory().length"
+        [page]="historyPage()"
+        [pageSize]="historyPageSize()"
+        (pageChange)="historyPage.set($event)"
+        (pageSizeChange)="historyPageSize.set($event)"
+      />
     </div>
 
     <!-- ═══ Card C: Delivered Orders History ═══════════════════ -->

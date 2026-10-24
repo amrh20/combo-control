@@ -39,7 +39,7 @@ import {
   toApiLiveStatusOverride,
   vendorErrorMessage,
 } from '../../../core/services/vendor.service';
-import { VendorProfile } from '../data/vendors.mock';
+import { getVendorInitials, VendorProfile } from '../data/vendors.mock';
 
 const OUTSIDE_HUB_MESSAGE =
   'موقع المتجر يقع خارج حدود نقطة التجميع المحددة. الرجاء اختيار موقع صحيح.';
@@ -280,7 +280,7 @@ export class VendorFormComponent implements OnInit, OnDestroy {
       categoryId: raw.categoryId!,
       hubId,
       location: { lat, lng },
-      logoUrl: raw.logoUrl ?? '',
+      logoUrl: raw.logoUrl?.trim() || null,
       isActive: raw.isActive ?? true,
       liveStatusOverride: raw.liveStatusOverride ?? 'AUTO',
       autoAccept: raw.autoAccept ?? false,
@@ -347,6 +347,15 @@ export class VendorFormComponent implements OnInit, OnDestroy {
 
   cancel(): void {
     this.router.navigate(['/vendors']);
+  }
+
+  /** Shown in the upload area until a logo file is chosen. */
+  logoInitials(): string {
+    if (this.logoPreview()) {
+      return '';
+    }
+
+    return getVendorInitials(this.vendorForm.controls.name.value ?? '');
   }
 
   private patchFromVendor(vendor: VendorProfile): void {

@@ -23,6 +23,7 @@ import {
 } from '../models/vendor.model';
 import { egpToPiastres, piastresToEgp } from '../models/zone.model';
 import {
+  LiveStatus,
   LiveStatusOverride,
   VendorProfile,
   VENDORS_DATA,
@@ -360,7 +361,7 @@ function recordToPayload(record: VendorApiRecord): CreateVendorPayload {
     categoryId: record.categoryId ?? '',
     hubId: record.hubId ?? '',
     location: record.location ?? { lat: 0, lng: 0 },
-    logoUrl: record.logoUrl ?? '',
+    logoUrl: record.logoUrl?.trim() || null,
     isActive: record.isActive ?? true,
     liveStatusOverride: record.liveStatusOverride ?? 'AUTO',
     autoAccept: record.autoAccept ?? false,
@@ -381,7 +382,7 @@ function profileToPayload(vendor: VendorProfile): CreateVendorPayload {
     categoryId: vendor.category,
     hubId: vendor.hubId,
     location: vendor.location,
-    logoUrl: vendor.logoUrl ?? '',
+    logoUrl: vendor.logoUrl?.trim() || null,
     isActive: vendor.systemStatus === 'active',
     liveStatusOverride: toApiLiveStatusOverride(vendor.liveStatusOverride),
     autoAccept: vendor.settings.autoAccept,
@@ -477,8 +478,7 @@ function toVendorProfile(
   const discountBp = record.discountBp ?? payload.discountBp;
   const commissionBp = record.commissionBp ?? existing?.commissionBp ?? payload.commissionBp;
   const logoUrl = record.logoUrl ?? payload.logoUrl;
-  const ratingsScore =
-    record.ratingsScore !== undefined ? readRatingScore(record.ratingsScore) : (existing?.ratingsScore ?? null);
+  const ratingsScore = readVendorRatingScore(record, existing?.ratingsScore);
   const ratingsCount = readCount(record.ratingsCount, existing?.ratingsCount ?? 0);
   const completedOrders = readCount(record.completedOrders, existing?.completedOrders ?? 0);
   const walletBalance = readCount(record.walletBalance, existing?.walletBalance ?? 0);
@@ -486,6 +486,7 @@ function toVendorProfile(
     record.discountBadge !== undefined
       ? readDiscountBadge(record.discountBadge)
       : (existing?.discountBadge ?? null);
+  const nextOpeningTime = readNextOpeningTime(record, existing?.nextOpeningTime);
 
   return {
     id: record.id || `SH-${Date.now()}`,
@@ -493,13 +494,15 @@ function toVendorProfile(
     phone: record.phone ?? payload.phone,
     contactPerson: record.contactPerson ?? payload.contactPerson,
     category: record.categoryId ?? payload.categoryId,
+    categoryName: record.categoryName?.trim() || existing?.categoryName || undefined,
     hubId: record.hubId ?? payload.hubId,
     hubName: hubName || record.hubId || payload.hubId,
     location: record.location ?? payload.location,
     ...(logoUrl ? { logoUrl } : {}),
     systemStatus: (record.isActive ?? payload.isActive) ? 'active' : 'inactive',
     liveStatusOverride: toMockLiveStatusOverride(override),
-    liveStatus: 'closed',
+    liveStatus: readLiveStatus(record.liveStatus, existing?.liveStatus),
+    ...(nextOpeningTime ? { nextOpeningTime } : {}),
     settings: {
       openingTime: opens,
       closingTime: closes,
@@ -522,15 +525,75 @@ function toVendorProfile(
   };
 }
 
+/** Same `OPEN` | `BUSY` | `CLOSED` value the vendors list already shows. */
+function readLiveStatus(
+  value: string | null | undefined,
+  existing: LiveStatus | undefined,
+): LiveStatus {
+  switch (value) {
+    case 'OPEN':
+      return 'open';
+    case 'BUSY':
+      return 'busy';
+    case 'CLOSED':
+      return 'closed';
+    default:
+      return existing ?? 'closed';
+  }
+}
+
+/** `nextOpenAt` is an ISO instant on the vendor payload. The details page shows Cairo `HH:mm`. */
+function readNextOpeningTime(
+  record: VendorApiRecord,
+  existing: string | undefined,
+): string | undefined {
+  if (record.nextOpenAt === undefined) {
+    return existing;
+  }
+  const trimmed = record.nextOpenAt?.trim() ?? '';
+  if (!trimmed) {
+    return undefined;
+  }
+  if (/^\d{2}:\d{2}/.test(trimmed) && !trimmed.includes('T')) {
+    return trimmed.slice(0, 5);
+  }
+  const date = new Date(trimmed);
+  if (Number.isNaN(date.getTime())) {
+    return trimmed.match(/\d{2}:\d{2}/)?.[0] ?? trimmed;
+  }
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Africa/Cairo',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).format(date);
+}
+
 function readCount(value: number | null | undefined, fallback: number): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 
-function readRatingScore(value: number | null): number | null {
-  if (value === null || !Number.isFinite(value)) {
+/** API field is `ratingScore`. A positive count always comes with a finite mean. */
+function readVendorRatingScore(
+  record: VendorApiRecord,
+  existing: number | null | undefined,
+): number | null {
+  const raw = record.ratingScore !== undefined ? record.ratingScore : record.ratingsScore;
+  if (raw === undefined) {
+    return existing ?? null;
+  }
+  return readRatingScore(raw);
+}
+
+function readRatingScore(value: number | string | null): number | null {
+  if (value === null) {
     return null;
   }
-  return value;
+  const score = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(score)) {
+    return null;
+  }
+  return score;
 }
 
 function readDiscountBadge(value: VendorDiscountBadge | null): VendorDiscountBadge | null {

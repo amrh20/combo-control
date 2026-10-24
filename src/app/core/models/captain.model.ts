@@ -1,3 +1,5 @@
+import { CaptainCashSettlement } from './captain-settlement.model';
+
 /** Account state accepted by `POST` / `PATCH /v1/captains`. */
 export type CaptainStatus = 'ACTIVE' | 'BLOCKED';
 
@@ -16,6 +18,16 @@ export interface Captain {
   status: CaptainStatus;
   hubId: string;
   vehicleType: CaptainVehicleType;
+  /**
+   * Cash the captain still holds, in piastres.
+   * From `company_cash_balance` / `companyCashBalance` on the captain payload.
+   */
+  companyCashBalance: number | null;
+  /**
+   * Open remittance request from `GET /v1/captains/{id}` (`pendingSettlement`).
+   * Null when the captain has not asked to hand in cash.
+   */
+  pendingSettlement: CaptainCashSettlement | null;
 }
 
 export interface CaptainListQuery {

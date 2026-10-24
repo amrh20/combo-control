@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { DecimalPipe, NgClass } from '@angular/common';
+import { DatePipe, DecimalPipe, NgClass } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -10,9 +10,18 @@ import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { ToastModule } from 'primeng/toast';
 import { Captain } from '../../../core/models/captain.model';
+import {
+  CaptainCashSettlement,
+  SETTLEMENT_STATUS_LABELS,
+} from '../../../core/models/captain-settlement.model';
 import { PermissionDirective } from '../../../core/directives/permission.directive';
 import { CaptainService, captainErrorMessage } from '../../../core/services/captain.service';
+import {
+  CaptainSettlementService,
+  settlementErrorMessage,
+} from '../../../core/services/captain-settlement.service';
 import { HubService } from '../../../core/services/hub.service';
+import { piastresToEgp } from '../../../core/models/zone.model';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
 import {
   TablePagerComponent,
@@ -38,6 +47,7 @@ import {
   standalone: true,
   imports: [
     NgClass,
+    DatePipe,
     DecimalPipe,
     ReactiveFormsModule,
     TableModule,
@@ -57,6 +67,7 @@ export class DriverDetailsComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly captainService = inject(CaptainService);
+  private readonly settlementService = inject(CaptainSettlementService);
   private readonly hubService = inject(HubService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly messages = inject(MessageService);
@@ -92,6 +103,10 @@ export class DriverDetailsComponent implements OnInit {
   readonly ordersPageSize = signal(10);
   readonly complaintsPage = signal(0);
   readonly complaintsPageSize = signal(10);
+  readonly historyPage = signal(0);
+  readonly historyPageSize = signal(10);
+
+  readonly confirmingId = signal<string | null>(null);
 
   readonly deliveredOrders = computed(() => this.driver()?.deliveredOrders ?? []);
   readonly complaints = computed(() => this.driver()?.complaints ?? []);
@@ -101,6 +116,21 @@ export class DriverDetailsComponent implements OnInit {
   readonly pagedComplaints = computed(() =>
     slicePage(this.complaints(), this.complaintsPage(), this.complaintsPageSize()),
   );
+  readonly pendingSettlement = computed(() => {
+    const pending = this.captain()?.pendingSettlement;
+    return pending?.status === 'PENDING' ? pending : null;
+  });
+  readonly settlementHistory = computed(() => [] as CaptainCashSettlement[]);
+  readonly pagedHistory = computed(() =>
+    slicePage(this.settlementHistory(), this.historyPage(), this.historyPageSize()),
+  );
+  readonly cashBalanceLabel = computed(() => {
+    const amount = this.captain()?.companyCashBalance;
+    if (amount == null) {
+      return '—';
+    }
+    return this.moneyLabel(amount);
+  });
 
   readonly profileForm = this.fb.nonNullable.group({
     name: ['', Validators.required],
@@ -156,6 +186,53 @@ export class DriverDetailsComponent implements OnInit {
     return this.vehicleOptions.find((option) => option.value === type)?.label ?? type;
   }
 
+  moneyLabel(piastres: number): string {
+    return `${piastresToEgp(piastres).toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })} ${this.currency}`;
+  }
+
+  settlementStatusLabel(status: string): string {
+    if (status === 'PENDING' || status === 'CONFIRMED' || status === 'REJECTED') {
+      return SETTLEMENT_STATUS_LABELS[status];
+    }
+    return status;
+  }
+
+  confirmSettlement(row: CaptainCashSettlement): void {
+    const captainId = this.captain()?.id;
+    if (!captainId || row.status !== 'PENDING' || this.confirmingId()) {
+      return;
+    }
+
+    this.confirmingId.set(row.id);
+    this.settlementService
+      .confirmSettlement(captainId, row.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.confirmingId.set(null);
+          this.messages.add({
+            severity: 'success',
+            summary: 'تم التأكيد',
+            detail: 'تم تأكيد استلام العهدة.',
+            life: 4000,
+          });
+          this.refreshCaptain(captainId);
+        },
+        error: (error: unknown) => {
+          this.confirmingId.set(null);
+          this.messages.add({
+            severity: 'error',
+            summary: 'تعذر التأكيد',
+            detail: settlementErrorMessage(error, 'تعذر تأكيد استلام العهدة.'),
+            life: 6000,
+          });
+        },
+      });
+  }
+
   startEdit(): void {
     const current = this.driver();
     if (!current) return;
@@ -201,7 +278,11 @@ export class DriverDetailsComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (updated) => {
-          this.captain.set(updated);
+          this.captain.set({
+            ...updated,
+            pendingSettlement: updated.pendingSettlement ?? current.pendingSettlement,
+            companyCashBalance: updated.companyCashBalance ?? current.companyCashBalance,
+          });
           this.saving.set(false);
           this.isEditing.set(false);
           this.profileForm.controls.phone.enable({ emitEvent: false });
@@ -232,6 +313,16 @@ export class DriverDetailsComponent implements OnInit {
 
   goBack(): void {
     this.router.navigate(['/drivers']);
+  }
+
+  private refreshCaptain(id: string): void {
+    this.captainService
+      .getCaptain(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (captain) => this.captain.set(captain),
+        error: () => undefined,
+      });
   }
 }
 

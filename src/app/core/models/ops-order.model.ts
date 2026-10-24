@@ -145,6 +145,15 @@ export interface OpsOrderRow {
   placedAt: string;
   shopCount: number;
   shopStatuses: SubOrderStatus[];
+  /**
+   * This shop's sub-order status. Present when the list was filtered with `vendorId`.
+   */
+  shopStatus?: SubOrderStatus | null;
+  /**
+   * This shop's remaining items, in piastres. Present with `vendorId`.
+   * Delivery fees and other shops are not included. Divide by 100 for EGP.
+   */
+  subOrderTotal?: Piastres;
 }
 
 /** `GET /v1/orders/{id}`. */
@@ -189,6 +198,8 @@ export interface OpsOrderListQuery {
   status?: OrderStatus;
   hubId?: string;
   customerId?: string;
+  /** Orders that include this shop. The row then includes `shopStatus`. */
+  vendorId?: string;
   cursor?: string;
   limit?: number;
 }
@@ -241,7 +252,7 @@ export const SUB_ORDER_STATUS_CONFIG: Record<SubOrderStatus, StatusDisplay> = {
   PENDING: { labelAr: 'قيد الانتظار', tone: 'neutral' },
   PREPARING: { labelAr: 'قيد التحضير', tone: 'warning' },
   READY_FOR_PICKUP: { labelAr: 'جاهز للاستلام', tone: 'info' },
-  PICKED_UP: { labelAr: 'تم الاستلام', tone: 'primary' },
+  PICKED_UP: { labelAr: 'استلمها الكابتن', tone: 'primary' },
   AT_HUB: { labelAr: 'وصل الهب', tone: 'info' },
   VERIFIED: { labelAr: 'تم التحقق', tone: 'success' },
   HANDED_TO_DRIVER: { labelAr: 'سُلم للكابتن', tone: 'primary' },
@@ -308,7 +319,12 @@ const SHOP_ACTIONS: Partial<Record<SubOrderStatus, readonly ShopStatusAction[]>>
     },
   ],
   READY_FOR_PICKUP: [
-    { status: 'PICKED_UP', permission: 'orders.update', label: 'تم الاستلام', needsReason: false },
+    {
+      status: 'PICKED_UP',
+      permission: 'orders.update',
+      label: 'استلمها الكابتن',
+      needsReason: false,
+    },
   ],
   PICKED_UP: [
     { status: 'AT_HUB', permission: 'hub.verify', label: 'وصل الهب', needsReason: false },

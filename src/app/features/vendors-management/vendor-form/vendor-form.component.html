@@ -122,7 +122,10 @@
 
         <div class="col-md-6">
           <div class="vendor-form__field">
-            <label class="vendor-form__label" for="logoFile">شعار المتجر</label>
+            <label class="vendor-form__label" for="logoFile">
+              شعار المتجر
+              <span class="vendor-form__optional">اختياري</span>
+            </label>
             <div
               class="vendor-form__logo-placeholder"
               [class.vendor-form__logo-placeholder--filled]="!!logoPreview()"
@@ -148,6 +151,8 @@
                 >
                   <i class="pi pi-times"></i>
                 </button>
+              } @else if (logoInitials(); as initials) {
+                <span class="vendor-form__logo-initials" aria-hidden="true">{{ initials }}</span>
               } @else {
                 <i class="pi pi-image"></i>
               }

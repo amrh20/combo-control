@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable, filter, map, share } from 'rxjs';
 import { API_BASE_URL } from '../api-config';
 import {
   AssignmentMode,
@@ -14,9 +14,12 @@ import {
   OpsOrderEvent,
   OpsTrip,
   OpsTripOffer,
+  OrderStatus,
+  SubOrderStatus,
   SubOrderStatusChange,
   TaskStatus,
 } from '../models/ops-order.model';
+import { RealtimeService } from './realtime.service';
 
 const ORDERS_URL = `${API_BASE_URL}/v1/orders`;
 
@@ -32,6 +35,14 @@ interface ApiErrorBody {
 @Injectable({ providedIn: 'root' })
 export class OpsOrderService {
   private readonly http = inject(HttpClient);
+  private readonly realtime = inject(RealtimeService);
+
+  /** Live `order:created` payloads, mapped to list rows. */
+  readonly orderCreated$: Observable<OpsOrderRow> = this.realtime.on<unknown>('order:created').pipe(
+    map(asCreatedOrderRow),
+    filter((row): row is OpsOrderRow => row !== null),
+    share(),
+  );
 
   /** `GET /v1/orders` — newest first, cursor page. */
   listOrders(query: OpsOrderListQuery = {}): Observable<CursorPage<OpsOrderRow>> {
@@ -39,6 +50,7 @@ export class OpsOrderService {
     const status = query.status?.trim() ?? '';
     const hubId = query.hubId?.trim() ?? '';
     const customerId = query.customerId?.trim() ?? '';
+    const vendorId = query.vendorId?.trim() ?? '';
     const cursor = query.cursor?.trim() ?? '';
     if (status) {
       params = params.set('status', status);
@@ -48,6 +60,9 @@ export class OpsOrderService {
     }
     if (customerId) {
       params = params.set('customerId', customerId);
+    }
+    if (vendorId) {
+      params = params.set('vendorId', vendorId);
     }
     if (cursor) {
       params = params.set('cursor', cursor);
@@ -270,6 +285,105 @@ function asMode(value: string | null | undefined): AssignmentMode {
 
 function text(value: string | null | undefined): string {
   return value?.trim() ?? '';
+}
+
+const ORDER_STATUSES = new Set<OrderStatus>([
+  'PLACED',
+  'CONSOLIDATING',
+  'READY_AT_HUB',
+  'ASSIGNED',
+  'EN_ROUTE',
+  'DELIVERED',
+  'CANCELLED',
+  'FAILED',
+]);
+
+const SUB_ORDER_STATUSES = new Set<SubOrderStatus>([
+  'PENDING',
+  'PREPARING',
+  'READY_FOR_PICKUP',
+  'PICKED_UP',
+  'AT_HUB',
+  'VERIFIED',
+  'HANDED_TO_DRIVER',
+  'DELIVERED',
+  'REJECTED',
+  'CANCELLED',
+]);
+
+function asCreatedOrderRow(payload: unknown): OpsOrderRow | null {
+  const raw = unwrapCreatedOrder(payload);
+  if (!raw) {
+    return null;
+  }
+  const rec = asRecord(raw);
+  const id = field(rec['id']);
+  const orderNumber = field(rec['orderNumber']);
+  if (!id && !orderNumber) {
+    return null;
+  }
+  const hub = asRecord(rec['hub']);
+  const customer = asRecord(rec['customer']);
+  const address = asRecord(rec['deliveryAddress']);
+  const subOrders = Array.isArray(rec['subOrders']) ? rec['subOrders'] : [];
+  const listedStatuses = Array.isArray(rec['shopStatuses']) ? rec['shopStatuses'] : [];
+  const finalTotal = rec['finalTotal'];
+  return {
+    id: id || orderNumber,
+    orderNumber: orderNumber || id,
+    status: asOrderStatus(rec['status']),
+    hubId: field(rec['hubId']) || field(hub['id']),
+    hubName: field(rec['hubName']) || field(hub['name']),
+    customerName: field(rec['customerName']) || field(customer['name']) || field(customer['fullName']),
+    area: field(rec['area']) || field(address['area']),
+    estimatedTotal: asNumber(rec['estimatedTotal']),
+    finalTotal: finalTotal == null || finalTotal === '' ? null : asNumber(finalTotal),
+    placedAt: field(rec['placedAt']) || new Date().toISOString(),
+    shopCount: asNumber(rec['shopCount']) || subOrders.length,
+    shopStatuses: listedStatuses.length
+      ? listedStatuses.map((status) => asSubOrderStatus(status))
+      : subOrders.map((sub) => asSubOrderStatus(asRecord(sub)['status'])),
+  };
+}
+
+function field(value: unknown): string {
+  if (typeof value === 'string') {
+    return value.trim();
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value);
+  }
+  return '';
+}
+
+function unwrapCreatedOrder(payload: unknown): unknown {
+  if (payload == null) {
+    return null;
+  }
+  if (typeof payload !== 'object') {
+    return null;
+  }
+  const rec = payload as Record<string, unknown>;
+  return rec['order'] ?? rec['data'] ?? rec['payload'] ?? payload;
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+}
+
+function asOrderStatus(value: unknown): OrderStatus {
+  const status = String(value ?? '').trim().toUpperCase();
+  return ORDER_STATUSES.has(status as OrderStatus) ? (status as OrderStatus) : 'PLACED';
+}
+
+function asSubOrderStatus(value: unknown): SubOrderStatus {
+  const status = String(value ?? '').trim().toUpperCase();
+  return SUB_ORDER_STATUSES.has(status as SubOrderStatus) ? (status as SubOrderStatus) : 'PENDING';
+}
+
+function asNumber(value: unknown): number {
+  const n = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(n) ? n : 0;
 }
 
 function toPage(body: CursorPage<OpsOrderRow> | null): CursorPage<OpsOrderRow> {

@@ -89,6 +89,12 @@
     margin-left: 2px;
   }
 
+  &__optional {
+    margin-inline-start: 6px;
+    font-weight: 500;
+    color: var(--Combo-text-text-secondary-paragraph);
+  }
+
   // ── SAR / currency prefix wrapper ─────────────────
   &__affix-wrap {
     display: flex;
@@ -225,6 +231,20 @@
     &--filled {
       padding: 16px;
     }
+  }
+
+  &__logo-initials {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--Combo-bg-background-primary-50);
+    color: var(--Combo-text-text-primary);
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1;
   }
 
   &__logo-remove {

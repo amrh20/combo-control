@@ -29,6 +29,8 @@ export interface VendorProfile {
   contactPerson: string;
   /** Id from VendorCategoryService (e.g. VC-001). */
   category: string;
+  /** Display name from `GET /v1/vendors/{id}` when the category list is not loaded yet. */
+  categoryName?: string;
   /** Hub this shop is physically assigned to. */
   hubId: string;
   hubName: string;
@@ -238,12 +240,18 @@ export const VENDORS_DATA: VendorProfile[] = VENDOR_DRAFTS.map((draft) => {
   };
 });
 
+/** First two letters of a vendor name. "KFC" becomes "KF"; two words use one letter each. */
 export function getVendorInitials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return parts[0].charAt(0) + parts[1].charAt(0);
+  const trimmed = name.trim();
+  if (!trimmed) {
+    return '';
   }
-  return name.charAt(0);
+
+  const parts = trimmed.split(/\s+/).filter(Boolean);
+  const initials =
+    parts.length >= 2 ? `${parts[0].charAt(0)}${parts[1].charAt(0)}` : trimmed.slice(0, 2);
+
+  return initials.toLocaleUpperCase('en');
 }
 
 export function resolveLiveStatus(vendor: VendorProfile): LiveStatus {

@@ -221,6 +221,10 @@ export class OpsBoardComponent {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe((page) => this.applyPage(page));
+
+    this.ordersApi.orderCreated$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((order) => {
+      this.prependCreatedOrder(order);
+    });
   }
 
   onSearchChange(value: string): void {
@@ -290,6 +294,22 @@ export class OpsBoardComponent {
 
   rowTotal(row: OpsOrderRow): number {
     return this.egp(row.finalTotal ?? row.estimatedTotal);
+  }
+
+  private prependCreatedOrder(order: OpsOrderRow): void {
+    if (this.boardMode() !== 'live' || !this.keepsRow(order)) {
+      return;
+    }
+    const hubId = this.hubFilter();
+    if (hubId && order.hubId !== hubId) {
+      return;
+    }
+    this.rows.update((rows) => {
+      if (rows.some((row) => row.id === order.id)) {
+        return rows;
+      }
+      return [order, ...rows];
+    });
   }
 
   private keepsRow(row: OpsOrderRow): boolean {

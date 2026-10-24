@@ -194,7 +194,7 @@
       @if (vendor.logoUrl) {
         <img [src]="logoSrc(vendor.logoUrl)" alt="" />
       } @else {
-        <i class="pi pi-shop"></i>
+        <span class="catalog__vendor-initials">{{ vendorInitials(vendor.name) }}</span>
       }
     </span>
     <span class="catalog__vendor-copy">

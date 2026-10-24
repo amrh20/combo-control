@@ -2,7 +2,9 @@ import { Component, ElementRef, HostListener, computed, inject, output, signal, 
 import { NavigationEnd, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs/operators';
+import { formatOrderAge } from '../../core/models/ops-order.model';
 import { AuthService } from '../../core/services/auth.service';
+import { OpsNotificationService } from '../../core/services/ops-notification.service';
 
 const PAGE_TITLES: Record<string, string> = {
   analytics:  'لوحة التحليلات',
@@ -44,12 +46,18 @@ export class TopbarComponent {
 
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
+  private readonly notices = inject(OpsNotificationService);
   private readonly userMenu = viewChild<ElementRef<HTMLElement>>('userMenu');
+  private readonly noticeMenu = viewChild<ElementRef<HTMLElement>>('noticeMenu');
 
   readonly menuOpen = signal(false);
+  readonly noticesOpen = signal(false);
+  readonly notifications = this.notices.notifications;
+  readonly unreadCount = this.notices.unreadCount;
   readonly displayName = computed(() => this.auth.currentUser()?.fullName?.trim() || 'مسؤول');
   readonly email = computed(() => this.auth.currentUser()?.email ?? '');
   readonly avatarInitial = computed(() => this.displayName().charAt(0) || 'م');
+  readonly formatAge = formatOrderAge;
 
   pageTitle = toSignal(
     this.router.events.pipe(
@@ -60,25 +68,48 @@ export class TopbarComponent {
   );
 
   toggleMenu(): void {
+    this.noticesOpen.set(false);
     this.menuOpen.update((open) => !open);
+  }
+
+  toggleNotices(): void {
+    this.menuOpen.set(false);
+    this.noticesOpen.update((open) => !open);
+    if (this.noticesOpen()) {
+      this.notices.markAllRead();
+    }
+  }
+
+  openOrder(): void {
+    this.noticesOpen.set(false);
+    void this.router.navigateByUrl('/orders');
   }
 
   logout(): void {
     this.menuOpen.set(false);
+    this.noticesOpen.set(false);
     this.auth.logout();
   }
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
     this.menuOpen.set(false);
+    this.noticesOpen.set(false);
   }
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
-    const root = this.userMenu()?.nativeElement;
-    if (!this.menuOpen() || !root || !(event.target instanceof Node) || root.contains(event.target)) {
+    const target = event.target;
+    if (!(target instanceof Node)) {
       return;
     }
-    this.menuOpen.set(false);
+    const userRoot = this.userMenu()?.nativeElement;
+    if (this.menuOpen() && userRoot && !userRoot.contains(target)) {
+      this.menuOpen.set(false);
+    }
+    const noticeRoot = this.noticeMenu()?.nativeElement;
+    if (this.noticesOpen() && noticeRoot && !noticeRoot.contains(target)) {
+      this.noticesOpen.set(false);
+    }
   }
 }

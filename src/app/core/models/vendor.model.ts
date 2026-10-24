@@ -43,7 +43,8 @@ export interface CreateVendorPayload {
   categoryId: string;
   hubId: string;
   location: { lat: number; lng: number };
-  logoUrl: string;
+  /** `null` when the vendor has no logo. */
+  logoUrl: string | null;
   isActive: boolean;
   liveStatusOverride: VendorLiveStatusOverride;
   autoAccept: boolean;
@@ -120,7 +121,11 @@ export interface VendorApiRecord {
   commissionBp?: number;
   /** Integer piastres. Divide by 100 for EGP. */
   walletBalance?: number;
-  /** `null` when the vendor has no ratings yet. */
+  /**
+   * Mean score from `GET /v1/vendors/{id}` (`ratingScore`). `null` when `ratingsCount` is 0.
+   * `ratingsScore` is accepted only as a fallback if a payload already uses the UI name.
+   */
+  ratingScore?: number | null;
   ratingsScore?: number | null;
   ratingsCount?: number;
   completedOrders?: number;

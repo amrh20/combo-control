@@ -12,6 +12,7 @@ import {
   CreateCaptainPayload,
   UpdateCaptainPayload,
 } from '../models/captain.model';
+import { parseCaptainSettlement } from './captain-settlement.service';
 
 const CAPTAINS_URL = `${API_BASE_URL}/v1/captains`;
 
@@ -27,6 +28,10 @@ interface CaptainApiRecord {
   status?: string | null;
   hubId?: string | null;
   vehicleType?: string | null;
+  companyCashBalance?: number | string | null;
+  company_cash_balance?: number | string | null;
+  pendingSettlement?: unknown;
+  pending_settlement?: unknown;
 }
 
 interface CaptainPage {
@@ -143,7 +148,22 @@ function toCaptain(row: CaptainApiRecord): Captain {
     status: asStatus(row.status),
     hubId: row.hubId?.trim() ?? '',
     vehicleType: asVehicle(row.vehicleType),
+    companyCashBalance: asPiastres(row.companyCashBalance ?? row.company_cash_balance),
+    pendingSettlement:
+      parseCaptainSettlement(row.pendingSettlement ?? row.pending_settlement, row.id) ?? null,
   };
+}
+
+/** Live cash on hand. Missing on older payloads, never coerced to zero. */
+function asPiastres(value: number | string | null | undefined): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.trunc(value);
+  }
+  if (typeof value === 'string' && value.trim() !== '') {
+    const amount = Number(value);
+    return Number.isFinite(amount) ? Math.trunc(amount) : null;
+  }
+  return null;
 }
 
 function asRole(value: string | null | undefined): CaptainRole {

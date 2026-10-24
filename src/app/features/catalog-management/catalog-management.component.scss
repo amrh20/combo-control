@@ -64,9 +64,9 @@
     height: 32px;
     border-radius: 50%;
     overflow: hidden;
-    background: var(--Combo-bg-background-neutral-100);
+    background: var(--Combo-bg-background-primary-50);
     border: 1px solid var(--Combo-border-border-neutral-secondary);
-    color: var(--Combo-icon-icon-neutral);
+    color: var(--Combo-text-text-primary);
 
     img {
       width: 100%;
@@ -78,6 +78,13 @@
     .pi {
       font-size: 14px;
     }
+  }
+
+  &__vendor-initials {
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--Combo-text-text-primary);
   }
 
   &__vendor-copy {
