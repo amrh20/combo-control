@@ -23,6 +23,7 @@ export class CaptainSettlementService {
   ): Observable<CaptainCashSettlement[]> {
     let params = new HttpParams();
     const statuses = Array.isArray(status) ? status : status ? [status] : [];
+    params = params.set('limit', '100');
     if (statuses.length === 1) {
       params = params.set('status', statuses[0]);
     } else if (statuses.length > 1) {

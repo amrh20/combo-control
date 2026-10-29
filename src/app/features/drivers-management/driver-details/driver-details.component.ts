@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe, DecimalPipe, NgClass } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -15,7 +16,13 @@ import {
   SETTLEMENT_STATUS_LABELS,
 } from '../../../core/models/captain-settlement.model';
 import { PermissionDirective } from '../../../core/directives/permission.directive';
-import { CaptainService, captainErrorMessage } from '../../../core/services/captain.service';
+import {
+  CaptainDeliveredOrder,
+  CaptainIssueRow,
+  CaptainService,
+  CaptainStats,
+  captainErrorMessage,
+} from '../../../core/services/captain.service';
 import {
   CaptainSettlementService,
   settlementErrorMessage,
@@ -34,10 +41,8 @@ import {
   CaptainRole,
   CaptainVehicleType,
   DRIVER_CURRENCY,
-  RESOLUTION_CONFIG,
   ROLE_CONFIG,
   ROLE_OPTIONS,
-  SEVERITY_CONFIG,
   VEHICLE_OPTIONS,
   getInitials,
 } from '../data/drivers.mock';
@@ -74,8 +79,6 @@ export class DriverDetailsComponent implements OnInit {
 
   readonly availabilityConfig = AVAILABILITY_CONFIG;
   readonly accountStatusConfig = ACCOUNT_STATUS_CONFIG;
-  readonly severityConfig = SEVERITY_CONFIG;
-  readonly resolutionConfig = RESOLUTION_CONFIG;
   readonly roleConfig = ROLE_CONFIG;
   readonly currency = DRIVER_CURRENCY;
   readonly roleOptions = ROLE_OPTIONS;
@@ -107,9 +110,22 @@ export class DriverDetailsComponent implements OnInit {
   readonly historyPageSize = signal(10);
 
   readonly confirmingId = signal<string | null>(null);
+  readonly stats = signal<CaptainStats | null>(null);
+  readonly orders = signal<CaptainDeliveredOrder[]>([]);
+  readonly issues = signal<CaptainIssueRow[]>([]);
+  readonly ordersNote = signal('لا توجد طلبات مسلّمة.');
+  readonly issuesNote = signal('لا توجد مشاكل مسجّلة.');
 
-  readonly deliveredOrders = computed(() => this.driver()?.deliveredOrders ?? []);
-  readonly complaints = computed(() => this.driver()?.complaints ?? []);
+  readonly deliveredOrders = computed(() =>
+    this.orders().map((order) => ({
+      id: order.orderNumber,
+      date: order.completedAt,
+      zoneName: order.zoneName,
+      deliveryFeeEarned: order.captainProfit / 100,
+      status: 'delivered' as const,
+    })),
+  );
+  readonly complaints = computed(() => this.issues());
   readonly pagedOrders = computed(() =>
     slicePage(this.deliveredOrders(), this.ordersPage(), this.ordersPageSize()),
   );
@@ -120,7 +136,7 @@ export class DriverDetailsComponent implements OnInit {
     const pending = this.captain()?.pendingSettlement;
     return pending?.status === 'PENDING' ? pending : null;
   });
-  readonly settlementHistory = computed(() => [] as CaptainCashSettlement[]);
+  readonly settlementHistory = signal<CaptainCashSettlement[]>([]);
   readonly pagedHistory = computed(() =>
     slicePage(this.settlementHistory(), this.historyPage(), this.historyPageSize()),
   );
@@ -166,6 +182,7 @@ export class DriverDetailsComponent implements OnInit {
         next: (captain) => {
           this.captain.set(captain);
           this.loading.set(false);
+          this.loadActivity(captain.id);
         },
         error: (error: unknown) => {
           this.loading.set(false);
@@ -220,6 +237,7 @@ export class DriverDetailsComponent implements OnInit {
             life: 4000,
           });
           this.refreshCaptain(captainId);
+          this.loadSettlements(captainId);
         },
         error: (error: unknown) => {
           this.confirmingId.set(null);
@@ -315,6 +333,75 @@ export class DriverDetailsComponent implements OnInit {
     this.router.navigate(['/drivers']);
   }
 
+  issueTypeLabel(type: string): string {
+    return ISSUE_TYPE_LABELS[type] ?? type;
+  }
+
+  issueSeverity(type: string): 'low' | 'medium' | 'high' {
+    if (type === 'VEHICLE_BREAKDOWN' || type === 'CUSTOMER_REFUSED') {
+      return 'high';
+    }
+    if (type === 'CUSTOMER_UNREACHABLE' || type === 'SHOP_PROBLEM') {
+      return 'medium';
+    }
+    return 'low';
+  }
+
+  issueResolution(issue: CaptainIssueRow): 'pending' | 'resolved' {
+    return issue.resolvedAt || issue.resolution ? 'resolved' : 'pending';
+  }
+
+  deliveredLabel(): string {
+    const count = this.stats()?.deliveredOrders;
+    return count == null ? '—' : String(count);
+  }
+
+  acceptanceLabel(): string {
+    const rate = this.stats()?.acceptanceRate;
+    return rate == null ? '—' : `${rate}%`;
+  }
+
+  ratingLabel(): string {
+    const rating = this.stats()?.customerRating;
+    return rating == null ? '—' : rating.toLocaleString('en-US', { maximumFractionDigits: 1 });
+  }
+
+  deliveryTimeLabel(): string {
+    const minutes = this.stats()?.avgDeliveryTimeMinutes;
+    return minutes == null ? '—' : `${minutes} د`;
+  }
+
+  private loadActivity(id: string): void {
+    this.loadSettlements(id);
+    forkJoin({
+      stats: this.captainService.getStats(id),
+      orders: this.captainService.getDeliveredOrders(id),
+      issues: this.captainService.getIssues(id),
+    })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (result) => {
+          this.stats.set(result.stats);
+          this.orders.set(result.orders);
+          this.issues.set(result.issues);
+        },
+        error: () => {
+          this.ordersNote.set('تعذر تحميل سجل الطلبات.');
+          this.issuesNote.set('تعذر تحميل سجل المشاكل.');
+        },
+      });
+  }
+
+  private loadSettlements(id: string): void {
+    this.settlementService
+      .listSettlements(id, ['CONFIRMED', 'REJECTED'])
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (rows) => this.settlementHistory.set(rows),
+        error: () => this.settlementHistory.set([]),
+      });
+  }
+
   private refreshCaptain(id: string): void {
     this.captainService
       .getCaptain(id)
@@ -349,3 +436,12 @@ function toProfile(captain: Captain, hubName: string): CaptainProfile {
     complaints: [],
   };
 }
+
+const ISSUE_TYPE_LABELS: Record<string, string> = {
+  CUSTOMER_UNREACHABLE: 'العميل لا يرد',
+  WRONG_GPS: 'موقع خاطئ',
+  CUSTOMER_REFUSED: 'العميل رفض الاستلام',
+  VEHICLE_BREAKDOWN: 'عطل المركبة',
+  SHOP_PROBLEM: 'مشكلة محل',
+  OTHER: 'أخرى',
+};
