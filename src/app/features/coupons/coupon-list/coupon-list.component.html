@@ -1,0 +1,149 @@
+<div class="coupons-list">
+  <div class="coupons-list__header">
+    <div class="coupons-list__header-text">
+      <h1 class="coupons-list__title">الكوبونات</h1>
+      <p class="coupons-list__subtitle">
+        إنشاء كوبونات الخصم وتعديلها وإيقافها. الحالة تتحدث مباشرة من الجدول.
+      </p>
+    </div>
+    <a *ctrlPermission="writePermissions" routerLink="/coupons/new" class="btn btn-primary coupons-list__add">
+      <i class="pi pi-plus" aria-hidden="true"></i>
+      إضافة كوبون
+    </a>
+  </div>
+
+  @if (loadError(); as message) {
+    <div class="alert alert-danger d-flex align-items-center justify-content-between gap-2" role="alert">
+      <span>{{ message }}</span>
+      <button type="button" class="btn btn-sm btn-outline-danger" (click)="reload()">إعادة المحاولة</button>
+    </div>
+  }
+
+  @if (actionError(); as message) {
+    <div class="alert alert-danger" role="alert">{{ message }}</div>
+  }
+
+  <div class="coupons-list__card">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th scope="col">كود الكوبون</th>
+            <th scope="col">نسبة الخصم</th>
+            <th scope="col">الحد الأقصى للخصم</th>
+            <th scope="col">تاريخ الانتهاء</th>
+            <th scope="col">مرات الاستخدام</th>
+            <th scope="col">الحالة</th>
+            <th scope="col" class="text-center">الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (loading() && coupons().length === 0) {
+            <tr>
+              <td colspan="7" class="coupons-list__empty">جاري تحميل الكوبونات...</td>
+            </tr>
+          } @else if (coupons().length === 0) {
+            <tr>
+              <td colspan="7" class="coupons-list__empty">لا توجد كوبونات.</td>
+            </tr>
+          } @else {
+            @for (coupon of coupons(); track coupon.id) {
+              <tr [class.coupons-list__row--inactive]="!coupon.isActive">
+                <td>
+                  <code class="coupons-list__code" dir="ltr">{{ coupon.code }}</code>
+                </td>
+                <td>{{ coupon.discountPercent }}%</td>
+                <td>{{ coupon.maxDiscountAmount | number: '1.0-2' }} ج.م</td>
+                <td dir="ltr" class="coupons-list__date">{{ coupon.expiresAt || '—' }}</td>
+                <td>{{ coupon.usedCount }} / {{ coupon.usageLimit }}</td>
+                <td>
+                  <div class="form-check form-switch coupons-list__switch mb-0">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      role="switch"
+                      [id]="'coupon-active-' + coupon.id"
+                      [checked]="coupon.isActive"
+                      [disabled]="!canWrite() || pendingId() !== null"
+                      [attr.aria-label]="coupon.isActive ? 'إيقاف ' + coupon.code : 'تفعيل ' + coupon.code"
+                      (change)="onActiveChange(coupon, $event)"
+                    />
+                    <label class="form-check-label" [for]="'coupon-active-' + coupon.id">
+                      {{ coupon.isActive ? 'نشط' : 'متوقف' }}
+                    </label>
+                  </div>
+                </td>
+                <td>
+                  <div *ctrlPermission="writePermissions" class="coupons-list__actions">
+                    <a
+                      class="coupons-list__action"
+                      [routerLink]="['/coupons', coupon.id, 'edit']"
+                      title="تعديل"
+                      [attr.aria-label]="'تعديل ' + coupon.code"
+                    >
+                      <i class="pi pi-pencil" aria-hidden="true"></i>
+                    </a>
+                    <button
+                      type="button"
+                      class="coupons-list__action coupons-list__action--delete"
+                      title="حذف"
+                      [attr.aria-label]="'حذف ' + coupon.code"
+                      [disabled]="deleting()"
+                      (click)="askDelete(coupon)"
+                    >
+                      <i class="pi pi-trash" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+@if (pendingDelete(); as coupon) {
+  <div
+    class="modal fade show d-block coupons-list__modal"
+    tabindex="-1"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="coupon-delete-title"
+    (click)="cancelDelete()"
+  >
+    <div class="modal-dialog modal-dialog-centered" (click)="$event.stopPropagation()">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="coupon-delete-title" class="modal-title fs-5">حذف الكوبون</h2>
+          <button
+            type="button"
+            class="btn-close"
+            aria-label="إغلاق"
+            [disabled]="deleting()"
+            (click)="cancelDelete()"
+          ></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">
+            حذف الكوبون <strong dir="ltr">{{ coupon.code }}</strong>؟ لا يمكن التراجع عن هذا الإجراء.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" [disabled]="deleting()" (click)="cancelDelete()">
+            إلغاء
+          </button>
+          <button type="button" class="btn btn-danger" [disabled]="deleting()" (click)="confirmDelete()">
+            @if (deleting()) {
+              جاري الحذف...
+            } @else {
+              حذف
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade show"></div>
+}

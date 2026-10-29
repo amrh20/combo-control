@@ -26,6 +26,8 @@ export const Permission = {
   CustomersBlock: 'customers.block',
   FinancialsRead: 'financials.read',
   FinancialsPayout: 'financials.payout',
+  CouponsRead: 'coupons.read',
+  CouponsWrite: 'coupons.write',
 } as const;
 
 export type Permission = (typeof Permission)[keyof typeof Permission];
@@ -39,6 +41,7 @@ export const LANDING_PAGES: readonly { path: string; permission: Permission }[] 
   { path: '/orders', permission: Permission.OrdersRead },
   { path: '/drivers', permission: Permission.DriversRead },
   { path: '/financials', permission: Permission.FinancialsRead },
+  { path: '/coupons', permission: Permission.CouponsRead },
   { path: '/staff', permission: Permission.StaffRead },
   { path: '/customers', permission: Permission.CustomersRead },
   { path: '/audit-log', permission: Permission.AuditRead },

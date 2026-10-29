@@ -11,8 +11,8 @@ interface NavLink {
   label: string;
   icon: string;
   route: string;
-  /** Grant required to see this page. */
-  permission: string;
+  /** Grant required to see this page. Any match when more than one is listed. */
+  permission: string | readonly string[];
   /** Exact match so a parent path does not stay active on sibling routes. */
   exact?: boolean;
 }
@@ -31,7 +31,7 @@ const link = (
   label: string,
   icon: string,
   route: string,
-  permission: string,
+  permission: string | readonly string[],
   options?: { exact?: boolean },
 ): NavLink => ({
   kind: 'link',
@@ -96,6 +96,7 @@ export class SidebarComponent {
     },
     link('الكباتن', 'pi-car', '/drivers', Permission.DriversRead),
     link('الماليات', 'pi-wallet', '/financials', Permission.FinancialsRead),
+    link('الكوبونات', 'pi-ticket', '/coupons', [Permission.CouponsRead, Permission.FinancialsRead]),
     link('الموظفين', 'pi-shield', '/staff', Permission.StaffRead),
     link('الأدوار والصلاحيات', 'pi-key', '/roles', Permission.StaffRead),
     link('العملاء', 'pi-users', '/customers', Permission.CustomersRead),
@@ -104,7 +105,10 @@ export class SidebarComponent {
 
   /** Sidebar entries the signed-in user is allowed to open. */
   readonly visibleNav = computed(() => {
-    const allow = (permission: string) => this.auth.hasPermission(permission);
+    const allow = (permission: string | readonly string[]) =>
+      typeof permission === 'string'
+        ? this.auth.hasPermission(permission)
+        : this.auth.hasAnyPermission(permission);
     return this.navItems.flatMap((entry): NavEntry[] => {
       if (entry.kind === 'link') {
         return allow(entry.permission) ? [entry] : [];

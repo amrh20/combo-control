@@ -1,0 +1,182 @@
+<div class="coupon-form">
+  <div class="coupon-form__header">
+    <button type="button" class="coupon-form__back" (click)="cancel()">
+      <i class="pi pi-arrow-right" aria-hidden="true"></i>
+      العودة إلى الكوبونات
+    </button>
+    <h1 class="coupon-form__title">{{ editing ? 'تعديل الكوبون' : 'إضافة كوبون' }}</h1>
+    <p class="coupon-form__subtitle">
+      @if (editing) {
+        تحديث بيانات الكوبون وشروط استخدامه.
+      } @else {
+        كود الخصم يُحفظ بأحرف كبيرة. النسبة من 1 إلى 100.
+      }
+    </p>
+  </div>
+
+  @if (loadError(); as message) {
+    <div class="alert alert-danger" role="alert">{{ message }}</div>
+  }
+
+  <form class="coupon-form__card" [formGroup]="form" (ngSubmit)="save()">
+    @if (saveError(); as message) {
+      <div class="alert alert-danger" role="alert">{{ message }}</div>
+    }
+
+    <h2 class="coupon-form__section">
+      <i class="pi pi-ticket" aria-hidden="true"></i>
+      بيانات الكوبون
+    </h2>
+
+    <div class="row g-4">
+      <div class="col-md-6">
+        <label class="form-label" for="couponCode">
+          كود الكوبون <span class="coupon-form__required">*</span>
+        </label>
+        <input
+          id="couponCode"
+          type="text"
+          class="form-control"
+          dir="ltr"
+          formControlName="code"
+          autocomplete="off"
+          maxlength="32"
+          placeholder="SAVE10"
+          [class.is-invalid]="invalid('code')"
+        />
+        @if (invalid('code')) {
+          <div class="invalid-feedback">أدخل كوداً من 3 إلى 32 حرفاً: أحرف إنجليزية وأرقام و _ و -.</div>
+        }
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label" for="couponDiscount">
+          نسبة الخصم <span class="coupon-form__required">*</span>
+        </label>
+        <div class="input-group">
+          <input
+            id="couponDiscount"
+            type="number"
+            class="form-control"
+            dir="ltr"
+            formControlName="discountPercent"
+            min="1"
+            max="100"
+            step="1"
+            [class.is-invalid]="invalid('discountPercent')"
+          />
+          <span class="input-group-text">%</span>
+        </div>
+        @if (invalid('discountPercent')) {
+          <div class="invalid-feedback d-block">أدخل نسبة من 1 إلى 100.</div>
+        }
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label" for="couponMaxDiscount">
+          الحد الأقصى للخصم <span class="coupon-form__required">*</span>
+        </label>
+        <div class="input-group">
+          <input
+            id="couponMaxDiscount"
+            type="number"
+            class="form-control"
+            dir="ltr"
+            formControlName="maxDiscountAmount"
+            min="0"
+            step="0.01"
+            [class.is-invalid]="invalid('maxDiscountAmount')"
+          />
+          <span class="input-group-text">ج.م</span>
+        </div>
+        @if (invalid('maxDiscountAmount')) {
+          <div class="invalid-feedback d-block">أدخل حداً أقصى صفراً أو أكثر.</div>
+        }
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label" for="couponMinOrder">
+          الحد الأدنى للطلب <span class="coupon-form__required">*</span>
+        </label>
+        <div class="input-group">
+          <input
+            id="couponMinOrder"
+            type="number"
+            class="form-control"
+            dir="ltr"
+            formControlName="minOrderValue"
+            min="0"
+            step="0.01"
+            [class.is-invalid]="invalid('minOrderValue')"
+          />
+          <span class="input-group-text">ج.م</span>
+        </div>
+        @if (invalid('minOrderValue')) {
+          <div class="invalid-feedback d-block">أدخل حداً أدنى صفراً أو أكثر.</div>
+        }
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label" for="couponExpiry">
+          تاريخ الانتهاء <span class="text-muted">(اختياري)</span>
+        </label>
+        <input
+          id="couponExpiry"
+          type="date"
+          class="form-control"
+          dir="ltr"
+          formControlName="expiresAt"
+          [class.is-invalid]="invalid('expiresAt')"
+        />
+        @if (invalid('expiresAt')) {
+          <div class="invalid-feedback">اختر تاريخ اليوم أو تاريخاً لاحقاً.</div>
+        }
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label" for="couponUsageLimit">
+          حد الاستخدام <span class="coupon-form__required">*</span>
+        </label>
+        <input
+          id="couponUsageLimit"
+          type="number"
+          class="form-control"
+          dir="ltr"
+          formControlName="usageLimit"
+          min="1"
+          step="1"
+          [class.is-invalid]="invalid('usageLimit')"
+        />
+        @if (invalid('usageLimit')) {
+          <div class="invalid-feedback">أدخل عدداً صحيحاً يبدأ من 1.</div>
+        }
+      </div>
+
+      <div class="col-12">
+        <div class="form-check form-switch coupon-form__switch">
+          <input
+            id="couponActive"
+            class="form-check-input"
+            type="checkbox"
+            role="switch"
+            formControlName="isActive"
+          />
+          <label class="form-check-label" for="couponActive">الكوبون نشط</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="coupon-form__actions">
+      <button type="button" class="btn btn-outline-secondary" [disabled]="saving()" (click)="cancel()">
+        إلغاء
+      </button>
+      <button type="submit" class="btn btn-primary coupon-form__save" [disabled]="saving() || loading()">
+        @if (saving()) {
+          جاري الحفظ...
+        } @else {
+          حفظ
+        }
+      </button>
+    </div>
+  </form>
+</div>
