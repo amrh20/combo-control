@@ -1,0 +1,142 @@
+.coupon-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 960px;
+
+  &__header {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: fit-content;
+    padding: 0 0 8px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-family: 'Alexandria', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--Combo-text-text-secondary-paragraph);
+
+    &:hover {
+      color: var(--Combo-text-text-primary);
+    }
+  }
+
+  &__title {
+    margin: 0 0 4px;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--Combo-text-text-display);
+  }
+
+  &__subtitle {
+    margin: 0;
+    font-size: 13px;
+    color: var(--Combo-text-text-secondary-paragraph);
+  }
+
+  &__card {
+    background: var(--Combo-bg-background-card);
+    border: 1px solid var(--Combo-controls-control-border);
+    border-radius: 12px;
+    padding: 28px 32px;
+    font-family: 'Alexandria', sans-serif;
+  }
+
+  &__section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--Combo-border-border-neutral-secondary);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--Combo-text-text-display);
+
+    .pi {
+      font-size: 14px;
+      color: var(--Combo-icon-icon-primary);
+    }
+  }
+
+  &__required {
+    color: var(--Combo-text-text-error);
+  }
+
+  .form-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--Combo-text-text-primary-paragraph);
+  }
+
+  .form-control,
+  .input-group-text {
+    font-family: 'Alexandria', sans-serif;
+    font-size: 14px;
+  }
+
+  .form-control:focus {
+    border-color: var(--Combo-border-border-primary);
+    box-shadow: 0 0 0 3px var(--Combo-bg-background-primary-50);
+  }
+
+  .invalid-feedback {
+    display: block;
+  }
+
+  &__switch {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 0;
+    padding-left: 0;
+    padding-right: 0;
+    padding-inline-start: 2.5em;
+
+    .form-check-input {
+      float: none;
+      margin: 0;
+      margin-inline-start: -2.5em;
+      cursor: pointer;
+
+      &:checked {
+        background-color: var(--Combo-text-text-success);
+        border-color: var(--Combo-text-text-success);
+      }
+    }
+
+    .form-check-label {
+      font-size: 14px;
+      font-weight: 600;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--Combo-border-border-neutral-secondary);
+  }
+
+  &__save {
+    --bs-btn-bg: var(--Combo-button-button-background-primary-default);
+    --bs-btn-border-color: var(--Combo-button-button-background-primary-default);
+    --bs-btn-hover-bg: var(--Combo-button-button-background-primary-hovered);
+    --bs-btn-hover-border-color: var(--Combo-button-button-background-primary-hovered);
+    --bs-btn-active-bg: var(--Combo-button-button-background-primary-hovered);
+    --bs-btn-active-border-color: var(--Combo-button-button-background-primary-hovered);
+    --bs-btn-disabled-bg: var(--Combo-button-button-background-primary-default);
+    --bs-btn-disabled-border-color: var(--Combo-button-button-background-primary-default);
+    font-weight: 600;
+  }
+}

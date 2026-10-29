@@ -1,210 +1,222 @@
 import { DecimalPipe } from '@angular/common';
-import { Component, computed, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChartModule } from 'primeng/chart';
+import { take } from 'rxjs';
+import { AnalyticsKpis, DailyBreakdownPoint } from '../../core/models/analytics.model';
+import { AnalyticsService } from '../../core/services/analytics.service';
+import { VendorService } from '../../core/services/vendor.service';
 
 export type ReportPeriod = 'daily' | 'monthly' | 'yearly';
 
-export interface BreakdownRow {
-  label: string;
-  orders: number;
-  sales: number;
-}
-
-interface VendorProfile {
+interface StoreOption {
   id: string;
   name: string;
-  /** Typical orders in a busy hour. */
-  orderBase: number;
-  /** Typical ticket size in EGP. */
-  ticket: number;
 }
-
-const VENDORS: readonly VendorProfile[] = [
-  { id: 'fruit-market', name: 'سوق الفواكه', orderBase: 16, ticket: 155 },
-  { id: 'spring-bakery', name: 'مخبز الربيع', orderBase: 24, ticket: 62 },
-  { id: 'noor-grocery', name: 'بقالة النور', orderBase: 13, ticket: 220 },
-  { id: 'morning-cafe', name: 'كافيه الصباح', orderBase: 11, ticket: 92 },
-];
-
-const MONTHS = [
-  'يناير',
-  'فبراير',
-  'مارس',
-  'أبريل',
-  'مايو',
-  'يونيو',
-  'يوليو',
-  'أغسطس',
-  'سبتمبر',
-  'أكتوبر',
-  'نوفمبر',
-  'ديسمبر',
-] as const;
-
-const REPORTS = new Map<string, Record<ReportPeriod, readonly BreakdownRow[]>>(
-  VENDORS.map((vendor) => [vendor.id, buildVendorReport(vendor)]),
-);
 
 @Component({
   selector: 'ctrl-analytics',
   standalone: true,
-  imports: [DecimalPipe],
+  imports: [DecimalPipe, ChartModule],
   templateUrl: './analytics.component.html',
   styleUrl: './analytics.component.scss',
 })
-export class AnalyticsComponent {
-  readonly vendors = VENDORS;
+export class AnalyticsComponent implements OnInit {
+  private readonly analytics = inject(AnalyticsService);
+  private readonly vendorsApi = inject(VendorService);
+
   readonly periods: ReadonlyArray<{ id: ReportPeriod; label: string }> = [
     { id: 'daily', label: 'يومي' },
     { id: 'monthly', label: 'شهري' },
     { id: 'yearly', label: 'سنوي' },
   ];
 
-  readonly totalOrders = 12480;
-  readonly grossMerchandiseValue = 1842350;
-  readonly activeVendors = 48;
-  readonly avgDeliveryMinutes = 28;
+  readonly chartOptions = {
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+    },
+    scales: {
+      x: {
+        ticks: { maxRotation: 0, autoSkip: true, color: '#6b7280' },
+        grid: { display: false },
+      },
+      y: {
+        beginAtZero: true,
+        ticks: { color: '#6b7280' },
+        grid: { color: '#f3f4f6' },
+      },
+    },
+  };
 
-  readonly vendorId = signal(VENDORS[0].id);
+  readonly stores = signal<StoreOption[]>([]);
+  readonly vendorId = signal('');
   readonly period = signal<ReportPeriod>('monthly');
-
-  readonly selectedVendor = computed(
-    () => VENDORS.find((vendor) => vendor.id === this.vendorId()) ?? VENDORS[0],
-  );
+  readonly kpis = signal<AnalyticsKpis>({
+    totalOrders: 0,
+    netSales: 0,
+    totalSales: 0,
+    deliveryFees: 0,
+    serviceFees: 0,
+    activeStores: 0,
+    avgDeliveryTime: 0,
+  });
+  readonly breakdown = signal<DailyBreakdownPoint[]>([]);
+  readonly reportSales = signal(0);
+  readonly reportOrders = signal(0);
+  readonly reportAverage = signal(0);
+  readonly reportStoreName = signal<string | null>(null);
+  readonly loadingReport = signal(false);
+  readonly reportError = signal('');
 
   readonly periodLabel = computed(
     () => this.periods.find((option) => option.id === this.period())?.label ?? '',
   );
 
+  readonly selectedStoreName = computed(() => {
+    const id = this.vendorId();
+    if (!id) {
+      return this.reportStoreName() ?? 'كل المتاجر';
+    }
+    return this.stores().find((store) => store.id === id)?.name ?? this.reportStoreName() ?? '';
+  });
+
   readonly breakdownTitle = computed(() => {
     switch (this.period()) {
       case 'daily':
-        return 'تفصيل اليوم حسب الساعة';
+        return 'تفصيل اليوم';
       case 'yearly':
-        return 'تفصيل السنة حسب الشهر';
+        return 'تفصيل السنة حسب اليوم';
       default:
         return 'تفصيل الشهر حسب اليوم';
     }
   });
 
-  readonly breakdown = computed(
-    () => REPORTS.get(this.selectedVendor().id)?.[this.period()] ?? [],
-  );
-
-  readonly vendorSales = computed(() =>
-    this.breakdown().reduce((sum, row) => sum + row.sales, 0),
-  );
-
-  readonly completedOrders = computed(() =>
-    this.breakdown().reduce((sum, row) => sum + row.orders, 0),
-  );
-
-  readonly averageOrderValue = computed(() => {
-    const orders = this.completedOrders();
-    return orders === 0 ? 0 : this.vendorSales() / orders;
+  readonly chartData = computed(() => {
+    const rows = this.breakdown();
+    return {
+      labels: rows.map((row) => formatBreakdownDate(row.date)),
+      datasets: [
+        {
+          label: 'المبيعات',
+          data: rows.map((row) => row.salesValue),
+          backgroundColor: '#111827',
+          borderRadius: 4,
+          maxBarThickness: 28,
+        },
+      ],
+    };
   });
 
-  readonly peakSales = computed(() =>
-    this.breakdown().reduce((peak, row) => Math.max(peak, row.sales), 0),
-  );
+  ngOnInit(): void {
+    this.analytics.getKpis().pipe(take(1)).subscribe({
+      next: (kpis) => this.kpis.set(kpis),
+    });
+    this.vendorsApi.getVendors({ limit: 100 }).pipe(take(1)).subscribe({
+      next: (page) => {
+        this.stores.set(page.items.map((item) => ({ id: item.id, name: item.name })));
+      },
+    });
+    this.loadReport();
+  }
 
   onVendorChange(event: Event): void {
     this.vendorId.set((event.target as HTMLSelectElement).value);
+    this.loadReport();
   }
 
   onPeriodChange(event: Event): void {
     const value = (event.target as HTMLSelectElement).value;
     if (value === 'daily' || value === 'monthly' || value === 'yearly') {
       this.period.set(value);
+      this.loadReport();
     }
-  }
-
-  barHeight(row: BreakdownRow): number {
-    const peak = this.peakSales();
-    if (peak <= 0) {
-      return 0;
-    }
-    return Math.max(6, Math.round((row.sales / peak) * 100));
   }
 
   exportReport(): void {
-    const vendor = this.selectedVendor();
     const rows = this.breakdown();
     const lines = [
-      ['المتجر', vendor.name],
+      ['المتجر', this.selectedStoreName()],
       ['الفترة', this.periodLabel()],
-      ['إجمالي المبيعات (ج.م)', String(this.vendorSales())],
-      ['عدد الطلبات الناجحة', String(this.completedOrders())],
-      ['متوسط قيمة الطلب (ج.م)', this.averageOrderValue().toFixed(2)],
+      ['إجمالي المبيعات (ج.م)', String(this.reportSales())],
+      ['عدد الطلبات الناجحة', String(this.reportOrders())],
+      ['متوسط قيمة الطلب (ج.م)', this.reportAverage().toFixed(2)],
       [],
       ['التاريخ', 'عدد الطلبات', 'المبيعات (ج.م)'],
-      ...rows.map((row) => [row.label, String(row.orders), String(row.sales)]),
+      ...rows.map((row) => [row.date, String(row.orderCount), String(row.salesValue)]),
     ];
     const csv = `\uFEFF${lines.map((line) => line.join(',')).join('\n')}`;
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `vendor-report-${vendor.id}-${this.period()}.csv`;
+    link.download = `vendor-report-${this.vendorId() || 'all'}-${this.period()}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   }
+
+  private loadReport(): void {
+    const range = rangeForPeriod(this.period());
+    const storeId = this.vendorId().trim();
+    this.loadingReport.set(true);
+    this.reportError.set('');
+    this.analytics
+      .getStoresReport({
+        storeId: storeId || undefined,
+        period: this.period(),
+        from: range.from,
+        to: range.to,
+      })
+      .pipe(take(1))
+      .subscribe({
+        next: (report) => {
+          this.breakdown.set(report.dailyBreakdown);
+          this.reportSales.set(report.totalSales);
+          this.reportOrders.set(report.totalOrders);
+          this.reportAverage.set(report.averageOrderValue);
+          this.reportStoreName.set(report.storeName);
+          this.loadingReport.set(false);
+        },
+        error: () => {
+          this.breakdown.set([]);
+          this.reportSales.set(0);
+          this.reportOrders.set(0);
+          this.reportAverage.set(0);
+          this.loadingReport.set(false);
+          this.reportError.set('تعذر تحميل تقرير المتاجر.');
+        },
+      });
+  }
 }
 
-function buildVendorReport(vendor: VendorProfile): Record<ReportPeriod, readonly BreakdownRow[]> {
-  const rng = createRng(hashSeed(vendor.id));
-  const amount = (base: number, spread: number): number => {
-    const value = base * (1 - spread + rng() * spread * 2);
-    return Math.max(1, Math.round(value));
-  };
-
-  const daily: BreakdownRow[] = [];
-  for (let hour = 8; hour <= 22; hour++) {
-    const busy = hour >= 12 && hour <= 21 ? 1.4 : 0.65;
-    const orders = amount(vendor.orderBase * busy, 0.22);
-    daily.push({
-      label: `${String(hour).padStart(2, '0')}:00`,
-      orders,
-      sales: Math.round(orders * vendor.ticket * (0.88 + rng() * 0.24)),
-    });
+function rangeForPeriod(period: ReportPeriod): { from: string; to: string } {
+  const now = new Date();
+  if (period === 'daily') {
+    const day = isoDate(now);
+    return { from: day, to: day };
   }
-
-  const monthly: BreakdownRow[] = [];
-  for (let day = 1; day <= 31; day++) {
-    const weekend = day % 7 === 5 || day % 7 === 6 ? 1.25 : 1;
-    const orders = amount(vendor.orderBase * 11 * weekend, 0.28);
-    monthly.push({
-      label: `${day} أكتوبر`,
-      orders,
-      sales: Math.round(orders * vendor.ticket * (0.9 + rng() * 0.2)),
-    });
-  }
-
-  const yearly: BreakdownRow[] = MONTHS.map((month, index) => {
-    const season = index >= 5 && index <= 8 ? 1.18 : 1;
-    const orders = amount(vendor.orderBase * 11 * 30 * season, 0.18);
+  if (period === 'yearly') {
     return {
-      label: month,
-      orders,
-      sales: Math.round(orders * vendor.ticket * (0.9 + rng() * 0.18)),
+      from: isoDate(new Date(now.getFullYear(), 0, 1)),
+      to: isoDate(new Date(now.getFullYear(), 11, 31)),
     };
-  });
-
-  return { daily, monthly, yearly };
-}
-
-function hashSeed(value: string): number {
-  let hash = 2166136261;
-  for (let index = 0; index < value.length; index++) {
-    hash ^= value.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
   }
-  return hash >>> 0;
+  return {
+    from: isoDate(new Date(now.getFullYear(), now.getMonth(), 1)),
+    to: isoDate(new Date(now.getFullYear(), now.getMonth() + 1, 0)),
+  };
 }
 
-function createRng(seed: number): () => number {
-  let state = seed || 1;
-  return () => {
-    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
-    return state / 4294967296;
-  };
+function isoDate(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+function formatBreakdownDate(value: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  if (!match) {
+    return value;
+  }
+  const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+  return new Intl.DateTimeFormat('ar-EG', { day: 'numeric', month: 'short' }).format(date);
 }

@@ -193,10 +193,57 @@
     }
   }
 
+  &__tabs {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--Combo-border-border-neutral-secondary);
+  }
+
+  &__tab {
+    appearance: none;
+    flex: 0 0 auto;
+    margin: 0 0 -1px;
+    padding: 12px 16px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    background: transparent;
+    color: var(--Combo-text-text-secondary-paragraph);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    cursor: pointer;
+
+    &:hover {
+      color: var(--Combo-text-text-default);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--Combo-border-border-primary);
+      outline-offset: 2px;
+    }
+
+    &--active {
+      color: var(--Combo-text-text-display);
+      border-bottom-color: var(--Combo-text-text-display);
+    }
+  }
+
   &__body {
     display: flex;
     flex-direction: column;
     gap: 20px;
+  }
+
+  &__card-head--split {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
   }
 
   &__card {
@@ -571,6 +618,53 @@
       &:hover { background: var(--Combo-bg-background-neutral-100); }
     }
   }
+}
+
+.vendor-details__accounts {
+  .table {
+    font-family: 'Alexandria', sans-serif;
+    --bs-table-bg: transparent;
+  }
+
+  .table > :not(caption) > * > * {
+    background-color: transparent;
+  }
+}
+
+.vendor-details__add-user,
+.vendor-details__user-modal .btn-primary {
+  --bs-btn-bg: var(--Combo-button-button-background-primary-default);
+  --bs-btn-border-color: var(--Combo-button-button-background-primary-default);
+  --bs-btn-hover-bg: var(--Combo-button-button-background-primary-hovered);
+  --bs-btn-hover-border-color: var(--Combo-button-button-background-primary-hovered);
+  --bs-btn-active-bg: var(--Combo-button-button-background-primary-hovered);
+  --bs-btn-active-border-color: var(--Combo-button-button-background-primary-hovered);
+  --bs-btn-disabled-bg: var(--Combo-button-button-background-primary-default);
+  --bs-btn-disabled-border-color: var(--Combo-button-button-background-primary-default);
+  font-family: 'Alexandria', sans-serif;
+  font-weight: 600;
+}
+
+.vendor-details__add-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vendor-details__user-modal {
+  z-index: 1060;
+
+  .modal-content {
+    font-family: 'Alexandria', sans-serif;
+  }
+
+  .invalid-feedback {
+    display: block;
+  }
+}
+
+.vendor-details__user-modal + .modal-backdrop {
+  z-index: 1050;
 }
 
 :host ::ng-deep .vendor-details__card--orders {

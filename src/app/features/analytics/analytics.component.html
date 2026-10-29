@@ -7,7 +7,51 @@
     </p>
   </div>
 
-  <div class="mb-8 grid grid-cols-1 gap-4 md:grid-cols-4">
+  <div class="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <article class="flex flex-col rounded-xl border border-gray-100 bg-white p-5 shadow-none">
+      <div class="mb-3 flex items-center gap-2">
+        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-green-50 text-green-600" aria-hidden="true">
+          <i class="pi pi-chart-line text-sm"></i>
+        </span>
+        <h2 class="kpi-label">إجمالي صافي المبيعات</h2>
+      </div>
+      <p class="kpi-value text-green-700">
+        <span dir="ltr" class="inline-block">{{ kpis().netSales | number:'1.0-0' }}</span>
+        ج.م
+      </p>
+      <p class="kpi-hint">بضاعة المحلات على الطلبات المسلّمة</p>
+    </article>
+
+    <article class="flex flex-col rounded-xl border border-gray-100 bg-white p-5 shadow-none">
+      <div class="mb-3 flex items-center gap-2">
+        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-600" aria-hidden="true">
+          <i class="pi pi-truck text-sm"></i>
+        </span>
+        <h2 class="kpi-label">إجمالي التوصيل</h2>
+      </div>
+      <p class="kpi-value text-gray-900">
+        <span dir="ltr" class="inline-block">{{ kpis().deliveryFees | number:'1.0-0' }}</span>
+        ج.م
+      </p>
+      <p class="kpi-hint">رسوم التوصيل على الطلبات المسلّمة</p>
+    </article>
+
+    <article class="flex flex-col rounded-xl border border-gray-100 bg-white p-5 shadow-none">
+      <div class="mb-3 flex items-center gap-2">
+        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-teal-50 text-teal-600" aria-hidden="true">
+          <i class="pi pi-percentage text-sm"></i>
+        </span>
+        <h2 class="kpi-label">إجمالي الخدمة</h2>
+      </div>
+      <p class="kpi-value text-gray-900">
+        <span dir="ltr" class="inline-block">{{ kpis().serviceFees | number:'1.0-0' }}</span>
+        ج.م
+      </p>
+      <p class="kpi-hint">رسوم خدمة المنصة، منفصلة عن التوصيل</p>
+    </article>
+  </div>
+
+  <div class="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
     <article class="flex flex-col rounded-xl border border-gray-100 bg-white p-5 shadow-none">
       <div class="mb-3 flex items-center gap-2">
         <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 text-blue-600" aria-hidden="true">
@@ -15,22 +59,8 @@
         </span>
         <h2 class="kpi-label">إجمالي الطلبات</h2>
       </div>
-      <p class="kpi-value text-gray-900">{{ totalOrders | number:'1.0-0' }}</p>
+      <p class="kpi-value text-gray-900">{{ kpis().totalOrders | number:'1.0-0' }}</p>
       <p class="kpi-hint">كل الطلبات المسجّلة على المنصة</p>
-    </article>
-
-    <article class="flex flex-col rounded-xl border border-gray-100 bg-white p-5 shadow-none">
-      <div class="mb-3 flex items-center gap-2">
-        <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-green-50 text-green-600" aria-hidden="true">
-          <i class="pi pi-chart-line text-sm"></i>
-        </span>
-        <h2 class="kpi-label">إجمالي المبيعات</h2>
-      </div>
-      <p class="kpi-value text-green-700">
-        <span dir="ltr" class="inline-block">{{ grossMerchandiseValue | number:'1.0-0' }}</span>
-        ج.م
-      </p>
-      <p class="kpi-hint">قيمة البضائع الإجمالية</p>
     </article>
 
     <article class="flex flex-col rounded-xl border border-gray-100 bg-white p-5 shadow-none">
@@ -40,7 +70,7 @@
         </span>
         <h2 class="kpi-label">المتاجر النشطة</h2>
       </div>
-      <p class="kpi-value text-gray-900">{{ activeVendors | number:'1.0-0' }}</p>
+      <p class="kpi-value text-gray-900">{{ kpis().activeStores | number:'1.0-0' }}</p>
       <p class="kpi-hint">متاجر تستقبل طلبات حالياً</p>
     </article>
 
@@ -51,7 +81,7 @@
         </span>
         <h2 class="kpi-label">متوسط وقت التوصيل</h2>
       </div>
-      <p class="kpi-value text-gray-900">{{ avgDeliveryMinutes }} دقيقة</p>
+      <p class="kpi-value text-gray-900">{{ kpis().avgDeliveryTime | number:'1.0-0' }} دقيقة</p>
       <p class="kpi-hint">من تأكيد الطلب حتى التسليم</p>
     </article>
   </div>
@@ -74,7 +104,8 @@
             [value]="vendorId()"
             (change)="onVendorChange($event)"
           >
-            @for (vendor of vendors; track vendor.id) {
+            <option value="">كل المتاجر</option>
+            @for (vendor of stores(); track vendor.id) {
               <option [value]="vendor.id">{{ vendor.name }}</option>
             }
           </select>
@@ -109,22 +140,22 @@
       <article class="rounded-xl border border-gray-100 bg-gray-50 p-4 shadow-none">
         <h3 class="metric-label">إجمالي مبيعات المتجر</h3>
         <p class="metric-value mt-2 text-green-700">
-          <span dir="ltr" class="inline-block">{{ vendorSales() | number:'1.0-0' }}</span>
+          <span dir="ltr" class="inline-block">{{ reportSales() | number:'1.0-0' }}</span>
           ج.م
         </p>
-        <p class="metric-hint">{{ selectedVendor().name }} · {{ periodLabel() }}</p>
+        <p class="metric-hint">{{ selectedStoreName() }} · {{ periodLabel() }}</p>
       </article>
 
       <article class="rounded-xl border border-gray-100 bg-gray-50 p-4 shadow-none">
         <h3 class="metric-label">عدد الطلبات الناجحة</h3>
-        <p class="metric-value mt-2 text-gray-900">{{ completedOrders() | number:'1.0-0' }}</p>
+        <p class="metric-value mt-2 text-gray-900">{{ reportOrders() | number:'1.0-0' }}</p>
         <p class="metric-hint">طلبات مكتملة خلال الفترة</p>
       </article>
 
       <article class="rounded-xl border border-gray-100 bg-gray-50 p-4 shadow-none">
         <h3 class="metric-label">متوسط قيمة الطلب</h3>
         <p class="metric-value mt-2 text-gray-900">
-          <span dir="ltr" class="inline-block">{{ averageOrderValue() | number:'1.2-2' }}</span>
+          <span dir="ltr" class="inline-block">{{ reportAverage() | number:'1.2-2' }}</span>
           ج.م
         </p>
         <p class="metric-hint">المبيعات مقسومة على الطلبات الناجحة</p>
@@ -134,20 +165,20 @@
     <div class="mb-6">
       <div class="mb-2 flex items-center justify-between gap-3">
         <h3 class="chart-title">{{ breakdownTitle() }}</h3>
-        <p class="chart-meta">{{ selectedVendor().name }}</p>
+        <p class="chart-meta">{{ selectedStoreName() }}</p>
       </div>
+      @if (reportError()) {
+        <p class="metric-hint mb-3 text-red-600">{{ reportError() }}</p>
+      }
       <div
-        class="flex h-28 items-end gap-1 rounded-lg border border-gray-100 bg-gray-50 px-3 py-3"
+        class="h-56 rounded-lg border border-gray-100 bg-gray-50 px-3 py-3"
         role="img"
-        [attr.aria-label]="'مخطط مبيعات ' + selectedVendor().name + ' — ' + periodLabel()"
+        [attr.aria-label]="'مخطط مبيعات ' + selectedStoreName() + ' — ' + periodLabel()"
       >
-        @for (row of breakdown(); track row.label) {
-          <div class="flex h-full min-w-0 flex-1 items-end" [title]="row.label">
-            <div
-              class="w-full rounded-t bg-[var(--Combo-button-button-background-primary-default)]"
-              [style.height.%]="barHeight(row)"
-            ></div>
-          </div>
+        @if (breakdown().length > 0) {
+          <p-chart type="bar" [data]="chartData()" [options]="chartOptions" height="100%" />
+        } @else if (!loadingReport()) {
+          <p class="metric-hint flex h-full items-center justify-center">لا توجد بيانات لهذه الفترة</p>
         }
       </div>
     </div>
@@ -162,12 +193,12 @@
           </tr>
         </thead>
         <tbody>
-          @for (row of breakdown(); track row.label) {
+          @for (row of breakdown(); track row.date) {
             <tr class="border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
-              <td class="px-4 py-3 font-medium text-gray-900">{{ row.label }}</td>
-              <td class="px-4 py-3 text-gray-800">{{ row.orders | number:'1.0-0' }}</td>
+              <td class="px-4 py-3 font-medium text-gray-900">{{ row.date }}</td>
+              <td class="px-4 py-3 text-gray-800">{{ row.orderCount | number:'1.0-0' }}</td>
               <td class="px-4 py-3 whitespace-nowrap font-semibold text-gray-800">
-                <span dir="ltr" class="inline-block">{{ row.sales | number:'1.0-0' }}</span>
+                <span dir="ltr" class="inline-block">{{ row.salesValue | number:'1.0-0' }}</span>
                 ج.م
               </td>
             </tr>

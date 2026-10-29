@@ -1,8 +1,10 @@
-import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, HostListener, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe, DecimalPipe, NgClass } from '@angular/common';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TableModule } from 'primeng/table';
+import { PasswordToggleDirective } from '../../../core/directives/password-toggle.directive';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
 import {
   OpsOrderRow,
@@ -17,6 +19,14 @@ import { OpsOrderService } from '../../../core/services/ops-order.service';
 import { categoryIconSrc, VendorCategoryService } from '../../../core/services/vendor-category.service';
 import { VendorService, vendorErrorMessage } from '../../../core/services/vendor.service';
 import {
+  STORE_USER_ROLE_OPTIONS,
+  StoreUser,
+  StoreUserRole,
+  storeUserRoleLabel,
+  storeUserStatusLabel,
+} from '../../../core/models/store-user.model';
+import { StoreUsersService, storeUserErrorMessage } from '../../../core/services/store-users.service';
+import {
   getEffectiveLiveStatus,
   getVendorInitials,
   LIVE_OVERRIDE_CONFIG,
@@ -29,7 +39,16 @@ const ORDERS_PAGE_SIZE = 20;
 @Component({
   selector: 'ctrl-vendor-details',
   standalone: true,
-  imports: [NgClass, DatePipe, DecimalPipe, RouterLink, TableModule, StatCardComponent],
+  imports: [
+    NgClass,
+    DatePipe,
+    DecimalPipe,
+    RouterLink,
+    ReactiveFormsModule,
+    TableModule,
+    StatCardComponent,
+    PasswordToggleDirective,
+  ],
   templateUrl: './vendor-details.component.html',
   styleUrl: './vendor-details.component.scss',
 })
@@ -40,8 +59,10 @@ export class VendorDetailsComponent implements OnInit {
   private readonly hubService = inject(HubService);
   private readonly vendorService = inject(VendorService);
   private readonly ordersApi = inject(OpsOrderService);
+  private readonly storeUsersApi = inject(StoreUsersService);
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly fb = inject(FormBuilder);
 
   readonly loading = signal(true);
   readonly loadError = signal<string | null>(null);
@@ -66,6 +87,28 @@ export class VendorDetailsComponent implements OnInit {
   readonly liveStatus = computed(() => {
     const v = this.vendor();
     return v ? getEffectiveLiveStatus(v) : 'closed';
+  });
+
+  readonly detailsTab = signal<'profile' | 'accounts'>('profile');
+  readonly storeUsers = signal<StoreUser[]>([]);
+  readonly storeUsersLoading = signal(false);
+  readonly storeUsersError = signal<string | null>(null);
+  readonly userModalOpen = signal(false);
+  readonly editingUser = signal<StoreUser | null>(null);
+  readonly userSaving = signal(false);
+  readonly userFormError = signal<string | null>(null);
+  readonly userActionId = signal<string | null>(null);
+  readonly pendingDelete = signal<StoreUser | null>(null);
+  readonly roleOptions = STORE_USER_ROLE_OPTIONS;
+  readonly roleLabel = storeUserRoleLabel;
+  readonly statusLabel = storeUserStatusLabel;
+  private storeUsersRequest = 0;
+
+  readonly userForm = this.fb.nonNullable.group({
+    fullName: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
+    phone: ['', [Validators.required, Validators.pattern(/^01[0125]\d{8}$/)]],
+    password: ['', [Validators.required, Validators.minLength(6)]],
+    role: ['CASHIER' as StoreUserRole, Validators.required],
   });
 
   ngOnInit(): void {
@@ -110,6 +153,153 @@ export class VendorDetailsComponent implements OnInit {
 
   goBack(): void {
     this.router.navigate(['/vendors']);
+  }
+
+  selectTab(tab: 'profile' | 'accounts'): void {
+    this.detailsTab.set(tab);
+    if (tab === 'accounts') {
+      this.loadStoreUsers();
+    }
+  }
+
+  reloadStoreUsers(): void {
+    this.loadStoreUsers();
+  }
+
+  openCreateUser(): void {
+    this.editingUser.set(null);
+    this.userFormError.set(null);
+    this.userForm.reset({ fullName: '', phone: '', password: '', role: 'CASHIER' });
+    this.userForm.controls.password.setValidators([Validators.required, Validators.minLength(6)]);
+    this.userForm.controls.password.updateValueAndValidity();
+    this.userModalOpen.set(true);
+  }
+
+  openEditUser(user: StoreUser): void {
+    this.editingUser.set(user);
+    this.userFormError.set(null);
+    this.userForm.reset({
+      fullName: user.fullName,
+      phone: user.phone,
+      password: '',
+      role: user.role,
+    });
+    this.userForm.controls.password.setValidators([Validators.minLength(6)]);
+    this.userForm.controls.password.updateValueAndValidity();
+    this.userModalOpen.set(true);
+  }
+
+  closeUserModal(): void {
+    if (this.userSaving()) {
+      return;
+    }
+    this.userModalOpen.set(false);
+    this.editingUser.set(null);
+    this.userFormError.set(null);
+  }
+
+  saveUser(): void {
+    const storeId = this.vendor()?.id;
+    if (!storeId || this.userForm.invalid || this.userSaving()) {
+      this.userForm.markAllAsTouched();
+      return;
+    }
+
+    const value = this.userForm.getRawValue();
+    const editing = this.editingUser();
+    this.userSaving.set(true);
+    this.userFormError.set(null);
+
+    const request = editing
+      ? this.storeUsersApi.updateUser(storeId, editing.id, {
+          fullName: value.fullName.trim(),
+          phone: value.phone.trim(),
+          role: value.role,
+          password: value.password.trim() || undefined,
+        })
+      : this.storeUsersApi.createUser(storeId, {
+          fullName: value.fullName.trim(),
+          phone: value.phone.trim(),
+          password: value.password,
+          role: value.role,
+        });
+
+    request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: () => {
+        this.userSaving.set(false);
+        this.userModalOpen.set(false);
+        this.editingUser.set(null);
+        this.loadStoreUsers();
+      },
+      error: (error: unknown) => {
+        this.userSaving.set(false);
+        this.userFormError.set(
+          storeUserErrorMessage(error, editing ? 'تعذر حفظ الحساب.' : 'تعذر إضافة المستخدم.'),
+        );
+      },
+    });
+  }
+
+  askDeleteUser(user: StoreUser): void {
+    this.pendingDelete.set(user);
+  }
+
+  cancelDeleteUser(): void {
+    this.pendingDelete.set(null);
+  }
+
+  confirmDeleteUser(): void {
+    const storeId = this.vendor()?.id;
+    const user = this.pendingDelete();
+    if (!storeId || !user || this.userActionId()) {
+      return;
+    }
+    this.userActionId.set(user.id);
+    this.storeUsersApi
+      .deleteUser(storeId, user.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.userActionId.set(null);
+          this.pendingDelete.set(null);
+          this.loadStoreUsers();
+        },
+        error: (error: unknown) => {
+          this.userActionId.set(null);
+          this.storeUsersError.set(storeUserErrorMessage(error, 'تعذر حذف الحساب.'));
+        },
+      });
+  }
+
+  toggleSuspend(user: StoreUser): void {
+    const storeId = this.vendor()?.id;
+    if (!storeId || this.userActionId()) {
+      return;
+    }
+    const next = user.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE';
+    this.userActionId.set(user.id);
+    this.storeUsersApi
+      .updateStatus(storeId, user.id, next)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.userActionId.set(null);
+          this.loadStoreUsers();
+        },
+        error: (error: unknown) => {
+          this.userActionId.set(null);
+          this.storeUsersError.set(storeUserErrorMessage(error, 'تعذر تحديث حالة الحساب.'));
+        },
+      });
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.pendingDelete() && !this.userActionId()) {
+      this.pendingDelete.set(null);
+      return;
+    }
+    this.closeUserModal();
   }
 
   orderTotal(order: OpsOrderRow): number {
@@ -177,12 +367,19 @@ export class VendorDetailsComponent implements OnInit {
           this.vendorSignal.set(structuredClone(found));
           this.ordersCursor.set(undefined);
           this.ordersBackStack.set([]);
+          this.storeUsers.set([]);
+          this.pendingDelete.set(null);
+          this.closeUserModal();
           this.loadOrders(found.id);
+          if (this.detailsTab() === 'accounts') {
+            this.loadStoreUsers();
+          }
         },
         error: (error: unknown) => {
           this.loading.set(false);
           this.vendorSignal.set(null);
           this.orders.set([]);
+          this.storeUsers.set([]);
           this.loadError.set(vendorErrorMessage(error, 'تعذر تحميل المتجر.'));
         },
       });
@@ -215,6 +412,41 @@ export class VendorDetailsComponent implements OnInit {
           this.ordersNextCursor.set(null);
           this.ordersLoading.set(false);
           this.ordersError.set('تعذر تحميل سجل الطلبات.');
+        },
+      });
+  }
+
+  fieldInvalid(name: 'fullName' | 'phone' | 'password' | 'role'): boolean {
+    const control = this.userForm.controls[name];
+    return control.invalid && (control.touched || control.dirty);
+  }
+
+  private loadStoreUsers(): void {
+    const storeId = this.vendor()?.id;
+    if (!storeId) {
+      return;
+    }
+    const request = ++this.storeUsersRequest;
+    this.storeUsersLoading.set(true);
+    this.storeUsersError.set(null);
+    this.storeUsersApi
+      .listUsers(storeId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (users) => {
+          if (request !== this.storeUsersRequest) {
+            return;
+          }
+          this.storeUsers.set(users);
+          this.storeUsersLoading.set(false);
+        },
+        error: () => {
+          if (request !== this.storeUsersRequest) {
+            return;
+          }
+          this.storeUsers.set([]);
+          this.storeUsersLoading.set(false);
+          this.storeUsersError.set('تعذر تحميل حسابات الدخول.');
         },
       });
   }

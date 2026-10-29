@@ -305,6 +305,13 @@ export const routes: Routes = [
           import('./features/financials/financials.component').then(m => m.FinancialsComponent),
       },
       {
+        path: 'coupons',
+        canActivate: [permissionGuard],
+        data: { permission: [Permission.CouponsRead, Permission.FinancialsRead] },
+        loadChildren: () =>
+          import('./features/coupons/coupons.module').then((m) => m.CouponsModule),
+      },
+      {
         path: 'staff',
         canActivate: [permissionGuard],
         data: { permission: Permission.StaffRead },

@@ -54,8 +54,32 @@
       </div>
     </div>
 
+    <div class="vendor-details__tabs" role="tablist" aria-label="أقسام المتجر">
+      <button
+        type="button"
+        role="tab"
+        class="vendor-details__tab"
+        [class.vendor-details__tab--active]="detailsTab() === 'profile'"
+        [attr.aria-selected]="detailsTab() === 'profile'"
+        (click)="selectTab('profile')"
+      >
+        بيانات المتجر
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="vendor-details__tab"
+        [class.vendor-details__tab--active]="detailsTab() === 'accounts'"
+        [attr.aria-selected]="detailsTab() === 'accounts'"
+        (click)="selectTab('accounts')"
+      >
+        حسابات الدخول
+      </button>
+    </div>
+
     <div class="vendor-details__body">
 
+      @if (detailsTab() === 'profile') {
       <div class="vendor-details__card">
         <div class="vendor-details__card-head">
           <h2 class="vendor-details__card-title">
@@ -269,7 +293,247 @@
           </div>
         }
       </div>
+      } @else {
+      <div class="vendor-details__card vendor-details__accounts">
+        <div class="vendor-details__card-head vendor-details__card-head--split">
+          <h2 class="vendor-details__card-title">
+            <i class="pi pi-users"></i>
+            حسابات الدخول
+          </h2>
+          <button type="button" class="btn btn-primary vendor-details__add-user" (click)="openCreateUser()">
+            <i class="pi pi-plus" aria-hidden="true"></i>
+            إضافة مستخدم
+          </button>
+        </div>
+
+        @if (storeUsersError(); as message) {
+          <div class="alert alert-danger d-flex align-items-center justify-content-between gap-2" role="alert">
+            <span>{{ message }}</span>
+            <button type="button" class="btn btn-sm btn-outline-danger" (click)="reloadStoreUsers()">
+              إعادة المحاولة
+            </button>
+          </div>
+        }
+
+        @if (pendingDelete(); as target) {
+          <div class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2" role="alert">
+            <span>حذف حساب {{ target.fullName }}؟ لا يمكن التراجع عن هذا الإجراء.</span>
+            <span class="d-flex gap-2">
+              <button
+                type="button"
+                class="btn btn-sm btn-danger"
+                [disabled]="userActionId() !== null"
+                (click)="confirmDeleteUser()"
+              >
+                حذف
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary"
+                [disabled]="userActionId() !== null"
+                (click)="cancelDeleteUser()"
+              >
+                إلغاء
+              </button>
+            </span>
+          </div>
+        }
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead>
+              <tr>
+                <th scope="col">الاسم</th>
+                <th scope="col">رقم الهاتف</th>
+                <th scope="col">الصلاحية</th>
+                <th scope="col">الحالة</th>
+                <th scope="col" class="text-center">الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (storeUsersLoading() && storeUsers().length === 0) {
+                <tr>
+                  <td colspan="5" class="text-center text-secondary py-4">جاري تحميل الحسابات...</td>
+                </tr>
+              } @else if (storeUsers().length === 0) {
+                <tr>
+                  <td colspan="5" class="text-center text-secondary py-4">لا توجد حسابات دخول لهذا المتجر.</td>
+                </tr>
+              } @else {
+                @for (user of storeUsers(); track user.id) {
+                  <tr>
+                    <td class="fw-semibold">{{ user.fullName }}</td>
+                    <td dir="ltr" class="text-start">{{ user.phone }}</td>
+                    <td>
+                      <span class="badge text-bg-light border">{{ roleLabel(user.role) }}</span>
+                    </td>
+                    <td>
+                      <span
+                        class="badge"
+                        [class.text-bg-success]="user.status === 'ACTIVE'"
+                        [class.text-bg-secondary]="user.status === 'SUSPENDED'"
+                      >
+                        {{ statusLabel(user.status) }}
+                      </span>
+                    </td>
+                    <td>
+                      <div class="d-flex justify-content-center flex-wrap gap-1">
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-secondary"
+                          [disabled]="userActionId() !== null"
+                          (click)="openEditUser(user)"
+                        >
+                          تعديل
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-warning"
+                          [disabled]="userActionId() !== null"
+                          (click)="toggleSuspend(user)"
+                        >
+                          {{ user.status === 'ACTIVE' ? 'إيقاف' : 'تفعيل' }}
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-danger"
+                          [disabled]="userActionId() !== null"
+                          (click)="askDeleteUser(user)"
+                        >
+                          حذف
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+      }
     </div>
+
+    @if (userModalOpen()) {
+      <div
+        class="modal fade show d-block vendor-details__user-modal"
+        tabindex="-1"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="store-user-modal-title"
+        (click)="closeUserModal()"
+      >
+        <div class="modal-dialog modal-dialog-centered" (click)="$event.stopPropagation()">
+          <div class="modal-content">
+            <form [formGroup]="userForm" (ngSubmit)="saveUser()">
+              <div class="modal-header">
+                <h2 id="store-user-modal-title" class="modal-title fs-5">
+                  {{ editingUser() ? 'تعديل المستخدم' : 'إضافة مستخدم' }}
+                </h2>
+                <button
+                  type="button"
+                  class="btn-close"
+                  aria-label="إغلاق"
+                  [disabled]="userSaving()"
+                  (click)="closeUserModal()"
+                ></button>
+              </div>
+              <div class="modal-body">
+                @if (userFormError(); as message) {
+                  <div class="alert alert-danger" role="alert">{{ message }}</div>
+                }
+
+                <div class="mb-3">
+                  <label class="form-label" for="storeUserName">الاسم الكامل</label>
+                  <input
+                    id="storeUserName"
+                    type="text"
+                    class="form-control"
+                    formControlName="fullName"
+                    autocomplete="name"
+                    placeholder="مثال: سارة علي"
+                    [class.is-invalid]="fieldInvalid('fullName')"
+                  />
+                  @if (fieldInvalid('fullName')) {
+                    <div class="invalid-feedback">أدخل الاسم الكامل (3 أحرف على الأقل).</div>
+                  }
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label" for="storeUserPhone">رقم الهاتف</label>
+                  <input
+                    id="storeUserPhone"
+                    type="tel"
+                    class="form-control"
+                    dir="ltr"
+                    formControlName="phone"
+                    autocomplete="off"
+                    placeholder="01xxxxxxxxx"
+                    [class.is-invalid]="fieldInvalid('phone')"
+                  />
+                  @if (fieldInvalid('phone')) {
+                    <div class="invalid-feedback">أدخل رقم موبايل مصري صحيح. يُستخدم لتسجيل الدخول.</div>
+                  }
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label" for="storeUserPassword">
+                    كلمة المرور
+                    @if (editingUser()) {
+                      <span class="text-secondary fw-normal">(اختياري عند التعديل)</span>
+                    }
+                  </label>
+                  <input
+                    id="storeUserPassword"
+                    type="password"
+                    class="form-control"
+                    dir="ltr"
+                    formControlName="password"
+                    autocomplete="new-password"
+                    [class.is-invalid]="fieldInvalid('password')"
+                  />
+                  @if (fieldInvalid('password')) {
+                    <div class="invalid-feedback">كلمة المرور مطلوبة ويجب ألا تقل عن 6 أحرف.</div>
+                  }
+                </div>
+
+                <div class="mb-0">
+                  <label class="form-label" for="storeUserRole">الصلاحية</label>
+                  <select
+                    id="storeUserRole"
+                    class="form-select"
+                    formControlName="role"
+                    [class.is-invalid]="fieldInvalid('role')"
+                  >
+                    @for (option of roleOptions; track option.value) {
+                      <option [value]="option.value">{{ option.label }}</option>
+                    }
+                  </select>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary"
+                  [disabled]="userSaving()"
+                  (click)="closeUserModal()"
+                >
+                  إلغاء
+                </button>
+                <button type="submit" class="btn btn-primary" [disabled]="userSaving()">
+                  @if (userSaving()) {
+                    جاري الحفظ...
+                  } @else {
+                    حفظ
+                  }
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div class="modal-backdrop fade show"></div>
+    }
   }
 
 </div>

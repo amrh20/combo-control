@@ -65,6 +65,8 @@ const PERMISSION_LABELS: Readonly<Record<string, string>> = {
   'customers.block': 'حظر العملاء وإلغاء الحظر',
   'financials.read': 'عرض التقارير المالية',
   'financials.payout': 'تسوية مستحقات المتاجر والكباتن',
+  'coupons.read': 'عرض كوبونات الخصم',
+  'coupons.write': 'إنشاء وتعديل وحذف كوبونات الخصم',
 };
 
 const GROUP_LABELS: Readonly<Record<string, string>> = {
@@ -80,6 +82,7 @@ const GROUP_LABELS: Readonly<Record<string, string>> = {
   drivers: 'الكباتن',
   customers: 'العملاء',
   financials: 'الماليات',
+  coupons: 'الكوبونات',
 };
 
 const GROUP_ORDER = Object.keys(GROUP_LABELS);
