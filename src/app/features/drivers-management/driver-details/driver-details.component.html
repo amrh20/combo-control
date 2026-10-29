@@ -193,7 +193,7 @@
         <div class="col-md-4">
           <ctrl-stat-card
             label="الطلبات التي سلمها"
-            value="—"
+            [value]="deliveredLabel()"
             icon="pi-box"
             variant="primary"
           />
@@ -209,7 +209,7 @@
         <div class="col-md-4">
           <ctrl-stat-card
             label="نسبة القبول"
-            value="—"
+            [value]="acceptanceLabel()"
             icon="pi-check-circle"
             variant="success"
           />
@@ -217,7 +217,7 @@
         <div class="col-md-4">
           <ctrl-stat-card
             label="تقييم العملاء"
-            value="—"
+            [value]="ratingLabel()"
             icon="pi-star-fill"
             variant="info"
           />
@@ -225,7 +225,7 @@
         <div class="col-md-4">
           <ctrl-stat-card
             label="متوسط وقت التوصيل"
-            value="—"
+            [value]="deliveryTimeLabel()"
             icon="pi-clock"
             variant="primary"
           />
@@ -342,7 +342,7 @@
         <ng-template pTemplate="body" let-order>
           <tr>
             <td><code class="driver-details__id-pill">{{ order.id }}</code></td>
-            <td dir="ltr">{{ order.date }}</td>
+            <td dir="ltr">{{ order.date | date: 'd MMM y, h:mm a' }}</td>
             <td>{{ order.zoneName }}</td>
             <td>{{ order.deliveryFeeEarned | number:'1.2-2' }} {{ currency }}</td>
             <td>
@@ -352,7 +352,7 @@
         </ng-template>
         <ng-template pTemplate="emptymessage">
           <tr>
-            <td colspan="5" class="driver-details__empty">سجل الطلبات غير متاح من النظام بعد.</td>
+            <td colspan="5" class="driver-details__empty">{{ ordersNote() }}</td>
           </tr>
         </ng-template>
       </p-table>
@@ -373,10 +373,10 @@
         <span class="driver-details__card-sub">الشكاوى والمشاكل التشغيلية</span>
       </h2>
 
-      @if (d.complaints.length === 0) {
+      @if (issues().length === 0) {
         <div class="driver-details__no-issues">
           <i class="pi pi-check-circle"></i>
-          <p>سجل المشاكل غير متاح من النظام بعد.</p>
+          <p>{{ issuesNote() }}</p>
         </div>
       } @else {
         <p-table
@@ -388,7 +388,7 @@
               <th class="driver-details__th" style="width: 100px">رقم المشكلة</th>
               <th class="driver-details__th" style="width: 110px">التاريخ</th>
               <th class="driver-details__th" style="width: 110px">رقم الطلب</th>
-              <th class="driver-details__th" style="width: 100px">الخطورة</th>
+              <th class="driver-details__th" style="width: 140px">نوع المشكلة</th>
               <th class="driver-details__th">الوصف</th>
               <th class="driver-details__th" style="width: 120px">الحل</th>
             </tr>
@@ -396,23 +396,23 @@
           <ng-template pTemplate="body" let-issue>
             <tr>
               <td><code class="driver-details__id-pill">{{ issue.id }}</code></td>
-              <td dir="ltr">{{ issue.date }}</td>
-              <td><code class="driver-details__id-pill driver-details__id-pill--muted">{{ issue.orderId }}</code></td>
+              <td dir="ltr">{{ issue.createdAt | date: 'd MMM y, h:mm a' }}</td>
+              <td><code class="driver-details__id-pill driver-details__id-pill--muted">{{ issue.orderNumber }}</code></td>
               <td>
                 <span
                   class="driver-details__severity"
-                  [ngClass]="'driver-details__severity--' + issue.severity"
+                  [ngClass]="'driver-details__severity--' + issueSeverity(issue.type)"
                 >
-                  {{ severityConfig[issue.severity].labelAr }}
+                  {{ issueTypeLabel(issue.type) }}
                 </span>
               </td>
-              <td class="driver-details__desc">{{ issue.description }}</td>
+              <td class="driver-details__desc">{{ issue.note || '—' }}</td>
               <td>
                 <span
                   class="driver-details__resolution"
-                  [ngClass]="'driver-details__resolution--' + issue.resolution"
+                  [ngClass]="'driver-details__resolution--' + issueResolution(issue)"
                 >
-                  {{ resolutionConfig[issue.resolution].labelAr }}
+                  {{ issue.resolution === 'FAIL_ORDER' ? 'فشل الطلب' : (issueResolution(issue) === 'resolved' ? 'تم الحل' : 'قيد المعالجة') }}
                 </span>
               </td>
             </tr>

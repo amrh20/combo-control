@@ -93,6 +93,27 @@ export class CaptainService {
     return this.http.post<void>(`${CAPTAINS_URL}/${id}/reset-password`, { password });
   }
 
+  /** `GET /v1/captains/{id}/stats` */
+  getStats(id: string): Observable<CaptainStats> {
+    return this.http.get<unknown>(`${CAPTAINS_URL}/${id}/stats`).pipe(map(parseStats));
+  }
+
+  /** `GET /v1/captains/{id}/orders` */
+  getDeliveredOrders(id: string): Observable<CaptainDeliveredOrder[]> {
+    const params = new HttpParams().set('limit', '100');
+    return this.http.get<unknown>(`${CAPTAINS_URL}/${id}/orders`, { params }).pipe(
+      map((body) => unwrapItems(body).map(parseOrder).filter((row) => row !== undefined)),
+    );
+  }
+
+  /** `GET /v1/captains/{id}/issues` */
+  getIssues(id: string): Observable<CaptainIssueRow[]> {
+    const params = new HttpParams().set('limit', '100');
+    return this.http.get<unknown>(`${CAPTAINS_URL}/${id}/issues`, { params }).pipe(
+      map((body) => unwrapItems(body).map(parseIssue).filter((row) => row !== undefined)),
+    );
+  }
+
   private upsert(captain: Captain): void {
     this.captainsSignal.update((list) => {
       const index = list.findIndex((item) => item.id === captain.id);
@@ -172,6 +193,106 @@ function asRole(value: string | null | undefined): CaptainRole {
 
 function asStatus(value: string | null | undefined): CaptainStatus {
   return value && STATUSES.has(value as CaptainStatus) ? (value as CaptainStatus) : 'ACTIVE';
+}
+
+export interface CaptainStats {
+  deliveredOrders: number;
+  acceptanceRate: number | null;
+  customerRating: number | null;
+  avgDeliveryTimeMinutes: number | null;
+}
+
+export interface CaptainDeliveredOrder {
+  id: string;
+  orderNumber: string;
+  completedAt: string;
+  zoneName: string;
+  captainProfit: number;
+}
+
+export interface CaptainIssueRow {
+  id: string;
+  orderNumber: string;
+  type: string;
+  note: string;
+  resolution: 'CONTINUE' | 'FAIL_ORDER' | null;
+  createdAt: string;
+  resolvedAt: string | null;
+}
+
+function parseStats(body: unknown): CaptainStats {
+  const rec = asRecord(body);
+  return {
+    deliveredOrders: asCount(rec['deliveredOrders']),
+    acceptanceRate: asOptionalNumber(rec['acceptanceRate']),
+    customerRating: asOptionalNumber(rec['customerRating']),
+    avgDeliveryTimeMinutes: asOptionalNumber(rec['avgDeliveryTimeMinutes']),
+  };
+}
+
+function parseOrder(row: unknown): CaptainDeliveredOrder | undefined {
+  const rec = asRecord(row);
+  const id = text(rec['id']);
+  if (!id) {
+    return undefined;
+  }
+  return {
+    id,
+    orderNumber: text(rec['orderNumber']) || id,
+    completedAt: text(rec['completedAt']),
+    zoneName: text(rec['zoneName']) || '—',
+    captainProfit: asCount(rec['captainProfit']),
+  };
+}
+
+function parseIssue(row: unknown): CaptainIssueRow | undefined {
+  const rec = asRecord(row);
+  const id = text(rec['id']);
+  if (!id) {
+    return undefined;
+  }
+  const resolution = text(rec['resolution']);
+  return {
+    id,
+    orderNumber: text(rec['orderNumber']) || text(rec['orderId']),
+    type: text(rec['type']) || 'OTHER',
+    note: text(rec['note']),
+    resolution: resolution === 'CONTINUE' || resolution === 'FAIL_ORDER' ? resolution : null,
+    createdAt: text(rec['createdAt']),
+    resolvedAt: text(rec['resolvedAt']) || null,
+  };
+}
+
+function unwrapItems(body: unknown): unknown[] {
+  if (Array.isArray(body)) {
+    return body;
+  }
+  const items = asRecord(body)['items'];
+  return Array.isArray(items) ? items : [];
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return {};
+}
+
+function text(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function asCount(value: unknown): number {
+  const amount = typeof value === 'number' ? value : Number(value ?? 0);
+  return Number.isFinite(amount) ? Math.max(0, Math.trunc(amount)) : 0;
+}
+
+function asOptionalNumber(value: unknown): number | null {
+  if (value == null || value === '') {
+    return null;
+  }
+  const amount = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(amount) ? amount : null;
 }
 
 function asVehicle(value: string | null | undefined): CaptainVehicleType {
