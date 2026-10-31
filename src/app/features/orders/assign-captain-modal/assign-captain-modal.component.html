@@ -132,6 +132,9 @@
   <span class="assign-captain__info">
     <span class="assign-captain__name-row">
       <span class="assign-captain__name">{{ captain.fullName }}</span>
+      @if (!captain.hasApp) {
+        <p-tag severity="warn" value="خارجي / بدون تطبيق" />
+      }
       <span
         class="assign-captain__badge"
         [class.assign-captain__badge--available]="availability(captain) === 'available'"
@@ -154,6 +157,6 @@
         }
       }
     </span>
-    <span class="assign-captain__phone" dir="ltr">{{ captain.phone }}</span>
+    <span class="assign-captain__phone"  >{{ captain.phone }}</span>
   </span>
 </ng-template>

@@ -1,7 +1,7 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, DestroyRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { EMPTY, Subject, catchError, forkJoin, interval, map, switchMap, tap } from 'rxjs';
+import { EMPTY, Subject, catchError, debounceTime, forkJoin, interval, map, switchMap, tap } from 'rxjs';
 import { ComboInputComponent } from '../../../shared/components/combo-input/combo-input.component';
 import { OrderDetailsComponent } from '../../orders/order-details/order-details.component';
 import {
@@ -71,7 +71,7 @@ export class OpsBoardComponent {
   /** `live` is the ops board. `history` lists delivered, cancelled, and failed orders. */
   readonly boardMode = input<BoardKind>('live');
 
-  /** Rows from `GET /v1/orders`, newest first. */
+  /** Rows from `GET /v1/ops/orders`, newest first. */
   private readonly ordersApi = inject(OpsOrderService);
   private readonly hubsApi = inject(HubService);
   private readonly destroyRef = inject(DestroyRef);
@@ -225,6 +225,19 @@ export class OpsBoardComponent {
     this.ordersApi.orderCreated$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((order) => {
       this.prependCreatedOrder(order);
     });
+
+    this.ordersApi.orderTouched$
+      .pipe(
+        debounceTime(80),
+        switchMap((orderId) => {
+          if (this.boardMode() !== 'live' || !this.rows().some((row) => row.id === orderId)) {
+            return EMPTY;
+          }
+          return this.ordersApi.getOrder(orderId).pipe(catchError(() => EMPTY));
+        }),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((order) => this.onOrderChanged(order));
   }
 
   onSearchChange(value: string): void {

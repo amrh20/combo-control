@@ -8,5 +8,5 @@ import { OpsBoardComponent } from '../../orders-management/ops-board/ops-board.c
   templateUrl: './order-history.component.html',
 })
 export class OrderHistoryComponent {
-  /** Closed orders from `GET /v1/orders` (delivered, cancelled, failed). */
+  /** Closed orders from `GET /v1/ops/orders` (delivered, cancelled, failed). */
 }

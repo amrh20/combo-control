@@ -48,6 +48,10 @@ export interface CreateVendorPayload {
   isActive: boolean;
   liveStatusOverride: VendorLiveStatusOverride;
   autoAccept: boolean;
+  /** Shop staff can sign in to combo-vendor. Defaults to false on create. */
+  usesStoreApp?: boolean;
+  /** Shop staff can add and edit products from combo-vendor. */
+  canEditCatalog?: boolean;
   minOrderPiastres: number;
   discountBp: number;
   commissionBp: number;
@@ -115,6 +119,8 @@ export interface VendorApiRecord {
   isActive?: boolean;
   liveStatusOverride?: VendorLiveStatusOverride;
   autoAccept?: boolean;
+  usesStoreApp?: boolean;
+  canEditCatalog?: boolean;
   minOrderPiastres?: number;
   discountBp?: number;
   /** 1% = 100 basis points. `1500` is 15%. */

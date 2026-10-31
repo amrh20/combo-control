@@ -1,11 +1,12 @@
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, filter, map, share } from 'rxjs';
+import { Observable, filter, map, merge, share } from 'rxjs';
 import { API_BASE_URL } from '../api-config';
 import {
   AssignmentMode,
   CancelOrderPayload,
   CursorPage,
+  AddOrderShopItemPayload,
   EditOrderItemPayload,
   OfferStatus,
   OpsOrder,
@@ -21,7 +22,20 @@ import {
 } from '../models/ops-order.model';
 import { RealtimeService } from './realtime.service';
 
-const ORDERS_URL = `${API_BASE_URL}/v1/orders`;
+const ORDERS_URL = `${API_BASE_URL}/v1/ops/orders`;
+
+const ORDER_TOUCH_EVENTS = [
+  'order.updated',
+  'offer.created',
+  'offer.declined',
+  'offer.expired',
+  'offer.cancelled',
+  'task.assigned',
+  'task.started',
+  'task.completed',
+  'task.cancelled',
+  'task.failed',
+] as const;
 
 interface ApiErrorBody {
   code?: string;
@@ -38,13 +52,26 @@ export class OpsOrderService {
   private readonly realtime = inject(RealtimeService);
 
   /** Live `order:created` payloads, mapped to list rows. */
-  readonly orderCreated$: Observable<OpsOrderRow> = this.realtime.on<unknown>('order:created').pipe(
+  readonly orderCreated$: Observable<OpsOrderRow> = this.realtime.on<unknown>('order.created').pipe(
     map(asCreatedOrderRow),
     filter((row): row is OpsOrderRow => row !== null),
     share(),
   );
 
-  /** `GET /v1/orders` — newest first, cursor page. */
+  /**
+   * Order ids that changed on the hub socket (dispatch, status, offers).
+   * Refetch the open order or list row when the id matches.
+   */
+  readonly orderTouched$: Observable<string> = merge(
+    ...ORDER_TOUCH_EVENTS.map((event) =>
+      this.realtime.on<unknown>(event).pipe(
+        map(orderIdFromRealtimePayload),
+        filter((id): id is string => id !== null),
+      ),
+    ),
+  ).pipe(share());
+
+  /** `GET /v1/ops/orders` — newest first, cursor page. */
   listOrders(query: OpsOrderListQuery = {}): Observable<CursorPage<OpsOrderRow>> {
     let params = new HttpParams().set('limit', String(query.limit ?? 20));
     const status = query.status?.trim() ?? '';
@@ -71,12 +98,12 @@ export class OpsOrderService {
     return this.http.get<CursorPage<OpsOrderRow>>(ORDERS_URL, { params }).pipe(map(toPage));
   }
 
-  /** `GET /v1/orders/{id}` */
+  /** `GET /v1/ops/orders/{id}` */
   getOrder(orderId: string): Observable<OpsOrder> {
     return this.http.get<unknown>(orderUrl(orderId)).pipe(map(normalizeOpsOrder));
   }
 
-  /** `POST /v1/orders/{id}/sub-orders/{subOrderId}/status` */
+  /** `POST /v1/ops/orders/{id}/sub-orders/{subOrderId}/status` */
   setSubOrderStatus(
     orderId: string,
     subOrderId: string,
@@ -92,19 +119,42 @@ export class OpsOrderService {
       .pipe(map(normalizeOpsOrder));
   }
 
-  /** `PATCH /v1/orders/{id}/items/{itemId}` — send the order `version` you last read. */
+  /** `PATCH /v1/ops/orders/{id}/items/{itemId}` — send the order `version` you last read. */
   editItem(orderId: string, itemId: string, payload: EditOrderItemPayload): Observable<OpsOrder> {
     return this.http
       .patch<unknown>(`${orderUrl(orderId)}/items/${encodeURIComponent(itemId)}`, payload)
       .pipe(map(normalizeOpsOrder));
   }
 
-  /** `POST /v1/orders/{id}/cancel` */
+  /** `POST /v1/ops/orders/{id}/shops/{shopId}/items` */
+  addShopItem(
+    orderId: string,
+    shopId: string,
+    payload: AddOrderShopItemPayload,
+  ): Observable<OpsOrder> {
+    return this.http
+      .post<unknown>(
+        `${orderUrl(orderId)}/shops/${encodeURIComponent(shopId)}/items`,
+        payload,
+      )
+      .pipe(map(normalizeOpsOrder));
+  }
+
+  /** `POST /v1/ops/orders/{id}/cancel` */
   cancelOrder(orderId: string, payload: CancelOrderPayload): Observable<OpsOrder> {
     return this.http
       .post<unknown>(`${orderUrl(orderId)}/cancel`, {
         reason: payload.reason.trim(),
         chargeFee: payload.chargeFee,
+      })
+      .pipe(map(normalizeOpsOrder));
+  }
+
+  /** `POST /v1/ops/orders/{id}/force-complete` — manual delivery for captains without the app. */
+  forceComplete(orderId: string): Observable<OpsOrder> {
+    return this.http
+      .post<unknown>(`${orderUrl(orderId)}/force-complete`, null, {
+        headers: new HttpHeaders({ 'Idempotency-Key': crypto.randomUUID() }),
       })
       .pipe(map(normalizeOpsOrder));
   }
@@ -134,6 +184,13 @@ function orderUrl(orderId: string): string {
   return `${ORDERS_URL}/${encodeURIComponent(orderId)}`;
 }
 
+function orderIdFromRealtimePayload(payload: unknown): string | null {
+  const rec = asRecord(payload);
+  const nested = asRecord(rec['data']);
+  const id = field(rec['orderId']) || field(nested['orderId']);
+  return id || null;
+}
+
 const TASK_STATUSES = new Set<TaskStatus>([
   'OPEN',
   'ASSIGNED',
@@ -147,6 +204,7 @@ const TASK_STATUSES = new Set<TaskStatus>([
 const MODES = new Set<AssignmentMode>(['COLLECT_ONLY', 'DELIVER_ONLY', 'COLLECT_AND_DELIVER']);
 
 const OFFER_STATUSES = new Set<OfferStatus>(['PENDING', 'ACCEPTED', 'DECLINED', 'EXPIRED']);
+const OFFERED = 'OFFERED';
 
 interface OfferRecord {
   id?: string | null;
@@ -183,7 +241,12 @@ function normalizeOpsOrder(body: unknown): OpsOrder {
   return { ...order, trips };
 }
 
-const DECLINE_EVENT_TYPES = new Set(['offer.declined', 'task.declined', 'captain.offer_declined']);
+const DECLINE_EVENT_TYPES = new Set([
+  'dispatch.declined',
+  'offer.declined',
+  'task.declined',
+  'captain.offer_declined',
+]);
 
 function withEventReason(trip: OpsTrip, events: OpsOrderEvent[]): OpsTrip {
   if (trip.status !== 'DECLINED' || trip.offer?.declineReason) {
@@ -268,6 +331,9 @@ function readCaptain(
 }
 
 function asOfferStatus(status: string): OfferStatus {
+  if (status === OFFERED) {
+    return 'PENDING';
+  }
   return OFFER_STATUSES.has(status as OfferStatus) ? (status as OfferStatus) : 'PENDING';
 }
 
@@ -317,7 +383,7 @@ function asCreatedOrderRow(payload: unknown): OpsOrderRow | null {
     return null;
   }
   const rec = asRecord(raw);
-  const id = field(rec['id']);
+  const id = field(rec['id']) || field(rec['orderId']);
   const orderNumber = field(rec['orderNumber']);
   if (!id && !orderNumber) {
     return null;

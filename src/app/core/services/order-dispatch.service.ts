@@ -35,8 +35,13 @@ interface AssignableCaptainRecord {
   phone?: string | null;
   role?: string | null;
   isOnline?: boolean | null;
+  is_online?: boolean | null;
   busyTaskId?: string | null;
+  busy_task_id?: string | null;
   hasOffer?: boolean | null;
+  has_offer?: boolean | null;
+  hasApp?: boolean | null;
+  has_app?: boolean | null;
   options?: AssignmentOptionRecord[] | null;
 }
 
@@ -219,16 +224,17 @@ function toAssignableCaptain(row: AssignableCaptainRecord): AssignableCaptain | 
   }
 
   const role = asRole(row.role);
-  const busyTaskId = row.busyTaskId?.trim() || null;
+  const busyTaskId = row.busyTaskId?.trim() || row.busy_task_id?.trim() || null;
 
   return {
     id,
     fullName: row.fullName?.trim() || row.name?.trim() || '',
     phone: row.phone?.trim() ?? '',
     role,
-    isOnline: row.isOnline === true,
+    isOnline: row.isOnline === true || row.is_online === true,
     busyTaskId,
-    hasOffer: row.hasOffer === true,
+    hasOffer: row.hasOffer === true || row.has_offer === true,
+    hasApp: row.hasApp !== false && row.has_app !== false,
     options: toOptions(row.options, role),
   };
 }

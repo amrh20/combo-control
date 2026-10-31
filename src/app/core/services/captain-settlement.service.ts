@@ -120,7 +120,8 @@ export function parseCaptainSettlement(
 }
 
 function asStatus(value: unknown): CaptainSettlementStatus {
-  const status = text(value).toUpperCase();
+  const raw = text(value).toUpperCase();
+  const status = raw === 'COMPLETED' ? 'CONFIRMED' : raw;
   return STATUSES.has(status as CaptainSettlementStatus)
     ? (status as CaptainSettlementStatus)
     : 'PENDING';

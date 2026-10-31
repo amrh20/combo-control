@@ -1,3 +1,16 @@
+<p-toast position="top-left" key="ops">
+  <ng-template let-message pTemplate="message">
+    <button
+      type="button"
+      class="ops-toast-hit"
+      (click)="notices.handleToastClick(message)"
+    >
+      <span class="ops-toast-hit__title">{{ message.summary }}</span>
+      <span class="ops-toast-hit__body">{{ message.detail }}</span>
+    </button>
+  </ng-template>
+</p-toast>
+
 <div
   class="admin-layout"
   [class.admin-layout--collapsed]="!isMobile() && sidebarCollapsed()"

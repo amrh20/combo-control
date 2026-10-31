@@ -365,6 +365,8 @@ function recordToPayload(record: VendorApiRecord): CreateVendorPayload {
     isActive: record.isActive ?? true,
     liveStatusOverride: record.liveStatusOverride ?? 'AUTO',
     autoAccept: record.autoAccept ?? false,
+    usesStoreApp: record.usesStoreApp ?? false,
+    canEditCatalog: record.canEditCatalog ?? false,
     minOrderPiastres: record.minOrderPiastres ?? 0,
     discountBp: record.discountBp ?? 0,
     commissionBp: record.commissionBp ?? 0,
@@ -386,6 +388,8 @@ function profileToPayload(vendor: VendorProfile): CreateVendorPayload {
     isActive: vendor.systemStatus === 'active',
     liveStatusOverride: toApiLiveStatusOverride(vendor.liveStatusOverride),
     autoAccept: vendor.settings.autoAccept,
+    usesStoreApp: vendor.usesStoreApp,
+    canEditCatalog: vendor.canEditCatalog,
     minOrderPiastres: egpToPiastres(vendor.minOrder),
     discountBp: percentToBasisPoints(vendor.discountPercent),
     commissionBp: vendor.commissionBp ?? percentToBasisPoints(vendor.commissionRate),
@@ -517,6 +521,9 @@ function toVendorProfile(
     ratingsCount,
     completedOrders,
     discountBadge,
+    usesStoreApp: record.usesStoreApp ?? payload.usesStoreApp ?? existing?.usesStoreApp ?? false,
+    canEditCatalog:
+      record.canEditCatalog ?? payload.canEditCatalog ?? existing?.canEditCatalog ?? false,
     stats: {
       rating: ratingsScore ?? 0,
       totalReviews: ratingsCount,

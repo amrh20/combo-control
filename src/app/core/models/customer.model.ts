@@ -6,11 +6,7 @@ export interface Customer {
   id: string;
   fullName: string;
   phone: string;
-  /**
-   * Not returned by `GET /v1/customers`. Present on the local book used by order creation.
-   */
   totalOrders?: number;
-  /** Not returned by `GET /v1/customers`. Present on the local book used by order creation. */
   totalSpent?: number;
   status: CustomerStatus;
   joinedAt: string;

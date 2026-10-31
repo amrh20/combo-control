@@ -16,7 +16,7 @@
         <h2 class="kpi-label">إجمالي صافي المبيعات</h2>
       </div>
       <p class="kpi-value text-green-700">
-        <span dir="ltr" class="inline-block">{{ kpis().netSales | number:'1.0-0' }}</span>
+        <span   class="inline-block">{{ kpis().netSales | number:'1.0-0' }}</span>
         ج.م
       </p>
       <p class="kpi-hint">بضاعة المحلات على الطلبات المسلّمة</p>
@@ -30,7 +30,7 @@
         <h2 class="kpi-label">إجمالي التوصيل</h2>
       </div>
       <p class="kpi-value text-gray-900">
-        <span dir="ltr" class="inline-block">{{ kpis().deliveryFees | number:'1.0-0' }}</span>
+        <span   class="inline-block">{{ kpis().deliveryFees | number:'1.0-0' }}</span>
         ج.م
       </p>
       <p class="kpi-hint">رسوم التوصيل على الطلبات المسلّمة</p>
@@ -44,7 +44,7 @@
         <h2 class="kpi-label">إجمالي الخدمة</h2>
       </div>
       <p class="kpi-value text-gray-900">
-        <span dir="ltr" class="inline-block">{{ kpis().serviceFees | number:'1.0-0' }}</span>
+        <span   class="inline-block">{{ kpis().serviceFees | number:'1.0-0' }}</span>
         ج.م
       </p>
       <p class="kpi-hint">رسوم خدمة المنصة، منفصلة عن التوصيل</p>
@@ -140,7 +140,7 @@
       <article class="rounded-xl border border-gray-100 bg-gray-50 p-4 shadow-none">
         <h3 class="metric-label">إجمالي مبيعات المتجر</h3>
         <p class="metric-value mt-2 text-green-700">
-          <span dir="ltr" class="inline-block">{{ reportSales() | number:'1.0-0' }}</span>
+          <span   class="inline-block">{{ reportSales() | number:'1.0-0' }}</span>
           ج.م
         </p>
         <p class="metric-hint">{{ selectedStoreName() }} · {{ periodLabel() }}</p>
@@ -155,7 +155,7 @@
       <article class="rounded-xl border border-gray-100 bg-gray-50 p-4 shadow-none">
         <h3 class="metric-label">متوسط قيمة الطلب</h3>
         <p class="metric-value mt-2 text-gray-900">
-          <span dir="ltr" class="inline-block">{{ reportAverage() | number:'1.2-2' }}</span>
+          <span   class="inline-block">{{ reportAverage() | number:'1.2-2' }}</span>
           ج.م
         </p>
         <p class="metric-hint">المبيعات مقسومة على الطلبات الناجحة</p>
@@ -198,7 +198,7 @@
               <td class="px-4 py-3 font-medium text-gray-900">{{ row.date }}</td>
               <td class="px-4 py-3 text-gray-800">{{ row.orderCount | number:'1.0-0' }}</td>
               <td class="px-4 py-3 whitespace-nowrap font-semibold text-gray-800">
-                <span dir="ltr" class="inline-block">{{ row.salesValue | number:'1.0-0' }}</span>
+                <span   class="inline-block">{{ row.salesValue | number:'1.0-0' }}</span>
                 ج.م
               </td>
             </tr>

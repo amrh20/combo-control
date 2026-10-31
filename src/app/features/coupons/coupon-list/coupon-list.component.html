@@ -50,11 +50,11 @@
             @for (coupon of coupons(); track coupon.id) {
               <tr [class.coupons-list__row--inactive]="!coupon.isActive">
                 <td>
-                  <code class="coupons-list__code" dir="ltr">{{ coupon.code }}</code>
+                  <code class="coupons-list__code"  >{{ coupon.code }}</code>
                 </td>
                 <td>{{ coupon.discountPercent }}%</td>
                 <td>{{ coupon.maxDiscountAmount | number: '1.0-2' }} ج.م</td>
-                <td dir="ltr" class="coupons-list__date">{{ coupon.expiresAt || '—' }}</td>
+                <td   class="coupons-list__date">{{ coupon.expiresAt || '—' }}</td>
                 <td>{{ coupon.usedCount }} / {{ coupon.usageLimit }}</td>
                 <td>
                   <div class="form-check form-switch coupons-list__switch mb-0">
@@ -127,7 +127,7 @@
         </div>
         <div class="modal-body">
           <p class="mb-0">
-            حذف الكوبون <strong dir="ltr">{{ coupon.code }}</strong>؟ لا يمكن التراجع عن هذا الإجراء.
+            حذف الكوبون <strong  >{{ coupon.code }}</strong>؟ لا يمكن التراجع عن هذا الإجراء.
           </p>
         </div>
         <div class="modal-footer">

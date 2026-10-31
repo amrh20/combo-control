@@ -25,6 +25,8 @@ export interface AssignableCaptain {
   isOnline: boolean;
   busyTaskId: string | null;
   hasOffer: boolean;
+  /** When false, the captain is external and does not use the mobile app. Defaults to true. */
+  hasApp?: boolean;
   options: AssignmentOption[];
 }
 

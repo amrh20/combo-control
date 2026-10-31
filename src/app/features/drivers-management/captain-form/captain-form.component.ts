@@ -2,18 +2,25 @@ import { Component, DestroyRef, computed, effect, inject, input, output, signal,
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
+import { CheckboxModule } from 'primeng/checkbox';
+import { InputNumberModule } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { ToastModule } from 'primeng/toast';
 import { map, of, switchMap } from 'rxjs';
 import { PasswordToggleDirective } from '../../../core/directives/password-toggle.directive';
 import {
+  CAPTAIN_DEFAULT_MAX_CASH_EGP,
+  CAPTAIN_EMPLOYMENT_OPTIONS,
   CAPTAIN_ROLE_OPTIONS,
   CAPTAIN_VEHICLE_OPTIONS,
   Captain,
+  CaptainEmploymentType,
   CaptainRole,
   CaptainVehicleType,
+  captainUsesApp,
 } from '../../../core/models/captain.model';
+import { egpToPiastres, piastresToEgp } from '../../../core/models/zone.model';
 import { CaptainService, captainErrorMessage } from '../../../core/services/captain.service';
 import { HubService } from '../../../core/services/hub.service';
 
@@ -22,7 +29,9 @@ import { HubService } from '../../../core/services/hub.service';
   standalone: true,
   imports: [
     ReactiveFormsModule,
+    CheckboxModule,
     SelectModule,
+    InputNumberModule,
     InputTextModule,
     ToastModule,
     PasswordToggleDirective,
@@ -42,6 +51,7 @@ export class CaptainFormComponent {
   readonly closed = output<void>();
 
   readonly roleOptions = CAPTAIN_ROLE_OPTIONS;
+  readonly employmentOptions = CAPTAIN_EMPLOYMENT_OPTIONS;
   readonly vehicleOptions = CAPTAIN_VEHICLE_OPTIONS;
   /** Collectors travel on foot, so the vehicle field is hidden and sent as `NONE`. */
   readonly showVehicle = signal(true);
@@ -66,6 +76,10 @@ export class CaptainFormComponent {
     password: ['', Validators.required],
     hubId: ['', Validators.required],
     vehicleType: ['MOTORCYCLE' as CaptainVehicleType, Validators.required],
+    employmentType: ['FREELANCER' as CaptainEmploymentType, Validators.required],
+    maxCashLimitEgp: [CAPTAIN_DEFAULT_MAX_CASH_EGP.FREELANCER, [Validators.required, Validators.min(0)]],
+    fixedSalaryEgp: this.fb.control<number | null>(null),
+    hasApp: [true],
   });
 
   constructor() {
@@ -84,6 +98,13 @@ export class CaptainFormComponent {
     this.form.controls.role.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((role) => this.syncVehicle(role));
+
+    this.form.controls.employmentType.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((employmentType) => {
+        this.form.controls.maxCashLimitEgp.setValue(CAPTAIN_DEFAULT_MAX_CASH_EGP[employmentType]);
+        this.syncFixedSalary(employmentType);
+      });
 
     effect(() => {
       const firstHub = this.activeHubs()[0];
@@ -129,6 +150,12 @@ export class CaptainFormComponent {
     const hubId = value.hubId;
     const password = value.password.trim();
     const vehicleType: CaptainVehicleType = role === 'COLLECTOR' ? 'NONE' : value.vehicleType;
+    const employmentType = value.employmentType;
+    const maxCashLimit = egpToPiastres(value.maxCashLimitEgp);
+    const fleetFields =
+      employmentType === 'FIXED' && value.fixedSalaryEgp != null
+        ? { fixedSalary: egpToPiastres(value.fixedSalaryEgp) }
+        : {};
 
     if (!fullName || !hubId || (!current && (!phone || !password))) {
       this.form.markAllAsTouched();
@@ -138,7 +165,18 @@ export class CaptainFormComponent {
     this.saving.set(true);
 
     const request = current
-      ? this.captainService.updateCaptain(current.id, { fullName, role, hubId, vehicleType }).pipe(
+      ? this.captainService
+          .updateCaptain(current.id, {
+            fullName,
+            role,
+            hubId,
+            vehicleType,
+            employmentType,
+            maxCashLimit,
+            hasApp: value.hasApp,
+            ...fleetFields,
+          })
+          .pipe(
           switchMap((updated) =>
             password
               ? this.captainService.resetPassword(updated.id, password).pipe(map(() => updated))
@@ -152,6 +190,10 @@ export class CaptainFormComponent {
           hubId,
           password,
           vehicleType,
+          employmentType,
+          maxCashLimit,
+          hasApp: value.hasApp,
+          ...fleetFields,
         });
 
     request.pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
@@ -176,6 +218,7 @@ export class CaptainFormComponent {
     const phone = this.form.controls.phone;
 
     if (current) {
+      const employmentType = current.employmentType ?? 'FREELANCER';
       this.form.reset(
         {
           role: current.role,
@@ -184,6 +227,14 @@ export class CaptainFormComponent {
           password: '',
           hubId: current.hubId,
           vehicleType: selectableVehicle(current.vehicleType),
+          employmentType,
+          maxCashLimitEgp:
+            current.maxCashLimit != null
+              ? piastresToEgp(current.maxCashLimit)
+              : CAPTAIN_DEFAULT_MAX_CASH_EGP[employmentType],
+          fixedSalaryEgp:
+            current.fixedSalary != null ? piastresToEgp(current.fixedSalary) : null,
+          hasApp: captainUsesApp(current),
         },
         { emitEvent: false },
       );
@@ -198,6 +249,10 @@ export class CaptainFormComponent {
           password: '',
           hubId: this.activeHubs()[0]?.id ?? '',
           vehicleType: 'MOTORCYCLE',
+          employmentType: 'FREELANCER',
+          maxCashLimitEgp: CAPTAIN_DEFAULT_MAX_CASH_EGP.FREELANCER,
+          fixedSalaryEgp: null,
+          hasApp: true,
         },
         { emitEvent: false },
       );
@@ -207,6 +262,18 @@ export class CaptainFormComponent {
 
     password.updateValueAndValidity({ emitEvent: false });
     this.syncVehicle(this.form.controls.role.value);
+    this.syncFixedSalary(this.form.controls.employmentType.value);
+  }
+
+  private syncFixedSalary(employmentType: CaptainEmploymentType): void {
+    const salary = this.form.controls.fixedSalaryEgp;
+    if (employmentType === 'FIXED') {
+      salary.setValidators([Validators.required, Validators.min(0)]);
+    } else {
+      salary.clearValidators();
+      salary.setValue(null, { emitEvent: false });
+    }
+    salary.updateValueAndValidity({ emitEvent: false });
   }
 
   /** A collector has no vehicle. Delivery duties must pick one of the API enums. */

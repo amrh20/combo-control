@@ -6,11 +6,19 @@ import { DatePipe, DecimalPipe, NgClass } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
+import { CheckboxModule } from 'primeng/checkbox';
+import { InputNumberModule } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { ToastModule } from 'primeng/toast';
-import { Captain } from '../../../core/models/captain.model';
+import {
+  CAPTAIN_DEFAULT_MAX_CASH_EGP,
+  CAPTAIN_EMPLOYMENT_OPTIONS,
+  Captain,
+  CaptainEmploymentType,
+  captainUsesApp,
+} from '../../../core/models/captain.model';
 import {
   CaptainCashSettlement,
   SETTLEMENT_STATUS_LABELS,
@@ -28,7 +36,7 @@ import {
   settlementErrorMessage,
 } from '../../../core/services/captain-settlement.service';
 import { HubService } from '../../../core/services/hub.service';
-import { piastresToEgp } from '../../../core/models/zone.model';
+import { egpToPiastres, piastresToEgp } from '../../../core/models/zone.model';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
 import {
   TablePagerComponent,
@@ -57,7 +65,9 @@ import {
     ReactiveFormsModule,
     TableModule,
     SelectModule,
+    InputNumberModule,
     InputTextModule,
+    CheckboxModule,
     ToastModule,
     StatCardComponent,
     TablePagerComponent,
@@ -82,6 +92,7 @@ export class DriverDetailsComponent implements OnInit {
   readonly roleConfig = ROLE_CONFIG;
   readonly currency = DRIVER_CURRENCY;
   readonly roleOptions = ROLE_OPTIONS;
+  readonly employmentOptions = CAPTAIN_EMPLOYMENT_OPTIONS;
   readonly vehicleOptions = VEHICLE_OPTIONS;
   readonly activeHubs = this.hubService.activeHubs;
   readonly showVehicle = signal(true);
@@ -132,13 +143,13 @@ export class DriverDetailsComponent implements OnInit {
   readonly pagedComplaints = computed(() =>
     slicePage(this.complaints(), this.complaintsPage(), this.complaintsPageSize()),
   );
-  readonly pendingSettlement = computed(() => {
-    const pending = this.captain()?.pendingSettlement;
-    return pending?.status === 'PENDING' ? pending : null;
-  });
   readonly settlementHistory = signal<CaptainCashSettlement[]>([]);
+  readonly allSettlements = computed(() => mergeSettlements(this.settlementHistory(), this.captain()));
+  readonly hasPendingSettlement = computed(() =>
+    this.allSettlements().some((row) => row.status === 'PENDING'),
+  );
   readonly pagedHistory = computed(() =>
-    slicePage(this.settlementHistory(), this.historyPage(), this.historyPageSize()),
+    slicePage(this.allSettlements(), this.historyPage(), this.historyPageSize()),
   );
   readonly cashBalanceLabel = computed(() => {
     const amount = this.captain()?.companyCashBalance;
@@ -155,12 +166,23 @@ export class DriverDetailsComponent implements OnInit {
     hubId: ['', Validators.required],
     vehicleType: ['' as CaptainVehicleType | ''],
     licenseExpiry: [''],
+    employmentType: ['FREELANCER' as CaptainEmploymentType, Validators.required],
+    maxCashLimitEgp: [CAPTAIN_DEFAULT_MAX_CASH_EGP.FREELANCER, [Validators.required, Validators.min(0)]],
+    fixedSalaryEgp: this.fb.control<number | null>(null),
+    hasApp: [true],
   });
 
   constructor() {
     this.profileForm.controls.role.valueChanges
-      .pipe(takeUntilDestroyed())
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((role) => this.syncVehicleControl(role));
+
+    this.profileForm.controls.employmentType.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((employmentType) => {
+        this.profileForm.controls.maxCashLimitEgp.setValue(CAPTAIN_DEFAULT_MAX_CASH_EGP[employmentType]);
+        this.syncFixedSalary(employmentType);
+      });
   }
 
   ngOnInit(): void {
@@ -203,6 +225,31 @@ export class DriverDetailsComponent implements OnInit {
     return this.vehicleOptions.find((option) => option.value === type)?.label ?? type;
   }
 
+  employmentLabel(type?: CaptainEmploymentType): string {
+    if (!type) {
+      return '—';
+    }
+    return this.employmentOptions.find((option) => option.value === type)?.label ?? type;
+  }
+
+  maxCashLimitLabel(piastres?: number): string {
+    return this.moneyAmountLabel(piastres, 0);
+  }
+
+  fixedSalaryLabel(piastres?: number): string {
+    return this.moneyAmountLabel(piastres, 0);
+  }
+
+  private moneyAmountLabel(piastres: number | undefined, minFractionDigits: number): string {
+    if (piastres == null) {
+      return '—';
+    }
+    return `${piastresToEgp(piastres).toLocaleString('en-US', {
+      minimumFractionDigits: minFractionDigits,
+      maximumFractionDigits: 2,
+    })} ${this.currency}`;
+  }
+
   moneyLabel(piastres: number): string {
     return `${piastresToEgp(piastres).toLocaleString('en-US', {
       minimumFractionDigits: 2,
@@ -211,10 +258,22 @@ export class DriverDetailsComponent implements OnInit {
   }
 
   settlementStatusLabel(status: string): string {
-    if (status === 'PENDING' || status === 'CONFIRMED' || status === 'REJECTED') {
-      return SETTLEMENT_STATUS_LABELS[status];
+    const normalized = status === 'COMPLETED' ? 'CONFIRMED' : status;
+    if (normalized === 'PENDING' || normalized === 'CONFIRMED' || normalized === 'REJECTED') {
+      return SETTLEMENT_STATUS_LABELS[normalized];
     }
     return status;
+  }
+
+  settlementStatusClass(status: string): string {
+    const normalized = status === 'COMPLETED' ? 'CONFIRMED' : status;
+    if (normalized === 'PENDING') {
+      return 'pending';
+    }
+    if (normalized === 'CONFIRMED') {
+      return 'resolved';
+    }
+    return 'rejected';
   }
 
   confirmSettlement(row: CaptainCashSettlement): void {
@@ -233,7 +292,7 @@ export class DriverDetailsComponent implements OnInit {
           this.messages.add({
             severity: 'success',
             summary: 'تم التأكيد',
-            detail: 'تم تأكيد استلام العهدة.',
+            detail: 'تم تأكيد استلام الكاش وتحديث رصيد العهدة.',
             life: 4000,
           });
           this.refreshCaptain(captainId);
@@ -252,21 +311,32 @@ export class DriverDetailsComponent implements OnInit {
   }
 
   startEdit(): void {
-    const current = this.driver();
-    if (!current) return;
+    const current = this.captain();
+    const profile = this.driver();
+    if (!current || !profile) return;
+    const employmentType = current.employmentType ?? 'FREELANCER';
     this.profileForm.patchValue(
       {
-        name: current.name,
-        phone: current.phone,
-        role: current.role,
-        hubId: current.hubId,
+        name: profile.name,
+        phone: profile.phone,
+        role: profile.role,
+        hubId: profile.hubId,
         vehicleType: '',
         licenseExpiry: '',
+        employmentType,
+        maxCashLimitEgp:
+          current.maxCashLimit != null
+            ? piastresToEgp(current.maxCashLimit)
+            : CAPTAIN_DEFAULT_MAX_CASH_EGP[employmentType],
+        fixedSalaryEgp:
+          current.fixedSalary != null ? piastresToEgp(current.fixedSalary) : null,
+        hasApp: captainUsesApp(current),
       },
       { emitEvent: false },
     );
     this.profileForm.controls.phone.disable({ emitEvent: false });
-    this.syncVehicleControl(current.role);
+    this.syncVehicleControl(profile.role);
+    this.syncFixedSalary(employmentType);
     this.isEditing.set(true);
   }
 
@@ -286,12 +356,20 @@ export class DriverDetailsComponent implements OnInit {
     if (!current) return;
 
     const value = this.profileForm.getRawValue();
+    const fleetFields =
+      value.employmentType === 'FIXED' && value.fixedSalaryEgp != null
+        ? { fixedSalary: egpToPiastres(value.fixedSalaryEgp) }
+        : {};
     this.saving.set(true);
     this.captainService
       .updateCaptain(current.id, {
         fullName: value.name.trim(),
         role: value.role,
         hubId: value.hubId,
+        employmentType: value.employmentType,
+        maxCashLimit: egpToPiastres(value.maxCashLimitEgp),
+        hasApp: value.hasApp,
+        ...fleetFields,
       })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
@@ -315,6 +393,17 @@ export class DriverDetailsComponent implements OnInit {
           });
         },
       });
+  }
+
+  private syncFixedSalary(employmentType: CaptainEmploymentType): void {
+    const salary = this.profileForm.controls.fixedSalaryEgp;
+    if (employmentType === 'FIXED') {
+      salary.setValidators([Validators.required, Validators.min(0)]);
+    } else {
+      salary.clearValidators();
+      salary.setValue(null, { emitEvent: false });
+    }
+    salary.updateValueAndValidity({ emitEvent: false });
   }
 
   /** Vehicle stays visible for delivery duties, and is not sent to the API. */
@@ -394,10 +483,10 @@ export class DriverDetailsComponent implements OnInit {
 
   private loadSettlements(id: string): void {
     this.settlementService
-      .listSettlements(id, ['CONFIRMED', 'REJECTED'])
+      .listSettlements(id)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (rows) => this.settlementHistory.set(rows),
+        next: (rows) => this.settlementHistory.set(sortSettlements(rows)),
         error: () => this.settlementHistory.set([]),
       });
   }
@@ -424,7 +513,11 @@ function toProfile(captain: Captain, hubName: string): CaptainProfile {
     availability: 'available',
     accountStatus: captain.status === 'ACTIVE' ? 'active' : 'inactive',
     vehicleType: '',
+    employmentType: captain.employmentType,
+    maxCashLimit: captain.maxCashLimit,
+    fixedSalary: captain.fixedSalary,
     licenseExpiry: '',
+    hasApp: captain.hasApp,
     stats: {
       totalCompletedOrders: 0,
       totalCashCollected: 0,
@@ -435,6 +528,32 @@ function toProfile(captain: Captain, hubName: string): CaptainProfile {
     deliveredOrders: [],
     complaints: [],
   };
+}
+
+function mergeSettlements(
+  rows: CaptainCashSettlement[],
+  captain: Captain | null,
+): CaptainCashSettlement[] {
+  const merged = [...rows];
+  const pending = captain?.pendingSettlement;
+  if (pending?.status === 'PENDING' && !merged.some((row) => row.id === pending.id)) {
+    merged.push(pending);
+  }
+  return sortSettlements(merged);
+}
+
+function sortSettlements(rows: CaptainCashSettlement[]): CaptainCashSettlement[] {
+  return [...rows].sort((a, b) => {
+    if (a.status === 'PENDING' && b.status !== 'PENDING') {
+      return -1;
+    }
+    if (b.status === 'PENDING' && a.status !== 'PENDING') {
+      return 1;
+    }
+    const aTime = Date.parse(a.requestedAt) || 0;
+    const bTime = Date.parse(b.requestedAt) || 0;
+    return bTime - aTime;
+  });
 }
 
 const ISSUE_TYPE_LABELS: Record<string, string> = {

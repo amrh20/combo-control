@@ -40,13 +40,13 @@
 
     <div class="ops-board__filters">
       <label class="ops-board__filter">
-        <span class="ops-board__filter-label">الهب</span>
+        <span class="ops-board__filter-label">المكان</span>
         <select
           class="ops-board__select"
           [value]="hubFilter()"
           (change)="onHubChange($any($event.target).value)"
         >
-          <option value="">كل الهبات</option>
+          <option value=""> كل الاماكن</option>
           @for (hub of hubs(); track hub.id) {
             <option [value]="hub.id">{{ hub.name }}</option>
           }

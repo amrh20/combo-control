@@ -25,7 +25,7 @@ export type SubOrderStatus =
   | 'REJECTED'
   | 'CANCELLED';
 
-/** Statuses staff can send to `POST /v1/orders/{id}/sub-orders/{subOrderId}/status`. */
+/** Statuses staff can send to `POST /v1/ops/orders/{id}/sub-orders/{subOrderId}/status`. */
 export type StaffSubOrderStatus =
   | 'PREPARING'
   | 'REJECTED'
@@ -92,6 +92,10 @@ export interface OpsSubOrder {
   logoUrl: string | null;
   status: SubOrderStatus;
   discountBp: number;
+  /** Piastres. Set when the captain replaced this shop's line-item sum. */
+  captainOverrideTotal: number | null;
+  /** `/files/...` photo of the invoice, or null. */
+  invoiceUrl: string | null;
   shopNotes: string | null;
   rejectionReason: string | null;
   statusChangedAt: string;
@@ -131,7 +135,7 @@ export interface OpsOrderEvent {
   at: string;
 }
 
-/** `GET /v1/orders` row. */
+/** `GET /v1/ops/orders` row. */
 export interface OpsOrderRow {
   id: string;
   orderNumber: string;
@@ -156,7 +160,7 @@ export interface OpsOrderRow {
   subOrderTotal?: Piastres;
 }
 
-/** `GET /v1/orders/{id}`. */
+/** `GET /v1/ops/orders/{id}`. */
 export interface OpsOrder {
   id: string;
   orderNumber: string;
@@ -169,6 +173,8 @@ export interface OpsOrder {
   itemsSubtotal: Piastres;
   discount: Piastres;
   deliveryFee: Piastres;
+  /** Platform service fee, frozen when the order was placed. */
+  serviceFee: Piastres;
   previousFees: Piastres;
   estimatedTotal: Piastres;
   finalTotal: Piastres | null;
@@ -213,6 +219,34 @@ export interface EditOrderItemPayload {
   version: number;
   isRemoved?: boolean;
   quantity?: number;
+  /** Selected option ids across variant groups (same shape as create-order). */
+  options?: string[];
+  variantId?: string;
+  optionId?: string;
+  /** Unit price override in piastres (100 = 1 EGP). */
+  customPrice?: number;
+}
+
+/** `POST /v1/ops/orders/{id}/shops/{shopId}/items` */
+export interface AddOrderShopItemPayload {
+  version: number;
+  productId: string;
+  quantity: number;
+  options: string[];
+  variantId?: string;
+  optionId?: string;
+  /** Unit price override in piastres (100 = 1 EGP). */
+  customPrice?: number;
+}
+
+/** Emitted by `ctrl-add-order-item-modal` before POST (same fields, no version). */
+export interface AddOrderItemModalSubmit {
+  productId: string;
+  quantity: number;
+  options: string[];
+  customPrice: number;
+  variantId?: string;
+  optionId?: string;
 }
 
 export interface CancelOrderPayload {
@@ -240,7 +274,7 @@ export const CLOSED_ORDER_STATUSES: readonly OrderStatus[] = ['DELIVERED', 'CANC
 export const ORDER_STATUS_CONFIG: Record<OrderStatus, StatusDisplay> = {
   PLACED: { labelAr: 'تم الطلب', tone: 'info' },
   CONSOLIDATING: { labelAr: 'قيد التجميع', tone: 'warning' },
-  READY_AT_HUB: { labelAr: 'جاهز في الهب', tone: 'primary' },
+  READY_AT_HUB: { labelAr: 'جاهز في المكان', tone: 'primary' },
   ASSIGNED: { labelAr: 'تم التعيين', tone: 'info' },
   EN_ROUTE: { labelAr: 'في الطريق', tone: 'warning' },
   DELIVERED: { labelAr: 'تم التسليم', tone: 'success' },
@@ -253,7 +287,7 @@ export const SUB_ORDER_STATUS_CONFIG: Record<SubOrderStatus, StatusDisplay> = {
   PREPARING: { labelAr: 'قيد التحضير', tone: 'warning' },
   READY_FOR_PICKUP: { labelAr: 'جاهز للاستلام', tone: 'info' },
   PICKED_UP: { labelAr: 'استلمها الكابتن', tone: 'primary' },
-  AT_HUB: { labelAr: 'وصل الهب', tone: 'info' },
+  AT_HUB: { labelAr: 'وصل المكان', tone: 'info' },
   VERIFIED: { labelAr: 'تم التحقق', tone: 'success' },
   HANDED_TO_DRIVER: { labelAr: 'سُلم للكابتن', tone: 'primary' },
   DELIVERED: { labelAr: 'تم التسليم', tone: 'success' },
@@ -283,6 +317,7 @@ const EVENT_LABELS: Record<string, string> = {
   'order.item_changed': 'تعديل صنف',
   'order.cancelled': 'تم إلغاء الطلب',
   'offer.declined': 'رفض الكابتن العرض',
+  'dispatch.declined': 'رفض الكابتن العرض',
 };
 
 const ACTOR_LABELS: Record<string, string> = {
@@ -327,7 +362,7 @@ const SHOP_ACTIONS: Partial<Record<SubOrderStatus, readonly ShopStatusAction[]>>
     },
   ],
   PICKED_UP: [
-    { status: 'AT_HUB', permission: 'hub.verify', label: 'وصل الهب', needsReason: false },
+    { status: 'AT_HUB', permission: 'hub.verify', label: 'وصل المكان', needsReason: false },
   ],
   AT_HUB: [
     { status: 'VERIFIED', permission: 'hub.verify', label: 'تم التحقق', needsReason: false },
@@ -344,6 +379,17 @@ export function itemsEditable(status: SubOrderStatus): boolean {
 
 export function isActiveTrip(trip: OpsTrip): boolean {
   return trip.status === 'OPEN' || trip.status === 'ASSIGNED' || trip.status === 'IN_PROGRESS';
+}
+
+/** Ops may force-complete while a trip is live and offered or assigned to a captain. */
+export function canForceCompleteOrder(order: OpsOrder): boolean {
+  if (order.status === 'DELIVERED' || order.status === 'CANCELLED' || order.status === 'FAILED') {
+    return false;
+  }
+  return order.trips.some(
+    (trip) =>
+      isActiveTrip(trip) && (Boolean(trip.captain) || trip.offer?.status === 'PENDING'),
+  );
 }
 
 /** The captain rejected the latest offer and the trip is free to offer again. */
@@ -380,6 +426,9 @@ export function lineTotalPiastres(item: OpsOrderItem): number {
 }
 
 export function shopSubtotalPiastres(sub: OpsSubOrder): number {
+  if (sub.captainOverrideTotal != null && sub.captainOverrideTotal > 0) {
+    return sub.captainOverrideTotal;
+  }
   return sub.items.reduce(
     (sum, item) => (item.isRemoved ? sum : sum + lineTotalPiastres(item)),
     0,

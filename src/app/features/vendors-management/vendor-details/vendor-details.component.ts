@@ -3,7 +3,9 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe, DecimalPipe, NgClass } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { MessageService } from 'primeng/api';
 import { TableModule } from 'primeng/table';
+import { ToastModule } from 'primeng/toast';
 import { PasswordToggleDirective } from '../../../core/directives/password-toggle.directive';
 import { StatCardComponent } from '../../../shared/components/stat-card/stat-card.component';
 import {
@@ -35,6 +37,17 @@ import {
 } from '../data/vendors.mock';
 
 const ORDERS_PAGE_SIZE = 20;
+/** Same rule as the API: 8–128 characters, at least one letter and one digit. */
+const STORE_USER_PASSWORD_PATTERN = /^(?=.*[A-Za-z\u0600-\u06FF])(?=.*\d).*$/;
+
+function storeUserPasswordValidators(required: boolean) {
+  const rules = [
+    Validators.minLength(8),
+    Validators.maxLength(128),
+    Validators.pattern(STORE_USER_PASSWORD_PATTERN),
+  ];
+  return required ? [Validators.required, ...rules] : rules;
+}
 
 @Component({
   selector: 'ctrl-vendor-details',
@@ -46,9 +59,11 @@ const ORDERS_PAGE_SIZE = 20;
     RouterLink,
     ReactiveFormsModule,
     TableModule,
+    ToastModule,
     StatCardComponent,
     PasswordToggleDirective,
   ],
+  providers: [MessageService],
   templateUrl: './vendor-details.component.html',
   styleUrl: './vendor-details.component.scss',
 })
@@ -60,6 +75,7 @@ export class VendorDetailsComponent implements OnInit {
   private readonly vendorService = inject(VendorService);
   private readonly ordersApi = inject(OpsOrderService);
   private readonly storeUsersApi = inject(StoreUsersService);
+  private readonly messages = inject(MessageService);
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder);
@@ -99,6 +115,98 @@ export class VendorDetailsComponent implements OnInit {
   readonly userFormError = signal<string | null>(null);
   readonly userActionId = signal<string | null>(null);
   readonly pendingDelete = signal<StoreUser | null>(null);
+  readonly usesStoreAppSaving = signal(false);
+  private usesStoreAppRequest = 0;
+  readonly canEditCatalogSaving = signal(false);
+  private canEditCatalogRequest = 0;
+
+  readonly onUsesStoreAppChange = (event: Event): void => {
+    const input = event.target;
+    const vendor = this.vendor();
+    if (!(input instanceof HTMLInputElement) || !vendor) {
+      return;
+    }
+
+    const enabled = input.checked;
+    const previous = vendor.usesStoreApp;
+    if (enabled === previous) {
+      return;
+    }
+
+    const request = ++this.usesStoreAppRequest;
+    this.usesStoreAppSaving.set(true);
+    this.vendorSignal.set({ ...vendor, usesStoreApp: enabled });
+    this.vendorService
+      .updateVendor(vendor.id, { usesStoreApp: enabled })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (updated) => {
+          if (request !== this.usesStoreAppRequest) {
+            return;
+          }
+          this.usesStoreAppSaving.set(false);
+          this.vendorSignal.set(structuredClone(updated));
+          this.toast('success', 'تم تحديث السماح باستخدام تطبيق المتجر.');
+        },
+        error: (error: unknown) => {
+          if (request !== this.usesStoreAppRequest) {
+            return;
+          }
+          this.usesStoreAppSaving.set(false);
+          this.vendorSignal.update((current) =>
+            current ? { ...current, usesStoreApp: previous } : current,
+          );
+          this.toast(
+            'error',
+            vendorErrorMessage(error, 'تعذر تحديث السماح باستخدام تطبيق المتجر.'),
+          );
+        },
+      });
+  };
+
+  readonly onCanEditCatalogChange = (event: Event): void => {
+    const input = event.target;
+    const vendor = this.vendor();
+    if (!(input instanceof HTMLInputElement) || !vendor) {
+      return;
+    }
+
+    const enabled = input.checked;
+    const previous = vendor.canEditCatalog;
+    if (enabled === previous) {
+      return;
+    }
+
+    const request = ++this.canEditCatalogRequest;
+    this.canEditCatalogSaving.set(true);
+    this.vendorSignal.set({ ...vendor, canEditCatalog: enabled });
+    this.vendorService
+      .updateVendor(vendor.id, { canEditCatalog: enabled })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (updated) => {
+          if (request !== this.canEditCatalogRequest) {
+            return;
+          }
+          this.canEditCatalogSaving.set(false);
+          this.vendorSignal.set(structuredClone(updated));
+          this.toast('success', 'تم تحديث السماح للمتجر بإدارة الكتالوج.');
+        },
+        error: (error: unknown) => {
+          if (request !== this.canEditCatalogRequest) {
+            return;
+          }
+          this.canEditCatalogSaving.set(false);
+          this.vendorSignal.update((current) =>
+            current ? { ...current, canEditCatalog: previous } : current,
+          );
+          this.toast(
+            'error',
+            vendorErrorMessage(error, 'تعذر تحديث السماح للمتجر بإدارة الكتالوج.'),
+          );
+        },
+      });
+  };
   readonly roleOptions = STORE_USER_ROLE_OPTIONS;
   readonly roleLabel = storeUserRoleLabel;
   readonly statusLabel = storeUserStatusLabel;
@@ -106,8 +214,8 @@ export class VendorDetailsComponent implements OnInit {
 
   readonly userForm = this.fb.nonNullable.group({
     fullName: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
-    phone: ['', [Validators.required, Validators.pattern(/^01[0125]\d{8}$/)]],
-    password: ['', [Validators.required, Validators.minLength(6)]],
+    username: ['', [Validators.required, Validators.pattern(/^[A-Za-z0-9]{3,32}$/)]],
+    password: ['', storeUserPasswordValidators(true)],
     role: ['CASHIER' as StoreUserRole, Validators.required],
   });
 
@@ -169,8 +277,8 @@ export class VendorDetailsComponent implements OnInit {
   openCreateUser(): void {
     this.editingUser.set(null);
     this.userFormError.set(null);
-    this.userForm.reset({ fullName: '', phone: '', password: '', role: 'CASHIER' });
-    this.userForm.controls.password.setValidators([Validators.required, Validators.minLength(6)]);
+    this.userForm.reset({ fullName: '', username: '', password: '', role: 'CASHIER' });
+    this.userForm.controls.password.setValidators(storeUserPasswordValidators(true));
     this.userForm.controls.password.updateValueAndValidity();
     this.userModalOpen.set(true);
   }
@@ -180,11 +288,11 @@ export class VendorDetailsComponent implements OnInit {
     this.userFormError.set(null);
     this.userForm.reset({
       fullName: user.fullName,
-      phone: user.phone,
+      username: user.username,
       password: '',
       role: user.role,
     });
-    this.userForm.controls.password.setValidators([Validators.minLength(6)]);
+    this.userForm.controls.password.setValidators(storeUserPasswordValidators(false));
     this.userForm.controls.password.updateValueAndValidity();
     this.userModalOpen.set(true);
   }
@@ -213,13 +321,13 @@ export class VendorDetailsComponent implements OnInit {
     const request = editing
       ? this.storeUsersApi.updateUser(storeId, editing.id, {
           fullName: value.fullName.trim(),
-          phone: value.phone.trim(),
+          username: value.username.trim(),
           role: value.role,
           password: value.password.trim() || undefined,
         })
       : this.storeUsersApi.createUser(storeId, {
           fullName: value.fullName.trim(),
-          phone: value.phone.trim(),
+          username: value.username.trim(),
           password: value.password,
           role: value.role,
         });
@@ -229,13 +337,17 @@ export class VendorDetailsComponent implements OnInit {
         this.userSaving.set(false);
         this.userModalOpen.set(false);
         this.editingUser.set(null);
+        this.toast('success', editing ? 'تم تحديث الحساب.' : 'تم إضافة الحساب.');
         this.loadStoreUsers();
       },
       error: (error: unknown) => {
         this.userSaving.set(false);
-        this.userFormError.set(
-          storeUserErrorMessage(error, editing ? 'تعذر حفظ الحساب.' : 'تعذر إضافة المستخدم.'),
+        const message = storeUserErrorMessage(
+          error,
+          editing ? 'تعذر حفظ الحساب.' : 'تعذر إضافة المستخدم.',
         );
+        this.userFormError.set(message);
+        this.toast('error', message);
       },
     });
   }
@@ -262,11 +374,14 @@ export class VendorDetailsComponent implements OnInit {
         next: () => {
           this.userActionId.set(null);
           this.pendingDelete.set(null);
+          this.toast('success', 'تم حذف الحساب.');
           this.loadStoreUsers();
         },
         error: (error: unknown) => {
           this.userActionId.set(null);
-          this.storeUsersError.set(storeUserErrorMessage(error, 'تعذر حذف الحساب.'));
+          const message = storeUserErrorMessage(error, 'تعذر حذف الحساب.');
+          this.storeUsersError.set(message);
+          this.toast('error', message);
         },
       });
   }
@@ -284,11 +399,14 @@ export class VendorDetailsComponent implements OnInit {
       .subscribe({
         next: () => {
           this.userActionId.set(null);
+          this.toast('success', 'تم تحديث حالة الحساب.');
           this.loadStoreUsers();
         },
         error: (error: unknown) => {
           this.userActionId.set(null);
-          this.storeUsersError.set(storeUserErrorMessage(error, 'تعذر تحديث حالة الحساب.'));
+          const message = storeUserErrorMessage(error, 'تعذر تحديث حالة الحساب.');
+          this.storeUsersError.set(message);
+          this.toast('error', message);
         },
       });
   }
@@ -416,7 +534,16 @@ export class VendorDetailsComponent implements OnInit {
       });
   }
 
-  fieldInvalid(name: 'fullName' | 'phone' | 'password' | 'role'): boolean {
+  private toast(severity: 'success' | 'error', detail: string): void {
+    this.messages.add({
+      severity,
+      summary: severity === 'success' ? 'تم' : 'تعذر التنفيذ',
+      detail,
+      life: 5000,
+    });
+  }
+
+  fieldInvalid(name: 'fullName' | 'username' | 'password' | 'role'): boolean {
     const control = this.userForm.controls[name];
     return control.invalid && (control.touched || control.dirty);
   }
@@ -440,13 +567,15 @@ export class VendorDetailsComponent implements OnInit {
           this.storeUsers.set(users);
           this.storeUsersLoading.set(false);
         },
-        error: () => {
+        error: (error: unknown) => {
           if (request !== this.storeUsersRequest) {
             return;
           }
           this.storeUsers.set([]);
           this.storeUsersLoading.set(false);
-          this.storeUsersError.set('تعذر تحميل حسابات الدخول.');
+          const message = storeUserErrorMessage(error, 'تعذر تحميل حسابات الدخول.');
+          this.storeUsersError.set(message);
+          this.toast('error', message);
         },
       });
   }

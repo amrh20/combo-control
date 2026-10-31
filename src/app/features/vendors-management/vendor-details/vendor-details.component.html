@@ -1,3 +1,5 @@
+<p-toast position="top-center" />
+
 <div class="vendor-details">
 
   @if (loading()) {
@@ -26,7 +28,7 @@
         <div class="vendor-details__header-info">
           <h1 class="vendor-details__shop-name" dir="rtl">{{ v.name }}</h1>
           <div class="vendor-details__meta">
-            <code class="vendor-details__id-pill" dir="ltr">{{ v.id }}</code>
+            <code class="vendor-details__id-pill"  >{{ v.id }}</code>
             <span class="vendor-details__meta-item">
               <i class="pi pi-map-marker"></i>
               <span dir="rtl">{{ v.hubName || hubName(v.hubId) }}</span>
@@ -96,7 +98,7 @@
             </div>
             <div class="vendor-details__pair">
               <div class="vendor-details__label">رقم الهاتف</div>
-              <div class="vendor-details__value" dir="ltr">{{ v.phone }}</div>
+              <div class="vendor-details__value"  >{{ v.phone }}</div>
             </div>
             <div class="vendor-details__pair">
               <div class="vendor-details__label">جهة الاتصال</div>
@@ -137,8 +139,52 @@
           <div class="vendor-details__pair">
             <div class="vendor-details__label">ساعات العمل</div>
             <div class="vendor-details__value">
-              من <span dir="ltr">{{ v.settings.openingTime }}</span>
-              إلى <span dir="ltr">{{ v.settings.closingTime }}</span>
+              من <span  >{{ v.settings.openingTime }}</span>
+              إلى <span  >{{ v.settings.closingTime }}</span>
+            </div>
+          </div>
+          <div class="vendor-details__pair">
+            <div class="vendor-details__label">تطبيق المتجر</div>
+            <div class="vendor-details__value">
+              <div class="form-check form-switch mb-0">
+                <input
+                  id="usesStoreApp"
+                  class="form-check-input"
+                  type="checkbox"
+                  role="switch"
+                  [checked]="v.usesStoreApp"
+                  [disabled]="usesStoreAppSaving()"
+                  (change)="onUsesStoreAppChange($event)"
+                />
+                <label class="form-check-label" for="usesStoreApp">
+                  السماح باستخدام تطبيق المتجر
+                </label>
+              </div>
+              <span class="vendor-details__hint">
+                عند الإيقاف تُقفل حسابات تطبيق المتجر فوراً.
+              </span>
+            </div>
+          </div>
+          <div class="vendor-details__pair">
+            <div class="vendor-details__label">إدارة الكتالوج</div>
+            <div class="vendor-details__value">
+              <div class="form-check form-switch mb-0">
+                <input
+                  id="canEditCatalog"
+                  class="form-check-input"
+                  type="checkbox"
+                  role="switch"
+                  [checked]="v.canEditCatalog"
+                  [disabled]="canEditCatalogSaving()"
+                  (change)="onCanEditCatalogChange($event)"
+                />
+                <label class="form-check-label" for="canEditCatalog">
+                  السماح للمتجر بإدارة الكتالوج (إضافة وتعديل المنتجات)
+                </label>
+              </div>
+              <span class="vendor-details__hint">
+                عند التفعيل يمكن للمتجر إضافة وتعديل المنتجات من تطبيقه.
+              </span>
             </div>
           </div>
           <div class="vendor-details__pair">
@@ -239,7 +285,7 @@
                     {{ order.orderNumber }}
                   </a>
                 </td>
-                <td dir="ltr" class="vendor-details__order-date">
+                <td   class="vendor-details__order-date">
                   {{ order.placedAt | date: 'd MMM y, h:mm a' }}
                 </td>
                 <td>
@@ -344,7 +390,7 @@
             <thead>
               <tr>
                 <th scope="col">الاسم</th>
-                <th scope="col">رقم الهاتف</th>
+                <th scope="col">اسم المستخدم</th>
                 <th scope="col">الصلاحية</th>
                 <th scope="col">الحالة</th>
                 <th scope="col" class="text-center">الإجراءات</th>
@@ -363,7 +409,7 @@
                 @for (user of storeUsers(); track user.id) {
                   <tr>
                     <td class="fw-semibold">{{ user.fullName }}</td>
-                    <td dir="ltr" class="text-start">{{ user.phone }}</td>
+                    <td   class="text-start">{{ user.username }}</td>
                     <td>
                       <span class="badge text-bg-light border">{{ roleLabel(user.role) }}</span>
                     </td>
@@ -460,19 +506,19 @@
                 </div>
 
                 <div class="mb-3">
-                  <label class="form-label" for="storeUserPhone">رقم الهاتف</label>
+                  <label class="form-label" for="storeUserUsername">اسم المستخدم</label>
                   <input
-                    id="storeUserPhone"
-                    type="tel"
+                    id="storeUserUsername"
+                    type="text"
                     class="form-control"
-                    dir="ltr"
-                    formControlName="phone"
+                     
+                    formControlName="username"
                     autocomplete="off"
-                    placeholder="01xxxxxxxxx"
-                    [class.is-invalid]="fieldInvalid('phone')"
+                    placeholder="sara01"
+                    [class.is-invalid]="fieldInvalid('username')"
                   />
-                  @if (fieldInvalid('phone')) {
-                    <div class="invalid-feedback">أدخل رقم موبايل مصري صحيح. يُستخدم لتسجيل الدخول.</div>
+                  @if (fieldInvalid('username')) {
+                    <div class="invalid-feedback">حروف إنجليزية وأرقام فقط، من 3 إلى 32، بدون مسافات.</div>
                   }
                 </div>
 
@@ -487,13 +533,17 @@
                     id="storeUserPassword"
                     type="password"
                     class="form-control"
-                    dir="ltr"
+                     
                     formControlName="password"
                     autocomplete="new-password"
                     [class.is-invalid]="fieldInvalid('password')"
                   />
                   @if (fieldInvalid('password')) {
-                    <div class="invalid-feedback">كلمة المرور مطلوبة ويجب ألا تقل عن 6 أحرف.</div>
+                    <div class="invalid-feedback">
+                      8 أحرف على الأقل، وفيها حرف ورقم.
+                    </div>
+                  } @else {
+                    <div class="form-text">8 أحرف على الأقل، وفيها حرف ورقم.</div>
                   }
                 </div>
 

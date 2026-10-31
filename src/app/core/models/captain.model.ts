@@ -9,6 +9,9 @@ export type CaptainRole = 'COLLECTOR' | 'DELIVERY' | 'BOTH';
 /** Travel mode accepted by `POST` / `PATCH /v1/captains`. Collectors use `NONE`. */
 export type CaptainVehicleType = 'MOTORCYCLE' | 'CAR' | 'BICYCLE' | 'NONE';
 
+/** Mixed fleet: fixed salary vs freelancer cash limit rules. */
+export type CaptainEmploymentType = 'FIXED' | 'FREELANCER';
+
 /** Captain row from `GET /v1/captains` and `GET /v1/captains/{id}`. */
 export interface Captain {
   id: string;
@@ -28,6 +31,13 @@ export interface Captain {
    * Null when the captain has not asked to hand in cash.
    */
   pendingSettlement: CaptainCashSettlement | null;
+  employmentType?: CaptainEmploymentType;
+  /** Max cash the captain may hold, in piastres (`maxCashLimit` / `max_cash_limit`). */
+  maxCashLimit?: number;
+  /** Monthly salary for fixed captains, in piastres (`fixedSalary` / `fixed_salary`). */
+  fixedSalary?: number;
+  /** When false, the captain is external and does not use the mobile app. Defaults to true. */
+  hasApp?: boolean;
 }
 
 export interface CaptainListQuery {
@@ -44,6 +54,10 @@ export interface CreateCaptainPayload {
   hubId: string;
   password: string;
   vehicleType?: CaptainVehicleType;
+  employmentType?: CaptainEmploymentType;
+  maxCashLimit?: number;
+  fixedSalary?: number;
+  hasApp?: boolean;
 }
 
 /** `PATCH /v1/captains/{id}`. */
@@ -53,7 +67,26 @@ export interface UpdateCaptainPayload {
   status?: CaptainStatus;
   hubId?: string;
   vehicleType?: CaptainVehicleType;
+  employmentType?: CaptainEmploymentType;
+  maxCashLimit?: number;
+  fixedSalary?: number;
+  hasApp?: boolean;
 }
+
+/** Backend default is true; only an explicit `false` means no app access. */
+export function captainUsesApp(captain: { hasApp?: boolean | null } | null | undefined): boolean {
+  return captain?.hasApp !== false;
+}
+
+export const CAPTAIN_EMPLOYMENT_OPTIONS: { label: string; value: CaptainEmploymentType }[] = [
+  { label: 'عمل حر (Freelancer)', value: 'FREELANCER' },
+  { label: 'راتب ثابت (Fixed)', value: 'FIXED' },
+];
+
+export const CAPTAIN_DEFAULT_MAX_CASH_EGP: Readonly<Record<CaptainEmploymentType, number>> = {
+  FREELANCER: 200,
+  FIXED: 2000,
+};
 
 export const CAPTAIN_ROLE_OPTIONS: { label: string; value: CaptainRole }[] = [
   { label: 'طيار توصيل', value: 'DELIVERY' },

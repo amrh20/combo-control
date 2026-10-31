@@ -117,3 +117,25 @@ $mobile-bp: 991px;
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+
+.ops-toast-hit {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: start;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+
+  &__title {
+    font-weight: 600;
+  }
+
+  &__body {
+    opacity: 0.9;
+  }
+}

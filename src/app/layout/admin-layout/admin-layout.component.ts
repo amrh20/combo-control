@@ -7,6 +7,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { ToastModule } from 'primeng/toast';
 import { filter } from 'rxjs/operators';
 import { OpsNotificationService } from '../../core/services/ops-notification.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
@@ -17,13 +18,14 @@ const MOBILE_BREAKPOINT = 991;
 @Component({
   selector: 'ctrl-admin-layout',
   standalone: true,
-  imports: [RouterOutlet, SidebarComponent, TopbarComponent],
+  imports: [RouterOutlet, SidebarComponent, TopbarComponent, ToastModule],
   templateUrl: './admin-layout.component.html',
   styleUrl: './admin-layout.component.scss',
 })
 export class AdminLayoutComponent {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
+  readonly notices = inject(OpsNotificationService);
 
   /** Desktop icon-rail collapse. Ignored on mobile. */
   readonly sidebarCollapsed = signal(false);

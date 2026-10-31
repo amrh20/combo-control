@@ -82,7 +82,20 @@
               <i class="pi pi-user-plus"></i>
               تعيين كابتن
             </button>
-          } @else if (next.section === 'shops' && o.subOrders.length) {
+          }
+          @if (priorityDispatchTrip(); as trip) {
+            <button
+              type="button"
+              class="order-details__primary-btn"
+              *ctrlPermission="'orders.assign'"
+              [disabled]="pending()"
+              (click)="openReassign(trip)"
+            >
+              <i class="pi pi-user-plus"></i>
+              {{ tripDeclined(trip) ? 'إعادة تعيين' : 'تعيين كابتن' }}
+            </button>
+          }
+          @if (next.section === 'shops' && o.subOrders.length) {
             <button type="button" class="order-details__focus-btn" (click)="toggleShopDetails()">
               {{ shopDetailsOpen() ? 'إخفاء التفاصيل' : 'عرض التفاصيل' }}
               <i class="pi" [class.pi-chevron-up]="shopDetailsOpen()" [class.pi-chevron-down]="!shopDetailsOpen()"></i>
@@ -91,6 +104,18 @@
             <button type="button" class="order-details__focus-btn" (click)="showSection(next.section)">
               عرض القسم
               <i class="pi pi-arrow-left"></i>
+            </button>
+          }
+          @if (canForceComplete()) {
+            <button
+              type="button"
+              class="order-details__primary-btn"
+              *ctrlPermission="'orders.assign'"
+              [disabled]="pending()"
+              (click)="forceComplete()"
+            >
+              <i class="pi pi-check"></i>
+              إنهاء التوصيل يدوياً
             </button>
           }
           @if (canCancelOrder() && !showCancel()) {
@@ -228,7 +253,7 @@
         </div>
         <div class="order-details__field">
           <span class="order-details__label">رقم الهاتف</span>
-          <span class="order-details__value" dir="ltr">{{ o.customer.phone }}</span>
+          <span class="order-details__value"  >{{ o.customer.phone }}</span>
         </div>
         @if (o.deliveryAddress.label) {
           <div class="order-details__field">
@@ -254,7 +279,7 @@
         }
         <div class="order-details__field">
           <span class="order-details__label">الإحداثيات</span>
-          <span class="order-details__value order-details__value--mono" dir="ltr">
+          <span class="order-details__value order-details__value--mono"  >
             {{ o.deliveryAddress.location.lat | number: '1.4-6' }},
             {{ o.deliveryAddress.location.lng | number: '1.4-6' }}
           </span>
@@ -276,7 +301,7 @@
       <div class="order-details__card-head">
         <h2 class="order-details__card-title">
           <i class="pi pi-building"></i>
-          الهب والتجميع
+          المكان والتجميع
         </h2>
         <span class="order-details__progress-pill">
           {{ consolidationProgress().verified }}/{{ consolidationProgress().total }} تم التحقق
@@ -284,7 +309,7 @@
       </div>
       <div class="order-details__grid">
         <div class="order-details__field">
-          <span class="order-details__label">الهب</span>
+          <span class="order-details__label">المكان</span>
           <span class="order-details__value">{{ o.hub.name }}</span>
         </div>
         <div class="order-details__field">
@@ -335,6 +360,22 @@
               </span>
             </summary>
 
+            @if (sub.invoiceUrl) {
+              <div class="order-details__captain-override" role="status">
+                <p>
+                  تنبيه: قام الكابتن بتعديل إجمالي هذا المتجر إلى
+                  <strong>{{ egp(sub.captainOverrideTotal) | number: '1.0-2' }} {{ currency }}</strong>
+                </p>
+                <a
+                  [href]="invoiceHref(sub.invoiceUrl)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  عرض الفاتورة
+                </a>
+              </div>
+            }
+
             @if (shopActions(sub.status).length) {
               <div class="order-details__shop-actions">
                 @for (action of shopActions(sub.status); track action.status) {
@@ -350,6 +391,20 @@
                     {{ action.label }}
                   </button>
                 }
+              </div>
+            }
+
+            @if (canEditItems(sub.status)) {
+              <div class="order-details__shop-actions" *ctrlPermission="'orders.update'">
+                <button
+                  type="button"
+                  class="order-details__tool-btn order-details__tool-btn--edit"
+                  [disabled]="pending()"
+                  (click)="openAddProduct(sub)"
+                >
+                  <i class="pi pi-plus"></i>
+                  إضافة منتج
+                </button>
               </div>
             }
 
@@ -388,7 +443,32 @@
                       }
                     </div>
                     @if (isEditing(item.id)) {
-                      <div class="order-details__inline-edit">
+                      <div class="order-details__inline-edit order-details__inline-edit--wrap">
+                        @if (editCatalogLoading()) {
+                          <span class="order-details__muted">جاري تحميل خيارات المنتج...</span>
+                        } @else if (editCatalogProduct(); as product) {
+                          @for (variant of product.variants; track variant.id) {
+                            @if (variant.options.length > 0) {
+                              <div class="order-details__inline-field order-details__inline-field--grow">
+                                <label class="order-details__inline-label">{{
+                                  variantFieldLabel(product, variant)
+                                }}</label>
+                                <p-select
+                                  [options]="variant.options"
+                                  optionLabel="label"
+                                  optionValue="id"
+                                  [ngModel]="editOptionForVariant(variant.id)"
+                                  (ngModelChange)="setEditVariantOption(variant.id, $event)"
+                                  placeholder="اختر {{ variant.name }}"
+                                  appendTo="body"
+                                  scrollHeight="200px"
+                                  styleClass="order-details__variant-select"
+                                  [disabled]="pending()"
+                                />
+                              </div>
+                            }
+                          }
+                        }
                         <div class="order-details__inline-field">
                           <label class="order-details__inline-label" [attr.for]="'qty-' + item.id">الكمية</label>
                           <input
@@ -399,6 +479,20 @@
                             max="50"
                             step="1"
                             [(ngModel)]="editQuantity"
+                          />
+                        </div>
+                        <div class="order-details__inline-field">
+                          <label class="order-details__inline-label" [attr.for]="'price-' + item.id">السعر (ج.م)</label>
+                          <p-inputnumber
+                            [inputId]="'price-' + item.id"
+                            [(ngModel)]="editPriceEgp"
+                            [min]="0"
+                            [minFractionDigits]="0"
+                            [maxFractionDigits]="2"
+                            mode="decimal"
+                            locale="en-US"
+                            styleClass="order-details__inline-price"
+                            [disabled]="pending()"
                           />
                         </div>
                         <button type="button" class="order-details__save-btn" [disabled]="pending()" (click)="saveEdit(item)">
@@ -438,7 +532,7 @@
                             type="button"
                             class="order-details__tool-btn order-details__tool-btn--edit"
                             [disabled]="pending()"
-                            (click)="startEdit(item)"
+                            (click)="startEdit(item, sub)"
                           >
                             <i class="pi pi-pencil"></i>
                             تعديل
@@ -517,7 +611,7 @@
               </div>
               <div class="order-details__field">
                 <span class="order-details__label">الهاتف</span>
-                <span class="order-details__value" dir="ltr">{{ trip.captain?.phone || '—' }}</span>
+                <span class="order-details__value" >{{ trip.captain?.phone || '—' }}</span>
               </div>
             </div>
             @if (declineReason(trip); as reason) {
@@ -527,6 +621,16 @@
             }
             @if (canReassign(trip) || tripIsActive(trip)) {
               <div class="order-details__shop-actions" *ctrlPermission="'orders.assign'">
+                @if (canForceComplete() && tripIsActive(trip)) {
+                  <button
+                    type="button"
+                    class="order-details__tool-btn order-details__tool-btn--edit"
+                    [disabled]="pending()"
+                    (click)="forceComplete()"
+                  >
+                    إنهاء التوصيل يدوياً
+                  </button>
+                }
                 @if (canReassign(trip)) {
                   <button type="button" class="order-details__tool-btn order-details__tool-btn--edit" [disabled]="pending()" (click)="openReassign(trip)">
                     إعادة تعيين
@@ -581,6 +685,10 @@
         <div class="order-details__dl-row">
           <dt>رسوم التوصيل</dt>
           <dd>{{ egp(o.deliveryFee) | number: '1.0-2' }} {{ currency }}</dd>
+        </div>
+        <div class="order-details__dl-row">
+          <dt>رسوم الخدمة</dt>
+          <dd>{{ egp(o.serviceFee) | number: '1.0-2' }} {{ currency }}</dd>
         </div>
         <div class="order-details__dl-row">
           <dt>الخصم</dt>
@@ -665,3 +773,15 @@
   (closed)="closeDriverModal()"
   (assigned)="onCaptainAssigned()"
 />
+
+@if (addProductSubOrder(); as sub) {
+  <ctrl-add-order-item-modal
+    [open]="true"
+    [shopId]="sub.vendorId"
+    [shopName]="sub.vendorName"
+    [submitting]="pending()"
+    [submitError]="addItemError()"
+    (closed)="closeAddProduct()"
+    (submitted)="confirmAddProduct($event)"
+  />
+}

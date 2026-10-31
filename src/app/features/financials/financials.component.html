@@ -16,7 +16,7 @@
         <h2 class="kpi-label">إجمالي العُهد</h2>
       </div>
       <p class="kpi-value text-amber-700">
-        <span dir="ltr" class="inline-block">{{ cashInTransit() | currency:'EGP':'symbol' }}</span>
+        <span   class="inline-block">{{ cashInTransit() | currency:'EGP':'symbol' }}</span>
       </p>
       <p class="kpi-hint">كاش محتفظ به مع الكباتن</p>
     </article>
@@ -29,7 +29,7 @@
         <h2 class="kpi-label">مستحقات المتاجر</h2>
       </div>
       <p class="kpi-value text-red-700">
-        <span dir="ltr" class="inline-block">{{ vendorPayouts() | currency:'EGP':'symbol' }}</span>
+        <span   class="inline-block">{{ vendorPayouts() | currency:'EGP':'symbol' }}</span>
       </p>
       <p class="kpi-hint">مبالغ لم تُسدَّد للمتاجر بعد</p>
     </article>
@@ -42,7 +42,7 @@
         <h2 class="kpi-label">مستحقات الكباتن</h2>
       </div>
       <p class="kpi-value text-blue-700">
-        <span dir="ltr" class="inline-block">{{ captainPayouts() | currency:'EGP':'symbol' }}</span>
+        <span   class="inline-block">{{ captainPayouts() | currency:'EGP':'symbol' }}</span>
       </p>
       <p class="kpi-hint">مكافآت توصيل وتجميع معلّقة</p>
     </article>
@@ -55,7 +55,7 @@
         <h2 class="kpi-label">أرباح المنصة</h2>
       </div>
       <p class="kpi-value text-green-700">
-        <span dir="ltr" class="inline-block">{{ netRevenue() | currency:'EGP':'symbol' }}</span>
+        <span   class="inline-block">{{ netRevenue() | currency:'EGP':'symbol' }}</span>
       </p>
       <p class="kpi-hint">عمولات ورسوم توصيل محتجزة</p>
     </article>
@@ -108,10 +108,10 @@
                   </span>
                 </td>
                 <td class="px-4 py-3 whitespace-nowrap font-semibold text-amber-700">
-                  <span dir="ltr" class="inline-block">{{ captain.cashCollected | currency:'EGP':'symbol' }}</span>
+                  <span   class="inline-block">{{ captain.cashCollected | currency:'EGP':'symbol' }}</span>
                 </td>
                 <td class="px-4 py-3 whitespace-nowrap font-semibold text-gray-800">
-                  <span dir="ltr" class="inline-block">{{ captain.earningsDue | currency:'EGP':'symbol' }}</span>
+                  <span   class="inline-block">{{ captain.earningsDue | currency:'EGP':'symbol' }}</span>
                 </td>
                 <td class="px-4 py-3 text-center">
                   <button
@@ -146,7 +146,7 @@
           <thead>
             <tr class="border-b border-gray-100 text-[13px] font-semibold text-gray-500">
               <th class="px-4 py-3 font-semibold">المتجر</th>
-              <th class="px-4 py-3 font-semibold">المركز/الهب</th>
+              <th class="px-4 py-3 font-semibold">المركز/المكان</th>
               <th class="px-4 py-3 font-semibold">إجمالي المبيعات المستحقة</th>
               <th class="px-4 py-3 text-center font-semibold">الإجراءات</th>
             </tr>
@@ -160,7 +160,7 @@
                 </td>
                 <td class="px-4 py-3 text-gray-700">{{ vendor.hubName }}</td>
                 <td class="px-4 py-3 whitespace-nowrap font-semibold text-red-700">
-                  <span dir="ltr" class="inline-block">{{ vendor.salesDue | currency:'EGP':'symbol' }}</span>
+                  <span   class="inline-block">{{ vendor.salesDue | currency:'EGP':'symbol' }}</span>
                 </td>
                 <td class="px-4 py-3 text-center">
                   <button
@@ -221,7 +221,7 @@
                   </span>
                 </td>
                 <td class="px-4 py-3 whitespace-nowrap font-semibold text-gray-800">
-                  <span dir="ltr" class="inline-block">{{ entry.amount | currency:'EGP':'symbol' }}</span>
+                  <span   class="inline-block">{{ entry.amount | currency:'EGP':'symbol' }}</span>
                 </td>
                 <td class="px-4 py-3 text-gray-700">{{ entry.description }}</td>
               </tr>

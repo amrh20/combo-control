@@ -47,6 +47,13 @@ export interface CaptainProfile {
   accountStatus: DriverAccountStatus;
   /** Empty for collectors — they do not operate a vehicle. */
   vehicleType: CaptainVehicleType | '';
+  employmentType?: 'FIXED' | 'FREELANCER';
+  /** Max cash limit from the API, in piastres. */
+  maxCashLimit?: number;
+  /** Monthly salary for fixed captains, in piastres. */
+  fixedSalary?: number;
+  /** When false, the captain does not use the mobile app. */
+  hasApp?: boolean;
   licenseExpiry: string;
   stats: DriverStats;
   deliveredOrders: DriverDeliveredOrder[];

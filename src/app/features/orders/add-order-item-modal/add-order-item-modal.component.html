@@ -1,0 +1,124 @@
+@if (open()) {
+  <div class="add-item__overlay" role="presentation" (click)="close()">
+    <div
+      class="add-item__dialog"
+      dir="rtl"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="add-order-item-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="add-item__header">
+        <h2 id="add-order-item-title" class="add-item__title">إضافة منتج — {{ shopName() }}</h2>
+        <button
+          type="button"
+          class="add-item__close"
+          aria-label="إغلاق"
+          [disabled]="submitting()"
+          (click)="close()"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      @if (submitError(); as message) {
+        <p class="add-item__alert" role="alert">{{ message }}</p>
+      }
+
+      <div class="add-item__body">
+        <label class="add-item__field">
+          <span class="add-item__label">المنتج</span>
+          <p-autoComplete
+            [(ngModel)]="selectedProduct"
+            [suggestions]="productSuggestions()"
+            (completeMethod)="onProductSearch($event)"
+            (ngModelChange)="onProductSelected($event)"
+            optionLabel="name"
+            [forceSelection]="true"
+            [minLength]="0"
+            [delay]="250"
+            [completeOnFocus]="true"
+            appendTo="body"
+            scrollHeight="240px"
+            placeholder="ابحث عن منتج..."
+            emptyMessage="لا توجد منتجات مطابقة"
+            styleClass="add-item__autocomplete"
+            inputStyleClass="add-item__input"
+            panelStyleClass="add-item__suggest-panel"
+            [disabled]="submitting()"
+          />
+          @if (searchLoading()) {
+            <span class="add-item__hint">جاري البحث...</span>
+          }
+        </label>
+
+        @if (selectedProduct; as product) {
+          @for (variant of selectedProductVariants(); track variant.id) {
+            @if (variant.options.length > 0) {
+              <label class="add-item__field">
+                <span class="add-item__label">{{ variantFieldLabel(product, variant) }}</span>
+                <p-select
+                  [options]="variant.options"
+                  optionLabel="label"
+                  optionValue="id"
+                  [ngModel]="optionIdForVariant(variant.id)"
+                  (ngModelChange)="setVariantOption(variant.id, $event)"
+                  placeholder="اختر {{ variantFieldLabel(product, variant) }}"
+                  appendTo="body"
+                  scrollHeight="200px"
+                  styleClass="add-item__select"
+                  [disabled]="submitting()"
+                />
+              </label>
+            }
+          }
+
+          <label class="add-item__field add-item__field--narrow">
+            <span class="add-item__label">السعر (ج.م)</span>
+            <p-inputnumber
+              inputId="add-order-item-price"
+              [(ngModel)]="priceEgp"
+              [min]="0"
+              [minFractionDigits]="0"
+              [maxFractionDigits]="2"
+              mode="decimal"
+              locale="en-US"
+              styleClass="add-item__price-input"
+              [disabled]="submitting()"
+            />
+          </label>
+
+          <label class="add-item__field add-item__field--narrow">
+            <span class="add-item__label">الكمية</span>
+            <input
+              type="number"
+              class="add-item__input"
+              min="1"
+              max="50"
+              step="1"
+              [(ngModel)]="quantity"
+              [disabled]="submitting()"
+            />
+          </label>
+        }
+      </div>
+
+      <div class="add-item__footer">
+        <button type="button" class="add-item__ghost-btn" [disabled]="submitting()" (click)="close()">
+          إلغاء
+        </button>
+        <button
+          type="button"
+          class="add-item__primary-btn"
+          [disabled]="!canSubmit() || submitting()"
+          (click)="confirm()"
+        >
+          @if (submitting()) {
+            <i class="pi pi-spin pi-spinner"></i>
+          }
+          إضافة إلى الطلب
+        </button>
+      </div>
+    </div>
+  </div>
+}

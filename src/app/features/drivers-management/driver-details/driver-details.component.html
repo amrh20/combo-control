@@ -112,8 +112,40 @@
           }
           <div class="col-md-4">
             <div class="driver-details__field">
+              <span class="driver-details__label">نوع التوظيف</span>
+              <span class="driver-details__value">{{ employmentLabel(d.employmentType) }}</span>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="driver-details__field">
+              <span class="driver-details__label">الحد الأقصى للعهدة</span>
+              <span class="driver-details__value">{{ maxCashLimitLabel(d.maxCashLimit) }}</span>
+            </div>
+          </div>
+          @if (d.employmentType === 'FIXED') {
+            <div class="col-md-4">
+              <div class="driver-details__field">
+                <span class="driver-details__label">الراتب الشهري</span>
+                <span class="driver-details__value">{{ fixedSalaryLabel(d.fixedSalary) }}</span>
+              </div>
+            </div>
+          }
+          <div class="col-md-4">
+            <div class="driver-details__field">
               <span class="driver-details__label">انتهاء الرخصة</span>
               <span class="driver-details__value" >{{ d.licenseExpiry || '—' }}</span>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="driver-details__field">
+              <span class="driver-details__label">تطبيق الكابتن</span>
+              <span class="driver-details__value">
+                @if (d.hasApp === false) {
+                  خارجي / بدون تطبيق
+                } @else {
+                  يستخدم التطبيق
+                }
+              </span>
             </div>
           </div>
         </div>
@@ -126,7 +158,7 @@
             </div>
             <div class="col-md-6">
               <label class="driver-details__form-label" for="driverPhone">رقم الهاتف</label>
-              <input pInputText id="driverPhone" formControlName="phone" class="driver-details__input" dir="ltr" />
+              <input pInputText id="driverPhone" formControlName="phone" class="driver-details__input"   />
             </div>
             <div class="col-md-4">
               <label class="driver-details__form-label" for="captainRole">دور الكابتن</label>
@@ -165,8 +197,56 @@
               </div>
             }
             <div class="col-md-4">
+              <label class="driver-details__form-label" for="driverEmploymentType">نوع التوظيف</label>
+              <p-select
+                inputId="driverEmploymentType"
+                formControlName="employmentType"
+                [options]="employmentOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="اختر نوع التوظيف..."
+                styleClass="driver-details__select"
+              />
+            </div>
+            <div class="col-md-4">
+              <label class="driver-details__form-label" for="driverMaxCashLimit">الحد الأقصى للعهدة (ج.م)</label>
+              <p-inputnumber
+                inputId="driverMaxCashLimit"
+                formControlName="maxCashLimitEgp"
+                [min]="0"
+                [minFractionDigits]="0"
+                [maxFractionDigits]="2"
+                mode="decimal"
+                locale="en-US"
+                styleClass="driver-details__input"
+              />
+            </div>
+            @if (profileForm.controls.employmentType.value === 'FIXED') {
+              <div class="col-md-4">
+                <label class="driver-details__form-label" for="driverFixedSalary">الراتب الشهري (ج.م)</label>
+                <p-inputnumber
+                  inputId="driverFixedSalary"
+                  formControlName="fixedSalaryEgp"
+                  [min]="0"
+                  [minFractionDigits]="0"
+                  [maxFractionDigits]="2"
+                  mode="decimal"
+                  locale="en-US"
+                  styleClass="driver-details__input"
+                />
+              </div>
+            }
+            <div class="col-md-4">
               <label class="driver-details__form-label" for="licenseExpiry">انتهاء الرخصة</label>
-              <input pInputText id="licenseExpiry" type="date" formControlName="licenseExpiry" class="driver-details__input" dir="ltr" />
+              <input pInputText id="licenseExpiry" type="date" formControlName="licenseExpiry" class="driver-details__input"   />
+            </div>
+            <div class="col-md-4">
+              <div class="driver-details__checkbox-row">
+                <p-checkbox formControlName="hasApp" [binary]="true" inputId="driverHasApp" />
+                <label class="driver-details__form-label driver-details__form-label--checkbox" for="driverHasApp">
+                  يستخدم تطبيق الكابتن
+                </label>
+              </div>
             </div>
           </div>
           <div class="driver-details__form-actions">
@@ -241,32 +321,10 @@
         <span class="driver-details__card-sub">تأكيد استلام الكاش من الكابتن</span>
       </h2>
 
-      @if (pendingSettlement(); as row) {
-        <ul class="driver-details__pending">
-          <li class="driver-details__pending-row">
-            <div class="driver-details__pending-info">
-              <span class="driver-details__pending-amount" dir="ltr">{{ moneyLabel(row.amountPiastres) }}</span>
-              <span class="driver-details__pending-meta">
-                <code class="driver-details__id-pill driver-details__id-pill--muted">{{ row.id }}</code>
-                @if (row.requestedAt) {
-                  <span dir="ltr">{{ row.requestedAt | date: 'd MMM y, h:mm a' }}</span>
-                }
-              </span>
-            </div>
-            <button
-              type="button"
-              class="driver-details__btn driver-details__btn--confirm"
-              [disabled]="confirmingId() !== null"
-              (click)="confirmSettlement(row)"
-            >
-              <i
-                class="pi"
-                [ngClass]="confirmingId() === row.id ? 'pi-spin pi-spinner' : 'pi-check-circle'"
-              ></i>
-              تأكيد استلام العهدة
-            </button>
-          </li>
-        </ul>
+      @if (hasPendingSettlement()) {
+        <p class="driver-details__settlements-note driver-details__settlements-note--pending">
+          يوجد طلب توريد معلّق — استخدم «تأكيد استلام الكاش» في الجدول أدناه بعد استلام المبلغ فعلياً.
+        </p>
       } @else {
         <p class="driver-details__settlements-note">لا توجد طلبات توريد معلّقة.</p>
       }
@@ -283,34 +341,54 @@
             <th class="driver-details__th">المبلغ</th>
             <th class="driver-details__th">الحالة</th>
             <th class="driver-details__th">تاريخ الإجراء</th>
+            <th class="driver-details__th">إجراء</th>
           </tr>
         </ng-template>
         <ng-template pTemplate="body" let-row>
-          <tr>
+          <tr [class.driver-details__row--pending]="row.status === 'PENDING'">
             <td><code class="driver-details__id-pill">{{ row.id }}</code></td>
             <td dir="ltr">{{ row.requestedAt ? (row.requestedAt | date: 'd MMM y, h:mm a') : '—' }}</td>
             <td dir="ltr">{{ moneyLabel(row.amountPiastres) }}</td>
             <td>
               <span
                 class="driver-details__resolution"
-                [ngClass]="'driver-details__resolution--' + (row.status === 'CONFIRMED' ? 'resolved' : 'rejected')"
+                [ngClass]="'driver-details__resolution--' + settlementStatusClass(row.status)"
               >
                 {{ settlementStatusLabel(row.status) }}
               </span>
             </td>
             <td dir="ltr">{{ row.resolvedAt ? (row.resolvedAt | date: 'd MMM y, h:mm a') : '—' }}</td>
+            <td>
+              @if (row.status === 'PENDING') {
+                <button
+                  *ctrlPermission="'drivers.write'"
+                  type="button"
+                  class="driver-details__btn driver-details__btn--confirm driver-details__btn--sm"
+                  [disabled]="confirmingId() !== null"
+                  (click)="confirmSettlement(row)"
+                >
+                  <i
+                    class="pi"
+                    [ngClass]="confirmingId() === row.id ? 'pi-spin pi-spinner' : 'pi-check-circle'"
+                  ></i>
+                  تأكيد استلام الكاش
+                </button>
+              } @else {
+                <span class="driver-details__muted">—</span>
+              }
+            </td>
           </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">
           <tr>
-            <td colspan="5" class="driver-details__empty">
-              لا توجد تسويات مؤكدة أو مرفوضة لهذا الكابتن.
+            <td colspan="6" class="driver-details__empty">
+              لا توجد تسويات مسجّلة لهذا الكابتن.
             </td>
           </tr>
         </ng-template>
       </p-table>
       <ctrl-table-pager
-        [total]="settlementHistory().length"
+        [total]="allSettlements().length"
         [page]="historyPage()"
         [pageSize]="historyPageSize()"
         (pageChange)="historyPage.set($event)"
@@ -342,7 +420,7 @@
         <ng-template pTemplate="body" let-order>
           <tr>
             <td><code class="driver-details__id-pill">{{ order.id }}</code></td>
-            <td dir="ltr">{{ order.date | date: 'd MMM y, h:mm a' }}</td>
+            <td  >{{ order.date | date: 'd MMM y, h:mm a' }}</td>
             <td>{{ order.zoneName }}</td>
             <td>{{ order.deliveryFeeEarned | number:'1.2-2' }} {{ currency }}</td>
             <td>
@@ -396,7 +474,7 @@
           <ng-template pTemplate="body" let-issue>
             <tr>
               <td><code class="driver-details__id-pill">{{ issue.id }}</code></td>
-              <td dir="ltr">{{ issue.createdAt | date: 'd MMM y, h:mm a' }}</td>
+              <td  >{{ issue.createdAt | date: 'd MMM y, h:mm a' }}</td>
               <td><code class="driver-details__id-pill driver-details__id-pill--muted">{{ issue.orderNumber }}</code></td>
               <td>
                 <span

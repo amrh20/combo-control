@@ -9,8 +9,8 @@ export interface StoreUser {
   id: string;
   storeId: string;
   fullName: string;
-  /** Login identifier. */
-  phone: string;
+  /** Login name. Lowercase letters and digits, unique across every shop. */
+  username: string;
   role: StoreUserRole;
   status: StoreUserStatus;
 }
@@ -18,17 +18,19 @@ export interface StoreUser {
 /** `POST /v1/ops/stores/{storeId}/users`. */
 export interface CreateStoreUserPayload {
   fullName: string;
-  phone: string;
+  username: string;
   password: string;
   role: StoreUserRole;
+  isActive?: boolean;
 }
 
 /** `PATCH /v1/ops/stores/{storeId}/users/{userId}`. Omit `password` to keep the current one. */
 export interface UpdateStoreUserPayload {
   fullName: string;
-  phone: string;
+  username: string;
   role: StoreUserRole;
   password?: string;
+  isActive?: boolean;
 }
 
 export const STORE_USER_ROLE_OPTIONS: ReadonlyArray<{ value: StoreUserRole; label: string }> = [

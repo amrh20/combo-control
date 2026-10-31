@@ -79,7 +79,7 @@
             formControlName="phone"
             class="drivers-list__input"
             placeholder="+20 10 0000 0000"
-            dir="ltr"
+             
           />
           @if (form.controls.phone.touched && form.controls.phone.invalid) {
             <span class="drivers-list__field-error">رقم الهاتف مطلوب</span>
@@ -101,7 +101,7 @@
             class="drivers-list__input"
             autocomplete="new-password"
             placeholder="••••••••"
-            dir="ltr"
+             
           />
           <span class="drivers-list__field-hint">
             @if (creating) {
@@ -116,6 +116,66 @@
         </div>
 
         <div class="drivers-list__field">
+          <label class="drivers-list__label" for="captainEmploymentType">
+            نوع التوظيف <span class="drivers-list__required">*</span>
+          </label>
+          <p-select
+            inputId="captainEmploymentType"
+            [options]="employmentOptions"
+            optionLabel="label"
+            optionValue="value"
+            formControlName="employmentType"
+            placeholder="اختر نوع التوظيف..."
+            styleClass="drivers-list__select"
+            panelStyleClass="drivers-list__select-panel"
+            [appendTo]="captainDialog"
+          />
+          @if (form.controls.employmentType.touched && form.controls.employmentType.invalid) {
+            <span class="drivers-list__field-error">نوع التوظيف مطلوب</span>
+          }
+        </div>
+
+        <div class="drivers-list__field">
+          <label class="drivers-list__label" for="captainMaxCashLimit">
+            الحد الأقصى للعهدة (ج.م) <span class="drivers-list__required">*</span>
+          </label>
+          <p-inputnumber
+            inputId="captainMaxCashLimit"
+            formControlName="maxCashLimitEgp"
+            [min]="0"
+            [minFractionDigits]="0"
+            [maxFractionDigits]="2"
+            mode="decimal"
+            locale="en-US"
+            styleClass="drivers-list__input"
+          />
+          @if (form.controls.maxCashLimitEgp.touched && form.controls.maxCashLimitEgp.invalid) {
+            <span class="drivers-list__field-error">أدخل حداً أقصى صالحاً للعهدة</span>
+          }
+        </div>
+
+        @if (form.controls.employmentType.value === 'FIXED') {
+          <div class="drivers-list__field">
+            <label class="drivers-list__label" for="captainFixedSalary">
+              الراتب الشهري (ج.م) <span class="drivers-list__required">*</span>
+            </label>
+            <p-inputnumber
+              inputId="captainFixedSalary"
+              formControlName="fixedSalaryEgp"
+              [min]="0"
+              [minFractionDigits]="0"
+              [maxFractionDigits]="2"
+              mode="decimal"
+              locale="en-US"
+              styleClass="drivers-list__input"
+            />
+            @if (form.controls.fixedSalaryEgp.touched && form.controls.fixedSalaryEgp.invalid) {
+              <span class="drivers-list__field-error">أدخل راتباً شهرياً صالحاً</span>
+            }
+          </div>
+        }
+
+        <div class="drivers-list__field">
           <label class="drivers-list__label" for="captainHub">
             مركز الانطلاق <span class="drivers-list__required">*</span>
           </label>
@@ -125,7 +185,7 @@
             optionLabel="name"
             optionValue="id"
             formControlName="hubId"
-            placeholder="اختر مركز الانطلاق..."
+            placeholder="اختر شارع  الشراء..."
             styleClass="drivers-list__select"
             panelStyleClass="drivers-list__select-panel"
             [appendTo]="captainDialog"
@@ -136,6 +196,13 @@
           @if (form.controls.hubId.touched && form.controls.hubId.invalid) {
             <span class="drivers-list__field-error">مركز الانطلاق مطلوب</span>
           }
+        </div>
+
+        <div class="drivers-list__field drivers-list__field--checkbox">
+          <p-checkbox formControlName="hasApp" [binary]="true" inputId="captainHasApp" />
+          <label class="drivers-list__label drivers-list__label--checkbox" for="captainHasApp">
+            يستخدم تطبيق الكابتن
+          </label>
         </div>
 
         @if (showVehicle()) {

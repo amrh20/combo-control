@@ -58,6 +58,10 @@ export interface VendorProfile {
   completedOrders: number;
   /** `null` hides the storefront discount chip. */
   discountBadge: VendorDiscountBadge | null;
+  /** When true, shop staff can sign in to combo-vendor. */
+  usesStoreApp: boolean;
+  /** When true, shop staff can add and edit products from combo-vendor. */
+  canEditCatalog: boolean;
   stats: VendorStats;
 }
 
@@ -222,7 +226,13 @@ const VENDOR_DRAFTS: VendorDraft[] = [
 
 type VendorDraft = Omit<
   VendorProfile,
-  'ratingsScore' | 'ratingsCount' | 'completedOrders' | 'commissionBp' | 'discountBadge'
+  | 'ratingsScore'
+  | 'ratingsCount'
+  | 'completedOrders'
+  | 'commissionBp'
+  | 'discountBadge'
+  | 'usesStoreApp'
+  | 'canEditCatalog'
 >;
 
 /** Local drafts store `walletBalance` in EGP. API profiles store piastres. */
@@ -235,6 +245,8 @@ export const VENDORS_DATA: VendorProfile[] = VENDOR_DRAFTS.map((draft) => {
     ratingsCount: draft.stats.totalReviews,
     completedOrders: draft.stats.totalCompletedOrders,
     commissionBp: Math.round(draft.commissionRate * 100),
+    usesStoreApp: false,
+    canEditCatalog: false,
     discountBadge:
       draft.discountPercent > 0 ? { discountBp, label: `-${draft.discountPercent}%` } : null,
   };

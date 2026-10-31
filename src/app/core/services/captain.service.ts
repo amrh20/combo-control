@@ -5,6 +5,7 @@ import { API_BASE_URL } from '../api-config';
 import { ApiErrorBody } from '../models/auth.model';
 import {
   Captain,
+  CaptainEmploymentType,
   CaptainListQuery,
   CaptainRole,
   CaptainStatus,
@@ -19,6 +20,7 @@ const CAPTAINS_URL = `${API_BASE_URL}/v1/captains`;
 const ROLES = new Set<CaptainRole>(['COLLECTOR', 'DELIVERY', 'BOTH']);
 const STATUSES = new Set<CaptainStatus>(['ACTIVE', 'BLOCKED']);
 const VEHICLE_TYPES = new Set<CaptainVehicleType>(['MOTORCYCLE', 'CAR', 'BICYCLE', 'NONE']);
+const EMPLOYMENT_TYPES = new Set<CaptainEmploymentType>(['FIXED', 'FREELANCER']);
 
 interface CaptainApiRecord {
   id: string;
@@ -32,6 +34,14 @@ interface CaptainApiRecord {
   company_cash_balance?: number | string | null;
   pendingSettlement?: unknown;
   pending_settlement?: unknown;
+  employmentType?: string | null;
+  employment_type?: string | null;
+  maxCashLimit?: number | string | null;
+  max_cash_limit?: number | string | null;
+  fixedSalary?: number | string | null;
+  fixed_salary?: number | string | null;
+  hasApp?: boolean | null;
+  has_app?: boolean | null;
 }
 
 interface CaptainPage {
@@ -172,7 +182,21 @@ function toCaptain(row: CaptainApiRecord): Captain {
     companyCashBalance: asPiastres(row.companyCashBalance ?? row.company_cash_balance),
     pendingSettlement:
       parseCaptainSettlement(row.pendingSettlement ?? row.pending_settlement, row.id) ?? null,
+    employmentType: asEmploymentType(row.employmentType ?? row.employment_type),
+    maxCashLimit: asOptionalPiastres(row.maxCashLimit ?? row.max_cash_limit),
+    fixedSalary: asOptionalPiastres(row.fixedSalary ?? row.fixed_salary),
+    hasApp: asHasApp(row.hasApp ?? row.has_app),
   };
+}
+
+function asHasApp(value: boolean | null | undefined): boolean | undefined {
+  if (value === false) {
+    return false;
+  }
+  if (value === true) {
+    return true;
+  }
+  return undefined;
 }
 
 /** Live cash on hand. Missing on older payloads, never coerced to zero. */
@@ -299,4 +323,16 @@ function asVehicle(value: string | null | undefined): CaptainVehicleType {
   return value && VEHICLE_TYPES.has(value as CaptainVehicleType)
     ? (value as CaptainVehicleType)
     : 'NONE';
+}
+
+function asEmploymentType(value: string | null | undefined): CaptainEmploymentType | undefined {
+  const type = value?.trim().toUpperCase();
+  return type && EMPLOYMENT_TYPES.has(type as CaptainEmploymentType)
+    ? (type as CaptainEmploymentType)
+    : undefined;
+}
+
+function asOptionalPiastres(value: number | string | null | undefined): number | undefined {
+  const amount = asPiastres(value);
+  return amount == null ? undefined : amount;
 }

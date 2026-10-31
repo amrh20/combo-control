@@ -4,6 +4,7 @@ import { Component, DestroyRef, effect, inject, input, output, signal, untracked
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
+import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import {
   AssignCaptainPayload,
@@ -25,7 +26,7 @@ type CaptainAvailability = 'available' | 'offer' | 'busy' | 'offline';
 @Component({
   selector: 'ctrl-assign-captain-modal',
   standalone: true,
-  imports: [FormsModule, NgTemplateOutlet, ToastModule],
+  imports: [FormsModule, NgTemplateOutlet, TagModule, ToastModule],
   providers: [MessageService],
   templateUrl: './assign-captain-modal.component.html',
   styleUrl: './assign-captain-modal.component.scss',
@@ -71,9 +72,18 @@ export class AssignCaptainModalComponent {
     return this.selectedCaptainId() === captainId;
   }
 
-  /** True when the captain is online and at least one assignment option is accepted. */
+  /**
+   * True when the API accepts at least one assignment mode for this captain.
+   * External captains (`hasApp === false`) may stay offline in the app but still be assignable manually.
+   */
   isCaptainSelectable(captain: AssignableCaptain): boolean {
-    return captain.isOnline && captain.options.some((option) => option.ok);
+    if (!captain.options.some((option) => option.ok)) {
+      return false;
+    }
+    if (captain.hasApp === false) {
+      return true;
+    }
+    return captain.isOnline;
   }
 
   /** The full-trip override is offered only when that option is accepted. */

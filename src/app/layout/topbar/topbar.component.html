@@ -34,11 +34,11 @@
                   <button
                     type="button"
                     class="topbar__notice"
-                    [class.topbar__notice--unread]="!item.read"
+                    [class.topbar__notice--unread]="item.readAt === null"
                     role="menuitem"
-                    (click)="openOrder()"
+                    (click)="openNotification(item)"
                   >
-                    <span class="topbar__notice-message">{{ item.message }}</span>
+                    <span class="topbar__notice-message">{{ item.body }}</span>
                     <span class="topbar__notice-age">{{ formatAge(item.createdAt) }}</span>
                   </button>
                 </li>
@@ -68,7 +68,7 @@
           <div class="topbar__menu-identity">
             <div class="topbar__menu-name">{{ displayName() }}</div>
             @if (email()) {
-              <div class="topbar__menu-email" dir="ltr">{{ email() }}</div>
+              <div class="topbar__menu-email"  >{{ email() }}</div>
             }
           </div>
           <button type="button" class="topbar__logout" role="menuitem" (click)="logout()">

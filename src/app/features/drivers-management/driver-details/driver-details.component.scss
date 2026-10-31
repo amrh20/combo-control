@@ -239,6 +239,19 @@
     color: var(--Combo-text-text-primary-paragraph);
   }
 
+  &__checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 42px;
+    padding-top: 28px;
+  }
+
+  &__form-label--checkbox {
+    margin: 0;
+    cursor: pointer;
+  }
+
   &__form-actions {
     display: flex;
     justify-content: flex-end;
@@ -318,6 +331,27 @@
     padding: 8px 0 16px;
     font-size: 14px;
     color: var(--Combo-text-text-secondary-paragraph);
+
+    &--pending {
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--Combo-border-border-warning-light);
+      background: var(--Combo-bg-background-warning-50);
+      color: var(--Combo-text-text-primary-paragraph);
+    }
+  }
+
+  &__row--pending {
+    background: var(--Combo-bg-background-warning-50);
+  }
+
+  &__muted {
+    color: var(--Combo-text-text-secondary-paragraph);
+  }
+
+  &__btn--sm {
+    padding: 8px 12px;
+    font-size: 13px;
   }
 
   &__pending {

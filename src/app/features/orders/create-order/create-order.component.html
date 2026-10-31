@@ -1,36 +1,19 @@
+<p-toast position="top-left" />
+
 <div class="mx-auto flex max-w-7xl flex-col gap-2">
   <div>
     <p role="heading" aria-level="1" class="m-0 text-base font-bold leading-snug text-[var(--Combo-text-text-display)]">
       إنشاء طلب جديد
     </p>
     <p class="m-0 mt-0.5 text-[11px] leading-relaxed text-[var(--Combo-text-text-secondary-paragraph)]">
-      إدخال طلب هاتف أو واتساب. الطلب الواحد يُجمَّع من مركز انطلاق واحد فقط.
+      إدخال طلب هاتف أو واتساب. الطلب يُجمَّع من شارع واحد ويمكن أن يشمل أكثر من محل.
     </p>
   </div>
-
-  @if (dispatchedId(); as orderId) {
-    <div
-      class="flex items-center justify-between gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2"
-      role="status"
-    >
-      <p class="m-0 text-xs font-semibold text-emerald-800">
-        تم إرسال الطلب إلى التشغيل —
-        <span dir="ltr" class="font-bold">{{ orderId }}</span>
-      </p>
-      <button
-        type="button"
-        class="shrink-0 rounded px-2 py-0.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100"
-        (click)="dismissDispatch()"
-      >
-        إغلاق
-      </button>
-    </div>
-  }
 
   <div class="rounded-lg border border-gray-200 bg-white p-3">
     <form
       id="manual-order"
-      class="grid items-start gap-3 xl:grid-cols-[minmax(0,1fr)_20rem]"
+      class="grid items-start gap-3 xl:grid-cols-[minmax(0,1fr)_28rem]"
       [formGroup]="form"
       (ngSubmit)="dispatch()"
       (keydown.enter)="blockEnter($event)"
@@ -41,9 +24,10 @@
         <section id="step-customer" class="scroll-mt-3">
           <header class="mb-1.5 flex items-baseline justify-between gap-2">
             <p role="heading" aria-level="2" class="m-0 text-sm font-bold text-[var(--Combo-text-text-display)]">
-              بيانات العميل والتوصيل
+              <span class="me-1 text-[11px] font-semibold text-[#00846A]">١</span>
+              بيانات العميل
             </p>
-            <p class="m-0 text-[10px] text-gray-400">ابحث بالهاتف ثم اختر أو أدخل العنوان</p>
+            <p class="m-0 text-[10px] text-gray-400">ابحث بالهاتف ثم أكّد الاسم</p>
           </header>
 
           <div class="grid gap-3 md:grid-cols-2">
@@ -60,60 +44,24 @@
                   id="order-phone"
                   type="tel"
                   inputmode="numeric"
-                  dir="ltr"
+                   
                   formControlName="phone"
                   placeholder="01xxxxxxxxx"
                   autocomplete="off"
-                  role="combobox"
-                  aria-autocomplete="list"
-                  aria-controls="customer-suggestions"
-                  [attr.aria-expanded]="showLookup()"
                   class="h-10 w-full rounded-md border border-gray-200 bg-white ps-8 pe-2.5 text-start text-sm text-gray-900 outline-none transition focus:border-[var(--Combo-border-border-primary)] focus:ring-2 focus:ring-emerald-700/15"
                   [class.border-red-400]="submitted() && form.controls.phone.invalid"
-                  (focus)="onPhoneFocus()"
-                  (blur)="onPhoneBlur()"
-                  (keydown)="onPhoneKeydown($event)"
                 />
               </div>
-              @if (showLookup()) {
-                <div
-                  id="customer-suggestions"
-                  class="absolute inset-x-0 top-full z-20 mt-1 overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg"
-                >
-                  @if (phoneSuggestions().length === 0) {
-                    <p class="m-0 px-2.5 py-2 text-xs text-gray-500">
-                      لا يوجد عميل بهذا الرقم. أكمل الاسم لتسجيل عميل جديد.
-                    </p>
-                  } @else {
-                    <ul class="m-0 max-h-52 list-none overflow-auto p-1" role="listbox">
-                      @for (customer of phoneSuggestions(); track customer.id; let i = $index) {
-                        <li role="option" [attr.aria-selected]="i === activeSuggestion()">
-                          <button
-                            type="button"
-                            class="flex w-full items-center justify-between gap-2 rounded px-2 py-1.5 text-start hover:bg-gray-50"
-                            [style.background-color]="i === activeSuggestion() ? '#E6F8F5' : null"
-                            (mousedown)="selectCustomer(customer); $event.preventDefault()"
-                          >
-                            <span class="min-w-0">
-                              <span class="block truncate text-xs font-semibold text-gray-900">{{ customer.fullName }}</span>
-                              <span dir="ltr" class="block text-[11px] text-gray-500">{{ formatPhone(customer.phone) }}</span>
-                            </span>
-                            <span class="flex shrink-0 flex-col items-end gap-0.5">
-                              <span class="text-[11px] text-gray-400">{{ customer.totalOrders }} طلب</span>
-                              @if (customer.status === 'BLOCKED') {
-                                <span class="rounded-full bg-red-50 px-1.5 py-0.5 text-[10px] font-semibold text-red-700">محظور</span>
-                              }
-                            </span>
-                          </button>
-                        </li>
-                      }
-                    </ul>
-                  }
-                </div>
+              @if (customerSearchLoading()) {
+                <p class="m-0 mt-1 text-[11px] text-gray-400">جاري البحث عن العميل…</p>
+              } @else if (form.controls.customerId.value) {
+                <p class="m-0 mt-1 text-[11px] text-emerald-700">تم العثور على عميل مسجّل.</p>
+              } @else if (phoneDigitsLength() === 11) {
+                <p class="m-0 mt-1 text-[11px] text-gray-500">عميل جديد — أكمل الاسم والعنوان.</p>
               }
-              @if (blockedMatch(); as blocked) {
+              @if (customerBlocked()) {
                 <p class="m-0 mt-1 text-[11px] font-medium text-red-700">
-                  هذا الرقم لعميل محظور ({{ blocked.fullName }}) ولا يمكن إرسال الطلب.
+                  هذا الرقم لعميل محظور ولا يمكن إرسال الطلب.
                 </p>
               } @else if (submitted() && form.controls.phone.invalid) {
                 <p class="m-0 mt-1 text-[11px] text-red-600">أدخل رقم موبايل مصري من 11 رقمًا يبدأ بـ 01.</p>
@@ -138,7 +86,7 @@
             </div>
           </div>
 
-          @if (linkedCustomer(); as customer) {
+          @if (searchedCustomer(); as customer) {
             <div
               class="mt-2 flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-xs"
               [class.bg-red-50]="customer.status === 'BLOCKED'"
@@ -147,7 +95,7 @@
               [class.text-gray-700]="customer.status !== 'BLOCKED'"
             >
               <span>
-                عميل مسجّل: <strong>{{ customer.fullName }}</strong>
+                عميل مسجّل: <strong>{{ customer.name }}</strong>
                 @if (customer.status === 'BLOCKED') {
                   — الحساب محظور ولا يمكن إرسال الطلب.
                 }
@@ -175,164 +123,267 @@
                       (click)="selectSavedAddress(address)"
                     >
                       <span class="flex items-center justify-between gap-2">
-                        <span class="text-xs font-semibold text-gray-900">{{ address.label }}</span>
-                        <span class="truncate text-[11px] text-gray-400">{{ subZoneName(address.subZoneId) }}</span>
+                        <span class="text-xs font-semibold text-gray-900">{{ address.label || 'عنوان' }}</span>
+                        @if (address.subZoneId) {
+                          <span class="truncate text-[11px] text-gray-400">{{ subZoneName(address.subZoneId) }}</span>
+                        }
                       </span>
-                      <span class="mt-0.5 truncate text-[11px] text-gray-500">{{ address.details }}</span>
+                      <span class="mt-0.5 truncate text-[11px] text-gray-500">{{ address.line }}</span>
                     </button>
                   </li>
                 }
               </ul>
             </div>
-          } @else if (addressCustomer(); as known) {
+          } @else if (searchedCustomer(); as known) {
             @if (known.status !== 'BLOCKED') {
               <p class="m-0 mt-2 text-[11px] text-gray-400">لا توجد عناوين محفوظة لهذا العميل. أدخل العنوان يدويًا.</p>
             }
           }
 
-          <div class="mt-3 grid gap-3 md:grid-cols-2">
-            <div>
-              <label class="mb-1 block text-xs font-medium text-gray-700" for="order-subzone">
-                منطقة التوصيل <span class="text-red-600">*</span>
+        </section>
+
+        <section id="step-delivery" class="scroll-mt-3 border-t border-gray-100 pt-2.5">
+          <header class="mb-1.5 flex items-baseline justify-between gap-2">
+            <p role="heading" aria-level="2" class="m-0 text-sm font-bold text-[var(--Combo-text-text-display)]">
+              <span class="me-1 text-[11px] font-semibold text-[#00846A]">٢</span>
+              موقع التوصيل
+            </p>
+            <p class="m-0 text-[10px] text-gray-400">المنطقة ثم الفرعية ثم تفاصيل العنوان</p>
+          </header>
+
+          <div class="grid gap-3 md:grid-cols-2">
+            <div [class.order-field--invalid]="submitted() && !formState().parentZoneId">
+              <label class="mb-1 block text-xs font-medium text-gray-700" for="order-zone">
+                المنطقة <span class="text-red-600">*</span>
               </label>
-              <select
-                id="order-subzone"
-                formControlName="subZoneId"
-                class="h-10 w-full rounded-md border border-gray-200 bg-white px-2.5 text-sm text-gray-900 outline-none transition focus:border-[var(--Combo-border-border-primary)] focus:ring-2 focus:ring-emerald-700/15"
-                [class.border-red-400]="submitted() && form.controls.subZoneId.invalid"
-                (change)="onSubZoneChange($event)"
-              >
-                <option value="">اختر المنطقة الفرعية</option>
-                @for (zone of dropZones(); track zone.id) {
-                  <option [value]="zone.id">{{ zone.name }}</option>
-                }
-              </select>
-              <button
-                type="button"
-                class="mt-1 inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-[11px] font-medium text-gray-500 shadow-none hover:text-[#00846A]"
-                (click)="openMap()"
-              >
-                <i class="pi pi-map text-[11px]" aria-hidden="true"></i>
-                تحديد على الخريطة
-              </button>
-              @if (submitted() && form.controls.subZoneId.invalid) {
-                <p class="m-0 mt-1 text-[11px] text-red-600">اختر المنطقة الفرعية.</p>
+              <p-select
+                inputId="order-zone"
+                [options]="parentZones()"
+                optionLabel="name"
+                optionValue="id"
+                formControlName="parentZoneId"
+                [placeholder]="lookupsLoading() ? 'جاري التحميل…' : 'اختر المنطقة'"
+                [filter]="true"
+                filterBy="name"
+                filterPlaceholder="ابحث عن المنطقة..."
+                filterMatchMode="contains"
+                [emptyFilterMessage]="'لا توجد مناطق مطابقة'"
+                [emptyMessage]="lookupsLoading() ? 'جاري التحميل…' : 'لا توجد مناطق'"
+                appendTo="body"
+                scrollHeight="240px"
+                styleClass="order-select"
+              />
+              @if (submitted() && !formState().parentZoneId) {
+                <p class="m-0 mt-1 text-[11px] text-red-600">اختر المنطقة.</p>
               }
             </div>
 
-            <div>
-              <label class="mb-1 block text-xs font-medium text-gray-700" for="order-address">
-                تفاصيل العنوان <span class="text-red-600">*</span>
+            <div [class.order-field--invalid]="submitted() && form.controls.subZoneId.invalid && !!formState().parentZoneId">
+              <label class="mb-1 block text-xs font-medium text-gray-700" for="order-subzone">
+                المنطقة الفرعية <span class="text-red-600">*</span>
               </label>
-              <textarea
-                id="order-address"
-                rows="2"
-                formControlName="addressDetails"
-                placeholder="العمارة، الشقة، الشارع"
-                class="w-full resize-y rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-sm leading-snug text-gray-900 outline-none transition focus:border-[var(--Combo-border-border-primary)] focus:ring-2 focus:ring-emerald-700/15"
-                [class.border-red-400]="submitted() && form.controls.addressDetails.invalid"
-                (input)="onAddressInput()"
-              ></textarea>
-              @if (submitted() && form.controls.addressDetails.invalid) {
-                <p class="m-0 mt-1 text-[11px] text-red-600">أدخل تفاصيل العنوان.</p>
+              @if (formState().parentZoneId) {
+                <p-select
+                  inputId="order-subzone"
+                  [options]="childSubZones()"
+                  optionLabel="name"
+                  optionValue="id"
+                  formControlName="subZoneId"
+                  placeholder="اختر المنطقة الفرعية"
+                  [filter]="true"
+                  filterBy="name"
+                  filterPlaceholder="ابحث عن المنطقة الفرعية..."
+                  filterMatchMode="contains"
+                  emptyFilterMessage="لا توجد مناطق فرعية مطابقة"
+                  emptyMessage="لا توجد مناطق فرعية"
+                  appendTo="body"
+                  scrollHeight="240px"
+                  styleClass="order-select"
+                />
+                @if (submitted() && form.controls.subZoneId.invalid) {
+                  <p class="m-0 mt-1 text-[11px] text-red-600">اختر المنطقة الفرعية.</p>
+                }
+              } @else {
+                <div class="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-2.5 text-xs text-gray-400">
+                  اختر المنطقة أولاً
+                </div>
               }
             </div>
+          </div>
+
+          <div class="mt-3">
+            <div class="mb-1 flex items-center justify-between gap-2">
+              <label class="block text-xs font-medium text-gray-700" for="order-address">
+                تفاصيل العنوان <span class="text-red-600">*</span>
+              </label>
+              <button
+                type="button"
+                class="inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-[11px] font-medium text-gray-500 shadow-none hover:text-[#00846A]"
+                (click)="openMap()"
+              >
+                <i class="pi pi-map text-[11px]" aria-hidden="true"></i>
+                تحديد المنطقة على الخريطة
+              </button>
+            </div>
+            <textarea
+              id="order-address"
+              rows="2"
+              formControlName="addressDetails"
+              placeholder="العمارة، الدور، الشقة، علامة مميزة"
+              class="w-full resize-y rounded-md border border-gray-200 bg-white px-2.5 py-1.5 text-sm leading-snug text-gray-900 outline-none transition focus:border-[var(--Combo-border-border-primary)] focus:ring-2 focus:ring-emerald-700/15"
+              [class.border-red-400]="submitted() && form.controls.addressDetails.invalid"
+              (input)="onAddressInput()"
+            ></textarea>
+            @if (submitted() && form.controls.addressDetails.hasError('required')) {
+              <p class="m-0 mt-1 text-[11px] text-red-600">أدخل تفاصيل العنوان.</p>
+            } @else if (submitted() && form.controls.addressDetails.hasError('minlength')) {
+              <p class="m-0 mt-1 text-[11px] text-red-600">
+                تفاصيل العنوان قصيرة — أدخل 3 أحرف على الأقل بعد حذف المسافات الزائدة.
+              </p>
+            } @else if (submitted() && form.controls.addressDetails.hasError('maxlength')) {
+              <p class="m-0 mt-1 text-[11px] text-red-600">تفاصيل العنوان طويلة جدًا (حد أقصى 300 حرف).</p>
+            }
           </div>
         </section>
 
         <section id="step-hub" class="scroll-mt-3 border-t border-gray-100 pt-2.5">
           <header class="mb-1.5 flex items-baseline justify-between gap-2">
             <p role="heading" aria-level="2" class="m-0 text-sm font-bold text-[var(--Combo-text-text-display)]">
-              تفاصيل الشراء والمتاجر
+              <span class="me-1 text-[11px] font-semibold text-[#00846A]">٣</span>
+              الشراء
             </p>
-            <p class="m-0 text-[10px] text-gray-400">اختر مركزًا واحدًا ثم المتاجر المطلوبة</p>
+            <p class="m-0 text-[10px] text-gray-400">شارع واحد، ويمكن إضافة أكثر من محل</p>
           </header>
 
-          <label class="mb-1 block text-xs font-medium text-gray-700" for="order-hub">
-            نقطة التجميع (الشارع) <span class="text-red-600">*</span>
-          </label>
-          @if (formState().subZoneId) {
-            <select
-              id="order-hub"
-              formControlName="hubId"
-              class="h-10 w-full max-w-sm rounded-md border border-gray-200 bg-white px-2.5 text-sm text-gray-900 outline-none transition focus:border-[var(--Combo-border-border-primary)] focus:ring-2 focus:ring-emerald-700/15"
-              [class.border-red-400]="submitted() && form.controls.hubId.invalid"
-              (change)="onHubChange()"
-            >
-              <option value="">اختر مركز الانطلاق</option>
-              @for (hub of eligibleHubs(); track hub.id) {
-                <option [value]="hub.id">{{ hub.name }}</option>
+          <div class="grid gap-3 md:grid-cols-2">
+            <div [class.order-field--invalid]="submitted() && form.controls.hubId.invalid && !!formState().subZoneId">
+              <label class="mb-1 block text-xs font-medium text-gray-700" for="order-hub">
+                الشارع <span class="text-red-600">*</span>
+              </label>
+              @if (formState().subZoneId) {
+                <p-select
+                  inputId="order-hub"
+                  [options]="eligibleHubs()"
+                  optionLabel="name"
+                  optionValue="id"
+                  formControlName="hubId"
+                  placeholder="اختر الشارع"
+                  [filter]="true"
+                  filterBy="name"
+                  filterPlaceholder="ابحث عن الشارع..."
+                  filterMatchMode="contains"
+                  emptyFilterMessage="لا توجد شوارع مطابقة"
+                  emptyMessage="لا يوجد شارع يخدم هذه المنطقة"
+                  appendTo="body"
+                  scrollHeight="240px"
+                  styleClass="order-select"
+                />
+                @if (eligibleHubs().length === 0) {
+                  <p class="m-0 mt-1 text-xs text-amber-700">لا يوجد شارع يخدم هذه المنطقة الفرعية.</p>
+                }
+                @if (submitted() && form.controls.hubId.invalid) {
+                  <p class="m-0 mt-1 text-[11px] text-red-600">اختر الشارع.</p>
+                }
+              } @else {
+                <div class="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-2.5 text-xs text-gray-400">
+                  اختر المنطقة الفرعية أولاً
+                </div>
               }
-            </select>
-            @if (eligibleHubs().length === 0) {
-              <p class="m-0 mt-1 text-xs text-amber-700">لا يوجد مركز انطلاق يخدم هذه المنطقة الفرعية.</p>
-            }
-          } @else {
-            <div class="flex h-10 max-w-sm items-center rounded-md border border-gray-200 bg-gray-50 px-2.5 text-xs text-gray-400">
-              اختر المنطقة الفرعية أولًا
             </div>
-          }
-          @if (submitted() && form.controls.hubId.invalid && formState().subZoneId) {
-            <p class="m-0 mt-1 text-[11px] text-red-600">اختر مركز الانطلاق.</p>
-          }
 
-          <div class="mt-3">
-            <div class="mb-1.5 flex items-center justify-between gap-2">
-              <p role="heading" aria-level="3" class="m-0 text-xs font-semibold text-gray-800">المتاجر المتاحة في نقطة التجميع</p>
-              @if (vendorCarts.length > 0) {
-                <span class="text-[11px] font-medium text-gray-500">{{ vendorCarts.length }} محدد</span>
+            <div>
+              <label class="mb-1 block text-xs font-medium text-gray-700" for="order-shop">
+                إضافة محل
+              </label>
+              @if (!formState().hubId) {
+                <div class="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-2.5 text-xs text-gray-400">
+                  اختر الشارع أولاً
+                </div>
+              } @else if (vendorsLoading()) {
+                <div class="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-2.5 text-xs text-gray-400">
+                  جاري تحميل المحلات…
+                </div>
+              } @else if (hubVendors().length === 0) {
+                <div class="flex h-10 items-center rounded-md border border-gray-200 bg-gray-50 px-2.5 text-xs text-gray-400">
+                  لا توجد محلات في هذا الشارع
+                </div>
+              } @else if (shopOptions().length === 0) {
+                <div class="flex h-10 items-center rounded-md border border-[#00846A]/30 bg-[#E6F8F5] px-2.5 text-xs text-gray-700">
+                  تمت إضافة كل المحلات المتاحة
+                </div>
+              } @else {
+                <p-select
+                  inputId="order-shop"
+                  [options]="shopOptions()"
+                  optionLabel="name"
+                  optionValue="id"
+                  optionDisabled="disabled"
+                  formControlName="shopToAdd"
+                  placeholder="ابحث وأضف محلًا…"
+                  [filter]="true"
+                  filterBy="name"
+                  filterPlaceholder="ابحث عن المحل..."
+                  filterMatchMode="contains"
+                  emptyFilterMessage="لا توجد محلات مطابقة"
+                  emptyMessage="لا توجد محلات"
+                  appendTo="body"
+                  scrollHeight="240px"
+                  styleClass="order-select"
+                >
+                  <ng-template pTemplate="item" let-vendor>
+                    <span class="flex w-full items-center justify-between gap-2">
+                      <span class="truncate">{{ vendor.name }}</span>
+                      <span class="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold {{ statusClass(vendor.liveStatus) }}">
+                        {{ statusLabel(vendor.liveStatus) }}
+                      </span>
+                    </span>
+                  </ng-template>
+                </p-select>
+              }
+              <p class="m-0 mt-1 text-[11px] text-gray-400">كل اختيار يضيف محلًا للطلب دون استبدال السابق.</p>
+              @if (submitted() && form.controls.hubId.valid && vendorCarts.length === 0) {
+                <p class="m-0 mt-1 text-[11px] text-red-600">أضف محلًا واحدًا على الأقل.</p>
               }
             </div>
+          </div>
 
-            @if (!formState().hubId) {
-              <p class="m-0 rounded-md bg-gray-50 px-2.5 py-2 text-xs text-gray-500">
-                حدّد مركز الانطلاق لعرض المتاجر داخله.
-              </p>
-            } @else if (hubVendors().length === 0) {
-              <p class="m-0 rounded-md bg-gray-50 px-2.5 py-2 text-xs text-gray-500">
-                لا توجد متاجر نشطة داخل هذا المركز.
-              </p>
-            } @else {
-              <ul class="m-0 grid list-none grid-cols-1 gap-1.5 p-0 sm:grid-cols-2 xl:grid-cols-3">
-                @for (vendor of hubVendors(); track vendor.id) {
-                  <li>
+          @if (vendorCarts.length > 0) {
+            <div class="mt-3">
+              <div class="mb-1.5 flex items-center justify-between gap-2">
+                <p class="m-0 text-xs font-semibold text-gray-800">المحلات في هذا الطلب</p>
+                <span class="text-[11px] font-medium text-gray-500">{{ vendorCarts.length }} محل</span>
+              </div>
+              <ul class="m-0 flex list-none flex-wrap gap-1.5 p-0">
+                @for (cart of vendorCarts.controls; track cart.controls.vendorId.value; let si = $index) {
+                  @let chipAccent = vendorCartAccent(si);
+                  <li
+                    class="inline-flex max-w-full items-center gap-1.5 rounded-md border px-2 py-1 {{ chipAccent.chip }}"
+                  >
+                    <span
+                      class="inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full text-[9px] font-bold {{ chipAccent.badge }}"
+                      aria-hidden="true"
+                    >
+                      {{ si + 1 }}
+                    </span>
+                    <span class="truncate text-xs font-semibold text-gray-900">{{ vendorName(cart.controls.vendorId.value) }}</span>
+                    @if (vendorById(cart.controls.vendorId.value); as vendor) {
+                      <span class="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold {{ statusClass(vendor.liveStatus) }}">
+                        {{ statusLabel(vendor.liveStatus) }}
+                      </span>
+                    }
                     <button
                       type="button"
-                      class="flex w-full flex-col items-stretch gap-1 rounded border px-2.5 py-1.5 text-start shadow-none transition disabled:opacity-60"
-                      [class.cursor-pointer]="canSelectVendor(vendor)"
-                      [class.cursor-not-allowed]="!canSelectVendor(vendor)"
-                      [class.border-gray-200]="!isVendorSelected(vendor.id)"
-                      [class.bg-white]="!isVendorSelected(vendor.id)"
-                      [style.border-color]="isVendorSelected(vendor.id) ? '#00846A' : null"
-                      [style.background-color]="isVendorSelected(vendor.id) ? '#E6F8F5' : null"
-                      [disabled]="!canSelectVendor(vendor)"
-                      [attr.aria-pressed]="isVendorSelected(vendor.id)"
-                      [attr.title]="canSelectVendor(vendor) ? vendor.name : 'المتجر غير متاح للطلب حالياً'"
-                      (click)="toggleVendor(vendor)"
+                      class="inline-flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded border-0 bg-transparent p-0 text-gray-500 shadow-none hover:text-red-600"
+                      [attr.aria-label]="'إزالة ' + vendorName(cart.controls.vendorId.value)"
+                      (click)="removeVendor(cart.controls.vendorId.value)"
                     >
-                      <span class="text-xs font-semibold leading-snug text-gray-900">{{ vendor.name }}</span>
-                      <span class="flex items-center justify-between gap-2">
-                        <span class="text-[10px] text-gray-500">حد أدنى {{ vendor.minOrder }} ج.م</span>
-                        <span class="flex shrink-0 items-center gap-1">
-                          <span
-                            class="rounded-full px-1.5 py-0.5 text-[10px] font-semibold {{ statusClass(vendor.liveStatus) }}"
-                          >
-                            {{ statusLabels[vendor.liveStatus].labelAr }}
-                          </span>
-                          @if (isVendorSelected(vendor.id)) {
-                            <i class="pi pi-check text-[10px] text-[#00846A]" aria-hidden="true"></i>
-                          }
-                        </span>
-                      </span>
+                      <i class="pi pi-times text-[10px]" aria-hidden="true"></i>
                     </button>
                   </li>
                 }
               </ul>
-            }
-            @if (submitted() && form.controls.hubId.valid && vendorCarts.length === 0) {
-              <p class="m-0 mt-1 text-[11px] text-red-600">اختر متجرًا واحدًا على الأقل من المركز.</p>
-            }
-          </div>
+            </div>
+          }
         </section>
 
       </div>
@@ -354,21 +405,33 @@
           <i class="pi pi-receipt mt-0.5 text-sm text-[#00846A]" aria-hidden="true"></i>
         </header>
 
-        <div class="max-h-[52vh] overflow-y-auto px-2 py-2" formArrayName="vendorCarts">
+        <div class="max-h-[60vh] overflow-y-auto px-2 py-2" formArrayName="vendorCarts">
           @if (vendorCarts.length === 0) {
             <div class="rounded-md border border-dashed border-gray-300 bg-white px-3 py-5 text-center">
               <i class="pi pi-shopping-bag text-lg text-gray-300" aria-hidden="true"></i>
               <p class="m-0 mt-1 text-[11px] font-medium text-gray-500">الفاتورة فارغة</p>
-              <p class="m-0 mt-0.5 text-[10px] text-gray-400">اختر متجرًا ليظهر هنا</p>
+              <p class="m-0 mt-0.5 text-[10px] text-gray-400">أضف محلًا ليظهر هنا</p>
             </div>
           } @else {
             <div class="flex flex-col gap-2">
               @for (cart of vendorCarts.controls; track cart.controls.vendorId.value; let vi = $index) {
-                <section class="rounded-md border border-gray-200 bg-white p-2" [formGroupName]="vi">
+                @let accent = vendorCartAccent(vi);
+                <section
+                  class="rounded-md border p-2 shadow-sm {{ accent.section }}"
+                  [formGroupName]="vi"
+                >
                   <header class="mb-1.5 flex items-center justify-between gap-2">
-                    <p role="heading" aria-level="3" class="m-0 text-[11px] font-bold leading-snug text-gray-900">
-                      {{ vendorName(cart.controls.vendorId.value) }}
-                    </p>
+                    <div class="flex min-w-0 flex-1 items-center gap-1.5">
+                      <span
+                        class="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold {{ accent.badge }}"
+                        [attr.aria-label]="'محل ' + (vi + 1)"
+                      >
+                        {{ vi + 1 }}
+                      </span>
+                      <p role="heading" aria-level="3" class="m-0 truncate text-[11px] font-bold leading-snug text-gray-900">
+                        {{ vendorName(cart.controls.vendorId.value) }}
+                      </p>
+                    </div>
                     <button
                       type="button"
                       class="cursor-pointer border-0 bg-transparent p-0 text-[10px] font-medium text-gray-400 shadow-none hover:text-red-600"
@@ -378,76 +441,125 @@
                     </button>
                   </header>
 
-                  <div class="flex flex-col gap-1.5" formArrayName="items">
-                    @for (item of cart.controls.items.controls; track $index; let ii = $index) {
-                      <div class="grid grid-cols-[minmax(0,1fr)_2.75rem_3.75rem_1.75rem] items-end gap-1" [formGroupName]="ii">
-                        <label>
-                          @if (ii === 0) {
-                            <span class="mb-0.5 block text-[9px] text-gray-400">الصنف</span>
+                  <div class="rounded p-1.5 {{ accent.draft }}" formGroupName="draft">
+                    <p class="m-0 mb-1.5 text-[10px] font-semibold text-gray-600">إضافة صنف</p>
+                    @let draft = cart.controls.draft;
+                    <div class="flex flex-col gap-1.5">
+                      <label class="block">
+                        <span class="mb-0.5 block text-[10px] text-gray-400">المنتج</span>
+                        <p-select
+                          [options]="productsForVendor(cart.controls.vendorId.value)"
+                          optionLabel="name"
+                          optionValue="id"
+                          formControlName="productId"
+                          [placeholder]="isProductsLoading(cart.controls.vendorId.value) ? 'جاري تحميل المنتجات…' : 'ابحث عن منتج'"
+                          [loading]="isProductsLoading(cart.controls.vendorId.value)"
+                          [filter]="true"
+                          filterBy="name"
+                          filterPlaceholder="اكتب اسم المنتج..."
+                          filterMatchMode="contains"
+                          emptyFilterMessage="لا توجد منتجات مطابقة"
+                          [emptyMessage]="isProductsLoading(cart.controls.vendorId.value) ? 'جاري التحميل…' : 'لا توجد منتجات'"
+                          [virtualScroll]="productsForVendor(cart.controls.vendorId.value).length > 50"
+                          [virtualScrollItemSize]="36"
+                          appendTo="body"
+                          scrollHeight="240px"
+                          styleClass="order-product-select"
+                          (onChange)="onProductPicked(cart.controls.vendorId.value, draft, $event.value)"
+                        />
+                      </label>
+                      <label class="flex w-fit items-center gap-1.5">
+                        <span class="text-[10px] text-gray-400">العدد</span>
+                        <input
+                          type="number"
+                           
+                          min="1"
+                          step="1"
+                          formControlName="quantity"
+                          class="h-8 w-14 rounded border border-gray-200 bg-white px-1 text-center text-xs outline-none focus:border-[var(--Combo-border-border-primary)]"
+                        />
+                      </label>
+                      @if (productForLine(cart.controls.vendorId.value, draft.controls.productId.value); as product) {
+                        @for (variant of product.variants; track variant.id) {
+                          @if (variant.options.length > 0) {
+                            <label class="block">
+                              <span class="mb-0.5 block text-[9px] text-gray-400">{{ variant.name }}</span>
+                              <select
+                                class="h-7 w-full rounded border border-gray-200 bg-white px-1 text-[11px] outline-none focus:border-[var(--Combo-border-border-primary)]"
+                                [value]="optionIdForVariant(draft, variant)"
+                                (change)="setVariantOption(draft, variant, $event)"
+                              >
+                                <option value="">اختر</option>
+                                @for (option of variant.options; track option.id) {
+                                  <option [value]="option.id">{{ option.label }}</option>
+                                }
+                              </select>
+                            </label>
                           }
-                          <input
-                            type="text"
-                            formControlName="name"
-                            placeholder="اسم الصنف"
-                            class="h-7 w-full rounded border border-gray-200 px-1.5 text-[11px] outline-none focus:border-[var(--Combo-border-border-primary)]"
-                            [class.border-red-400]="submitted() && item.controls.name.invalid"
-                          />
-                        </label>
-                        <label>
-                          @if (ii === 0) {
-                            <span class="mb-0.5 block text-center text-[9px] text-gray-400">عدد</span>
-                          }
-                          <input
-                            type="number"
-                            dir="ltr"
-                            min="1"
-                            step="1"
-                            formControlName="qty"
-                            class="h-7 w-full rounded border border-gray-200 px-1 text-center text-[10px] outline-none focus:border-[var(--Combo-border-border-primary)]"
-                            [class.border-red-400]="submitted() && item.controls.qty.invalid"
-                          />
-                        </label>
-                        <label>
-                          @if (ii === 0) {
-                            <span class="mb-0.5 block text-center text-[9px] text-gray-400">السعر</span>
-                          }
-                          <input
-                            type="number"
-                            dir="ltr"
-                            min="0"
-                            step="0.5"
-                            formControlName="price"
-                            placeholder="0"
-                            class="h-7 w-full rounded border border-gray-200 px-1 text-center text-[10px] outline-none focus:border-[var(--Combo-border-border-primary)]"
-                            [class.border-red-400]="submitted() && item.controls.price.invalid"
-                          />
-                        </label>
-                        <div class="flex items-end justify-center">
-                          <button
-                            type="button"
-                            class="inline-flex h-7 w-7 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-gray-400 shadow-none hover:text-red-600"
-                            [attr.aria-label]="'حذف الصنف'"
-                            (click)="removeItem(cart, ii)"
-                          >
-                            <i class="pi pi-trash text-[11px]" aria-hidden="true"></i>
-                          </button>
-                        </div>
-                        <p class="col-span-4 m-0 text-end text-[10px] text-gray-400">
-                          <span dir="ltr" class="font-medium text-gray-600">{{ lineTotal(item) | number: '1.0-2' }}</span>
+                        }
+                      }
+                      @if (draft.controls.productId.value) {
+                        <p
+                          class="m-0 rounded-md border px-2 py-1.5 text-[11px] leading-snug text-gray-700 {{ accent.preview }}"
+                          aria-live="polite"
+                        >
+                          {{ draftPreviewText(cart.controls.vendorId.value, draft) }}
+                        </p>
+                        <p class="m-0 text-[10px] text-gray-400">
+                          تقدير السطر:
+                          <span   class="font-medium text-gray-600">{{
+                            lineTotalEgp(cart.controls.vendorId.value, draft) | number: '1.2-2'
+                          }}</span>
                           ج.م
                         </p>
-                      </div>
-                    }
+                      }
+                    </div>
+                    <button
+                      type="button"
+                      class="mt-3 inline-flex h-8 cursor-pointer items-center justify-center gap-1.5 rounded-md border-0 bg-[#00846A] px-3 text-[11px] font-semibold text-white shadow-none hover:bg-[#006B56]"
+                      (click)="confirmAddItem(cart)"
+                    >
+                      <i class="pi pi-plus text-[10px]" aria-hidden="true"></i>
+                      إضافة صنف
+                    </button>
                   </div>
 
-                  <button
-                    type="button"
-                    class="mt-1.5 inline-flex cursor-pointer items-center gap-1 border-0 bg-transparent p-0 text-[11px] font-medium text-[#00846A] shadow-none hover:underline"
-                    (click)="addItem(cart)"
-                  >
-                    <i class="pi pi-plus text-[10px]" aria-hidden="true"></i>
-                    إضافة صنف
-                  </button>
+                  @if (cart.controls.items.length > 0) {
+                    <div class="mt-2 border-t border-black/5 pt-2">
+                      <p class="m-0 mb-1 text-[10px] font-semibold text-gray-600">الأصناف المضافة</p>
+                      <ul class="m-0 list-none space-y-1 p-0" formArrayName="items">
+                        @for (item of cart.controls.items.controls; track $index; let ii = $index) {
+                          <li
+                            class="flex items-start justify-between gap-2 rounded-md bg-white/60 px-1.5 py-1"
+                            [formGroupName]="ii"
+                          >
+                            <p class="m-0 min-w-0 flex-1 text-[11px] leading-snug text-gray-800">
+                              <span class="font-medium text-gray-400" aria-hidden="true">- </span>
+                              {{ draftPreviewText(cart.controls.vendorId.value, item) }}
+                            </p>
+                            <div class="flex shrink-0 items-center gap-1">
+                              <span   class="text-[11px] font-semibold text-gray-900">
+                                {{ lineTotalEgp(cart.controls.vendorId.value, item) | number: '1.2-2' }}
+                              </span>
+                              <span class="text-[10px] font-medium text-gray-500">ج.م</span>
+                              <button
+                                type="button"
+                                class="inline-flex h-7 w-7 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-gray-400 shadow-none hover:text-red-600"
+                                [attr.aria-label]="'حذف ' + draftPreviewText(cart.controls.vendorId.value, item)"
+                                (click)="removeItem(cart, ii)"
+                              >
+                                <i class="pi pi-trash text-xs" aria-hidden="true"></i>
+                              </button>
+                            </div>
+                          </li>
+                        }
+                      </ul>
+                    </div>
+                  }
+
+                  @if (submitted() && cart.controls.items.invalid) {
+                    <p class="m-0 mt-1 text-[10px] text-red-600">أضف صنفًا واحدًا على الأقل لهذا المحل.</p>
+                  }
                 </section>
               }
             </div>
@@ -456,8 +568,24 @@
 
         <div class="border-t border-dashed border-gray-300 bg-white px-3 py-2">
           <p role="heading" aria-level="3" class="m-0 text-[11px] font-bold text-gray-800">ملخص الحساب</p>
-        @if (selectedHubName()) {
-          <p class="m-0 mt-0.5 text-[9px] text-gray-400">مركز الانطلاق: {{ selectedHubName() }}</p>
+        @if (selectedParentZoneName() || selectedSubZoneName() || selectedHubName()) {
+          <p class="m-0 mt-0.5 text-[9px] text-gray-400">
+            @if (selectedParentZoneName()) {
+              {{ selectedParentZoneName() }}
+            }
+            @if (selectedSubZoneName()) {
+              @if (selectedParentZoneName()) {
+                ·
+              }
+              {{ selectedSubZoneName() }}
+            }
+            @if (selectedHubName()) {
+              @if (selectedParentZoneName() || selectedSubZoneName()) {
+                ·
+              }
+              {{ selectedHubName() }}
+            }
+          </p>
         }
         @if (formState().addressDetails) {
           <p class="m-0 mt-0.5 line-clamp-1 text-[9px] text-gray-400">{{ formState().addressDetails }}</p>
@@ -467,40 +595,42 @@
           <div class="flex items-center justify-between gap-2">
             <dt class="text-gray-500">المجموع الفرعي</dt>
             <dd class="m-0 font-semibold text-gray-900">
-              <span dir="ltr">{{ subtotal() | number: '1.2-2' }}</span>
+              <span  >{{ subtotal() | number: '1.2-2' }}</span>
               <span class="font-medium text-gray-500"> ج.م</span>
             </dd>
           </div>
           <div class="flex items-center justify-between gap-2">
             <dt class="text-gray-500">
-              رسوم التوصيل
+              رسوم التوصيل (تقدير)
               @if (selectedSubZoneName()) {
                 <span class="mt-0.5 block text-[9px] text-gray-400">{{ selectedSubZoneName() }}</span>
               }
             </dt>
             <dd class="m-0 font-semibold text-gray-900">
-              @let fee = deliveryFee();
-              @if (fee === null) {
-                —
-              } @else {
-                <span dir="ltr">{{ fee | number: '1.2-2' }}</span>
-                <span class="font-medium text-gray-500"> ج.م</span>
-              }
+              <span  >{{ deliveryFee() | number: '1.2-2' }}</span>
+              <span class="font-medium text-gray-500"> ج.م</span>
+            </dd>
+          </div>
+          <div class="flex items-center justify-between gap-2">
+            <dt class="text-gray-500">رسوم الخدمة (تقدير)</dt>
+            <dd class="m-0 font-semibold text-gray-900">
+              <span  >{{ serviceFee() | number: '1.2-2' }}</span>
+              <span class="font-medium text-gray-500"> ج.م</span>
             </dd>
           </div>
           <div class="flex items-center justify-between gap-2 border-t border-gray-200 pt-1.5 text-xs">
             <dt class="font-bold text-gray-900">الإجمالي</dt>
             <dd class="m-0 text-xs font-bold text-[var(--Combo-text-text-display)]">
-              @let grandTotal = total();
-              @if (grandTotal === null) {
-                —
-              } @else {
-                <span dir="ltr">{{ grandTotal | number: '1.2-2' }}</span>
-                <span class="text-[10px] font-medium text-gray-500"> ج.م</span>
-              }
+              <span  >{{ total() | number: '1.2-2' }}</span>
+              <span class="text-[10px] font-medium text-gray-500"> ج.م</span>
             </dd>
           </div>
         </dl>
+        @if (cartProblemMessage()) {
+          <p class="m-0 mt-1.5 rounded bg-red-50 px-2 py-1 text-[10px] font-medium text-red-700">
+            {{ cartProblemMessage() }}
+          </p>
+        }
         @if (customerBlocked()) {
           <p class="m-0 mt-1.5 rounded bg-red-50 px-2 py-1 text-[10px] font-medium text-red-700">
             لا يمكن إرسال طلب لعميل محظور.
@@ -516,10 +646,14 @@
         <button
           type="submit"
           class="mt-2 flex h-8 w-full cursor-pointer items-center justify-center gap-1.5 rounded-md border-0 bg-[var(--Combo-bg-background-primary)] text-[11px] font-bold text-white shadow-none transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50"
-          [disabled]="customerBlocked()"
+          [disabled]="customerBlocked() || submitting()"
         >
           <i class="pi pi-send text-xs" aria-hidden="true"></i>
-          تأكيد وإرسال للتشغيل
+          @if (submitting()) {
+            جاري الإرسال…
+          } @else {
+            تأكيد وإرسال للتشغيل
+          }
         </button>
         </div>
       </aside>
@@ -532,7 +666,7 @@
         role="dialog"
         aria-modal="true"
         aria-labelledby="map-dialog-title"
-        class="w-full max-w-md rounded-lg bg-white p-4 shadow-xl"
+        class="w-full max-w-lg rounded-lg bg-white p-4 shadow-xl"
         (click)="$event.stopPropagation()"
       >
         <div class="mb-3 flex items-start justify-between gap-3">
@@ -540,7 +674,7 @@
             <p id="map-dialog-title" role="heading" aria-level="2" class="m-0 text-sm font-bold text-gray-900">
               تحديد على الخريطة
             </p>
-            <p class="m-0 mt-0.5 text-[11px] text-gray-500">اختياري. اختيار المنطقة هنا يملأ القائمة فقط.</p>
+            <p class="m-0 mt-0.5 text-[11px] text-gray-500">اختيار المنطقة الفرعية هنا يملأ القوائم أعلاه.</p>
           </div>
           <button
             type="button"
@@ -551,22 +685,25 @@
             <i class="pi pi-times text-xs" aria-hidden="true"></i>
           </button>
         </div>
-        <div
-          class="grid grid-cols-1 gap-1.5 sm:grid-cols-2"
-          [style.background-image]="'linear-gradient(rgba(15,23,42,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(15,23,42,0.05) 1px, transparent 1px)'"
-          [style.background-size]="'16px 16px'"
-        >
-          @for (zone of dropZones(); track zone.id) {
-            <button
-              type="button"
-              class="rounded-md border-2 bg-white/90 px-2.5 py-2 text-start text-xs font-semibold text-gray-900 transition hover:bg-white"
-              [style.border-color]="zone.color"
-              [style.background-color]="formState().subZoneId === zone.id ? zone.color + '18' : null"
-              [attr.aria-pressed]="formState().subZoneId === zone.id"
-              (click)="applyMapZone(zone.id)"
-            >
-              {{ zone.name }}
-            </button>
+        <div class="flex max-h-[60vh] flex-col gap-3 overflow-y-auto">
+          @for (parent of parentZones(); track parent.id) {
+            <div>
+              <p class="m-0 mb-1.5 text-[11px] font-semibold text-gray-500">{{ parent.name }}</p>
+              <div class="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                @for (zone of subZonesOf(parent.id); track zone.id; let zi = $index) {
+                  <button
+                    type="button"
+                    class="rounded-md border-2 bg-white px-2.5 py-2 text-start text-xs font-semibold text-gray-900 transition hover:bg-gray-50"
+                    [style.border-color]="zoneColor(zi)"
+                    [style.background-color]="formState().subZoneId === zone.id ? zoneColor(zi) + '18' : null"
+                    [attr.aria-pressed]="formState().subZoneId === zone.id"
+                    (click)="applyMapZone(zone.id)"
+                  >
+                    {{ zone.name }}
+                  </button>
+                }
+              </div>
+            </div>
           }
         </div>
       </div>

@@ -1,0 +1,220 @@
+:host {
+  display: contents;
+}
+
+.add-item {
+  &__overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 400;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  &__dialog {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 28rem;
+    max-height: calc(100dvh - 48px);
+    padding: 24px;
+    overflow: hidden;
+    background: var(--Combo-bg-background-card);
+    border: 1px solid var(--Combo-border-border-neutral-secondary);
+    border-radius: 12px;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.16);
+  }
+
+  &__header {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  &__title {
+    margin: 0;
+    font-family: 'Alexandria', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--Combo-text-text-display);
+  }
+
+  &__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--Combo-text-text-secondary-paragraph);
+    cursor: pointer;
+
+    .pi {
+      font-size: 14px;
+    }
+
+    &:hover:not(:disabled) {
+      background: var(--Combo-bg-background-neutral-100);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+  }
+
+  &__alert {
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: var(--Combo-bg-background-error-50);
+    color: var(--Combo-text-text-error);
+    font-size: 13px;
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+    padding: 2px 0 8px;
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    &--narrow {
+      max-width: 120px;
+    }
+  }
+
+  &__label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--Combo-text-text-secondary-paragraph);
+  }
+
+  &__input {
+    width: 100%;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--Combo-border-border-neutral-primary);
+    border-radius: 8px;
+    font-family: 'Alexandria', sans-serif;
+    font-size: 14px;
+    background: var(--Combo-bg-background-card);
+    color: var(--Combo-text-text-display);
+
+    &:focus {
+      outline: none;
+      border-color: var(--Combo-border-border-primary);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+    }
+  }
+
+  &__hint {
+    font-size: 11px;
+    color: var(--Combo-text-text-secondary-paragraph);
+  }
+
+  &__footer {
+    display: flex;
+    flex-shrink: 0;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--Combo-border-border-neutral-secondary);
+  }
+
+  &__ghost-btn,
+  &__primary-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 40px;
+    padding: 0 16px;
+    border-radius: 8px;
+    font-family: 'Alexandria', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  &__ghost-btn {
+    border: 1px solid var(--Combo-border-border-neutral-primary);
+    background: transparent;
+    color: var(--Combo-text-text-primary-paragraph);
+
+    &:hover:not(:disabled) {
+      background: var(--Combo-bg-background-neutral-100);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+  }
+
+  &__primary-btn {
+    border: none;
+    background: var(--Combo-bg-background-primary);
+    color: var(--Combo-text-text-oncolor);
+
+    &:hover:not(:disabled) {
+      filter: brightness(0.95);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+  }
+}
+
+:host ::ng-deep {
+  .add-item__autocomplete {
+    width: 100%;
+  }
+
+  .add-item__autocomplete .add-item__input {
+    width: 100%;
+  }
+
+  .add-item__select {
+    width: 100%;
+  }
+
+  .add-item__price-input {
+    width: 100%;
+
+    .p-inputnumber-input {
+      width: 100%;
+      height: 40px;
+      padding: 0 12px;
+      border: 1px solid var(--Combo-border-border-neutral-primary);
+      border-radius: 8px;
+      font-family: 'Alexandria', sans-serif;
+      font-size: 14px;
+      background: var(--Combo-bg-background-card);
+      color: var(--Combo-text-text-display);
+    }
+  }
+}

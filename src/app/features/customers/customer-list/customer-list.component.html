@@ -91,7 +91,7 @@
               <div class="mt-0.5 text-xs text-gray-400">{{ customer.id }}</div>
             </td>
             <td class="px-4 py-3 whitespace-nowrap">
-              <span dir="ltr" class="inline-block text-gray-800">{{ formatPhone(customer.phone) }}</span>
+              <span   class="inline-block text-gray-800" dir="ltr">{{ formatPhone(customer.phone) }}</span>
             </td>
             <td class="px-4 py-3 text-center font-medium text-gray-800">
               {{ customer.totalOrders ?? '—' }}
@@ -100,7 +100,7 @@
               @if (customer.totalSpent == null) {
                 —
               } @else {
-                <span dir="ltr" class="inline-block">{{ customer.totalSpent | number: '1.2-2' }}</span>
+                <span   class="inline-block">{{ customer.totalSpent | number: '1.2-2' }}</span>
                 ج.م
               }
             </td>

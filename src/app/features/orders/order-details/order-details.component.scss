@@ -1106,6 +1106,32 @@
     color: var(--Combo-text-text-warning);
   }
 
+  &__captain-override {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 12px 0 0;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--Combo-border-border-warning-light);
+    background: var(--Combo-bg-background-warning-50);
+    color: var(--Combo-text-text-warning);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.6;
+
+    p {
+      margin: 0;
+    }
+
+    a {
+      color: inherit;
+      font-weight: 700;
+      text-decoration: underline;
+    }
+  }
+
   &__finance {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1322,5 +1348,27 @@
       font-weight: 700;
       color: var(--Combo-text-text-display);
     }
+  }
+}
+
+:host ::ng-deep .order-details__variant-select {
+  width: 100%;
+  min-width: 160px;
+}
+
+:host ::ng-deep .order-details__inline-price {
+  width: 88px;
+
+  .p-inputnumber-input {
+    width: 100%;
+    font-family: 'Alexandria', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--Combo-text-text-default);
+    background: var(--Combo-bg-background-card);
+    border: 1px solid var(--Combo-form-field-border-default);
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-feature-settings: 'tnum';
   }
 }

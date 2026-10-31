@@ -2,6 +2,7 @@ import { Component, ElementRef, HostListener, computed, inject, output, signal, 
 import { NavigationEnd, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { filter, map } from 'rxjs/operators';
+import { OpsNotification } from '../../core/models/ops-notification.model';
 import { formatOrderAge } from '../../core/models/ops-order.model';
 import { AuthService } from '../../core/services/auth.service';
 import { OpsNotificationService } from '../../core/services/ops-notification.service';
@@ -75,14 +76,11 @@ export class TopbarComponent {
   toggleNotices(): void {
     this.menuOpen.set(false);
     this.noticesOpen.update((open) => !open);
-    if (this.noticesOpen()) {
-      this.notices.markAllRead();
-    }
   }
 
-  openOrder(): void {
+  openNotification(item: OpsNotification): void {
     this.noticesOpen.set(false);
-    void this.router.navigateByUrl('/orders');
+    void this.notices.open(item);
   }
 
   logout(): void {
