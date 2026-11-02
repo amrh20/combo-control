@@ -12,15 +12,17 @@ import {
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AutoCompleteCompleteEvent, AutoCompleteModule } from 'primeng/autocomplete';
+import { InputNumberModule } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
-import { SelectModule } from 'primeng/select';
+import { MultiSelectModule } from 'primeng/multiselect';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
-import { Subject, catchError, finalize, map, of, takeUntil, tap } from 'rxjs';
+import { Subject, catchError, debounceTime, finalize, map, of, takeUntil, tap } from 'rxjs';
 import { egpToPiastres, piastresToEgp } from '../../../core/models/zone.model';
 import { Attribute, AttributeService } from '../../../core/services/attribute.service';
 import { CatalogSection, VendorCatalogService } from '../../../core/services/catalog.service';
 import {
   Product,
+  ProductCombination,
   ProductOption,
   ProductService,
   ProductSpecification,
@@ -29,7 +31,15 @@ import {
   displayImage,
 } from '../../../core/services/product.service';
 import { UploadService } from '../../../core/services/upload.service';
-import { vendorErrorMessage } from '../../../core/services/vendor.service';
+import { VendorService, vendorErrorMessage } from '../../../core/services/vendor.service';
+import {
+  CombinationPermutation,
+  buildSkuMapping,
+  buildVariantPermutations,
+  combinationRowLabel,
+  permutationKey,
+  permutationMatchesMapping,
+} from './product-combinations.util';
 
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 const MAX_IMAGES = 10;
@@ -49,13 +59,21 @@ function optionalNonNegative(control: AbstractControl): ValidationErrors | null 
 @Component({
   selector: 'ctrl-product-form',
   standalone: true,
-  imports: [ReactiveFormsModule, InputTextModule, SelectModule, ToggleSwitchModule, AutoCompleteModule],
+  imports: [
+    ReactiveFormsModule,
+    InputTextModule,
+    InputNumberModule,
+    MultiSelectModule,
+    ToggleSwitchModule,
+    AutoCompleteModule,
+  ],
   templateUrl: './product-form.component.html',
   styleUrl: './product-form.component.scss',
 })
 export class ProductFormComponent implements OnInit {
   private readonly products = inject(ProductService);
   private readonly catalog = inject(VendorCatalogService);
+  private readonly vendors = inject(VendorService);
   private readonly attributes = inject(AttributeService);
   private readonly uploadService = inject(UploadService);
   private readonly destroyRef = inject(DestroyRef);
@@ -66,9 +84,8 @@ export class ProductFormComponent implements OnInit {
   private readonly pendingAttributeNames = new Set<string>();
   private readonly attributeCommitTimers = new Map<number, ReturnType<typeof setTimeout>>();
   private uploadSeq = 0;
-  /** New option rows track the main price until the admin types a different final price. */
-  private readonly optionPriceFollowsBase = new WeakMap<FormGroup, boolean>();
-  private applyingBasePrice = false;
+  private syncingCombinations = false;
+  private loadedCombinations: ProductCombination[] = [];
 
   private vendorId = '';
   private productId: string | null = null;
@@ -87,13 +104,16 @@ export class ProductFormComponent implements OnInit {
   readonly imageDragOver = signal(false);
   readonly sectionLocked = signal(false);
   readonly isEditMode = signal(false);
+  /** Target shop for create/edit when `shopId` or vendor path id is present. */
+  readonly shopName = signal('');
+  readonly shopLoading = signal(false);
   readonly availableAttributes = signal<Attribute[]>([]);
   attributeNameSuggestions: string[] = [];
   optionValueSuggestions: string[] = [];
 
   readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(120)]],
-    sectionId: this.fb.control<string | null>(null),
+    categoryIds: this.fb.nonNullable.control<string[]>([]),
     price: [0, [Validators.required, Validators.min(0)]],
     oldPrice: [null as number | null, optionalNonNegative],
     description: ['', Validators.maxLength(5000)],
@@ -101,6 +121,7 @@ export class ProductFormComponent implements OnInit {
     isNew: [false],
     images: this.fb.nonNullable.array<string>([]),
     variants: this.fb.array<FormGroup>([]),
+    combinations: this.fb.array<FormGroup>([]),
     specifications: this.fb.array<FormGroup>([]),
   });
 
@@ -120,14 +141,15 @@ export class ProductFormComponent implements OnInit {
     const prefilledSectionId = this.route.snapshot.queryParamMap.get('sectionId')?.trim() ?? '';
     if (prefilledSectionId) {
       this.sectionLocked.set(true);
-      this.form.controls.sectionId.disable();
-      this.form.controls.sectionId.setValue(prefilledSectionId);
+      this.form.controls.categoryIds.disable();
+      this.form.controls.categoryIds.setValue([prefilledSectionId]);
     }
 
     this.destroyRef.onDestroy(() => this.clearAttributeCommits());
-    this.form.controls.price.valueChanges
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.syncOptionPricesToBase());
+    this.form.controls.variants.valueChanges
+      .pipe(debounceTime(0), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.syncCombinationsFromVariants());
+    this.loadShop(this.vendorId);
     this.loadSections(this.vendorId);
     this.loadAttributes(this.vendorId);
     if (this.productId) {
@@ -155,6 +177,10 @@ export class ProductFormComponent implements OnInit {
     return this.form.controls.specifications;
   }
 
+  get combinations(): FormArray<FormGroup> {
+    return this.form.controls.combinations;
+  }
+
   imageSrc(url: string): string {
     return displayImage(url);
   }
@@ -163,10 +189,10 @@ export class ProductFormComponent implements OnInit {
     return this.variants.at(index).controls['options'] as FormArray<FormGroup>;
   }
 
-  sectionOptions(): { label: string; value: string }[] {
+  categoryOptions(): Array<{ id: string; name: string }> {
     return this.sections().map((section) => ({
-      label: this.sectionLabel(section),
-      value: section.id,
+      id: section.id,
+      name: this.sectionLabel(section),
     }));
   }
 
@@ -182,7 +208,7 @@ export class ProductFormComponent implements OnInit {
     if (this.variants.length >= MAX_VARIANTS) {
       return;
     }
-    this.variants.push(this.variantGroup(undefined, egpToPiastres(this.currentBasePriceEgp())));
+    this.variants.push(this.variantGroup());
   }
 
   removeVariant(index: number): void {
@@ -195,7 +221,7 @@ export class ProductFormComponent implements OnInit {
     if (options.length >= MAX_OPTIONS) {
       return;
     }
-    options.push(this.optionGroup(undefined, egpToPiastres(this.currentBasePriceEgp())));
+    options.push(this.optionGroup());
   }
 
   removeOption(variantIndex: number, optionIndex: number): void {
@@ -353,6 +379,7 @@ export class ProductFormComponent implements OnInit {
   saveProduct(): void {
     if (this.form.invalid || this.imageError() || this.isUploading() || this.saving() || this.loading()) {
       this.form.markAllAsTouched();
+      this.revealCombinationErrors();
       return;
     }
 
@@ -368,9 +395,11 @@ export class ProductFormComponent implements OnInit {
       return;
     }
 
+    this.syncCombinationsFromVariants();
+
     const payload: ProductWritePayload = {
       vendorId: this.vendorId,
-      sectionId: raw.sectionId?.trim() || null,
+      categoryIds: (raw.categoryIds ?? []).map((id) => id.trim()).filter(Boolean),
       name: raw.name.trim(),
       description: raw.description.trim(),
       images: raw.images.map((image) => image.trim()).filter(Boolean),
@@ -379,6 +408,7 @@ export class ProductFormComponent implements OnInit {
       pricePiastres: egpToPiastres(price),
       oldPricePiastres: oldPrice === null ? null : egpToPiastres(oldPrice),
       variants: this.variantsPayload(),
+      combinations: this.combinationsPayload(),
       specifications: this.specificationsPayload(),
     };
 
@@ -403,21 +433,13 @@ export class ProductFormComponent implements OnInit {
   }
 
   private variantsPayload(): ProductVariant[] {
-    const basePrice = this.currentBasePriceEgp();
-    const basePiastres = egpToPiastres(basePrice);
     return this.variants.getRawValue().map((variant) => {
       const id = String(variant['id'] ?? '').trim();
       const options = (variant['options'] as Array<Record<string, unknown>>).map((option) => {
         const optionId = String(option['id'] ?? '').trim();
-        const parsedPrice = readOptionalEgp(option['price']);
-        const optionPrice = parsedPrice === null ? basePrice : parsedPrice;
-        let priceDeltaPiastres = egpToPiastres(optionPrice) - basePiastres;
-        if (basePiastres + priceDeltaPiastres <= 0) {
-          priceDeltaPiastres = 0;
-        }
         const mapped: ProductOption = {
           label: String(option['label'] ?? '').trim(),
-          priceDeltaPiastres,
+          priceDeltaPiastres: 0,
         };
         if (optionId) {
           mapped.id = optionId;
@@ -432,6 +454,21 @@ export class ProductFormComponent implements OnInit {
         mapped.id = id;
       }
       return mapped;
+    });
+  }
+
+  private combinationsPayload(): ProductCombination[] {
+    return this.combinations.getRawValue().map((row) => {
+      const picks = parseCombinationPicks(row['picksJson']);
+      const priceEgp = Number(row['priceEgp']);
+      const available = row['isAvailable'] === true;
+      const stock = Number(row['stockQuantity']);
+      return {
+        skuMapping: buildSkuMapping(picks),
+        pricePiastres: egpToPiastres(Number.isFinite(priceEgp) && priceEgp >= 0 ? priceEgp : 0),
+        isAvailable: available,
+        stockQuantity: available && Number.isFinite(stock) && stock >= 0 ? Math.trunc(stock) : null,
+      };
     });
   }
 
@@ -469,9 +506,10 @@ export class ProductFormComponent implements OnInit {
   }
 
   private fillForm(product: Product, prefilledSectionId: string): void {
+    const categoryIds = resolveProductCategoryIds(product, prefilledSectionId);
     this.form.reset({
       name: product.name,
-      sectionId: prefilledSectionId || product.sectionId || null,
+      categoryIds,
       price: piastresToEgp(product.pricePiastres),
       oldPrice: product.oldPricePiastres === null ? null : piastresToEgp(product.oldPricePiastres),
       description: product.description,
@@ -482,81 +520,214 @@ export class ProductFormComponent implements OnInit {
     for (const image of product.images) {
       this.images.push(this.fb.nonNullable.control(image));
     }
+    this.loadedCombinations = product.combinations ?? [];
     this.variants.clear();
     for (const variant of product.variants) {
-      this.variants.push(this.variantGroup(variant, product.pricePiastres));
+      this.variants.push(this.variantGroup(variant));
     }
+    this.syncCombinationsFromVariants();
+    this.mergeLoadedCombinations(this.loadedCombinations);
     this.specifications.clear();
     for (const spec of product.specifications) {
       this.specifications.push(this.specificationGroup(spec));
     }
     if (this.sectionLocked()) {
-      this.form.controls.sectionId.disable();
+      this.form.controls.categoryIds.disable();
     }
   }
 
-  private variantGroup(variant?: ProductVariant, basePricePiastres?: number): FormGroup {
+  private variantGroup(variant?: ProductVariant): FormGroup {
     const options = variant?.options.length ? variant.options : [undefined];
     return this.fb.nonNullable.group({
       id: [variant?.id ?? ''],
       name: [variant?.name ?? '', [Validators.required, Validators.maxLength(60)]],
-      options: this.fb.array(options.map((option) => this.optionGroup(option, basePricePiastres))),
+      options: this.fb.array(options.map((option) => this.optionGroup(option))),
     });
   }
 
-  /**
-   * The option control stores the final price in EGP. A loaded choice is
-   * `(basePricePiastres + priceDeltaPiastres) / 100`. A new choice starts at the
-   * current base price, so its delta stays 0 until the admin types another price.
-   */
-  private optionGroup(option?: ProductOption, basePricePiastres?: number): FormGroup {
-    const group = this.fb.nonNullable.group({
+  private optionGroup(option?: ProductOption): FormGroup {
+    return this.fb.nonNullable.group({
       id: [option?.id ?? ''],
       label: [option?.label ?? '', [Validators.required, Validators.maxLength(60)]],
-      price: [this.absoluteOptionPrice(option, basePricePiastres), [Validators.required, Validators.min(0)]],
     });
-    this.optionPriceFollowsBase.set(group, !option);
-    group.controls['price'].valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-      if (!this.applyingBasePrice) {
-        this.optionPriceFollowsBase.set(group, false);
+  }
+
+  private syncCombinationsFromVariants(): void {
+    if (this.syncingCombinations) {
+      return;
+    }
+    this.syncingCombinations = true;
+    const variants = this.variants.getRawValue().map((variant) => ({
+      id: String(variant['id'] ?? '').trim(),
+      name: String(variant['name'] ?? '').trim(),
+      options: (variant['options'] as Array<Record<string, unknown>>).map((option) => ({
+        id: String(option['id'] ?? '').trim(),
+        label: String(option['label'] ?? '').trim(),
+      })),
+    }));
+    const groups = variants
+      .filter((variant) => variant.name.length > 0)
+      .map((variant) => ({
+        id: variant.id,
+        name: variant.name,
+        options: variant.options,
+      }));
+    const permutations = buildVariantPermutations(groups);
+    const existing = new Map(
+      this.combinations.getRawValue().map((row) => [String(row['key'] ?? ''), row]),
+    );
+    this.combinations.clear();
+    for (const permutation of permutations) {
+      const key = permutationKey(permutation);
+      const previous = existing.get(key);
+      const previousPrice = readOptionalEgp(previous?.['priceEgp']);
+      this.combinations.push(
+        this.combinationGroup({
+          key,
+          label: combinationRowLabel(permutation),
+          picks: permutation,
+          priceEgp: previousPrice,
+          isAvailable: previous?.['isAvailable'] !== false,
+          stockQuantity: readOptionalEgp(previous?.['stockQuantity']),
+        }),
+      );
+    }
+    this.syncingCombinations = false;
+  }
+
+  private mergeLoadedCombinations(combos: ProductCombination[]): void {
+    if (!combos.length) {
+      return;
+    }
+    for (const group of this.combinations.controls) {
+      const picks = parseCombinationPicks(group.controls['picksJson'].value);
+      const match = combos.find((combo) => permutationMatchesMapping(picks, combo.skuMapping));
+      if (!match) {
+        continue;
       }
+      group.patchValue({
+        priceEgp: piastresToEgp(match.pricePiastres),
+        isAvailable: match.isAvailable,
+        stockQuantity: match.stockQuantity,
+      });
+      this.applyCombinationAvailability(group);
+    }
+  }
+
+  /** Rows grouped by the first option (for example every color under "كيلو"). */
+  get combinationSections(): CombinationSection[] {
+    const sections: CombinationSection[] = [];
+    const byKey = new Map<string, CombinationSection>();
+    this.combinations.controls.forEach((group, index) => {
+      const picks = parseCombinationPicks(group.controls['picksJson']?.value);
+      const primary = picks[0];
+      const key = primary ? `${primary.variantIndex}:${primary.optionIndex}` : `row-${index}`;
+      const header = primary?.optionLabel || String(group.controls['label']?.value ?? '');
+      const detail = picks
+        .slice(1)
+        .map((pick) => pick.optionLabel)
+        .filter((label) => label.length > 0)
+        .join(' - ');
+      let section = byKey.get(key);
+      if (!section) {
+        section = { key, header, rows: [] };
+        byKey.set(key, section);
+        sections.push(section);
+      }
+      section.rows.push({
+        index,
+        key: String(group.controls['key']?.value ?? index),
+        detail: detail || header,
+      });
     });
+    return sections;
+  }
+
+  combinationInputsDisabled(index: number): boolean {
+    return this.combinations.at(index)?.controls['isAvailable']?.value !== true;
+  }
+
+  combinationFieldInvalid(index: number, field: 'priceEgp' | 'stockQuantity'): boolean {
+    const control = this.combinations.at(index)?.get(field);
+    if (!control?.enabled || (!control.touched && !control.dirty)) {
+      return false;
+    }
+    return readOptionalEgp(control.value) === null;
+  }
+
+  commitCombinationNumber(index: number, field: 'priceEgp' | 'stockQuantity', value: unknown): void {
+    const control = this.combinations.at(index)?.get(field);
+    if (!control || control.disabled) {
+      return;
+    }
+    const amount = readOptionalEgp(value);
+    if (control.value !== amount) {
+      control.setValue(amount);
+    }
+    control.updateValueAndValidity();
+  }
+
+  combinationRowInvalid(index: number): boolean {
+    return (
+      this.combinationFieldInvalid(index, 'priceEgp') ||
+      this.combinationFieldInvalid(index, 'stockQuantity')
+    );
+  }
+
+  onCombinationAvailabilityChange(index: number): void {
+    const group = this.combinations.at(index);
+    if (!group) {
+      return;
+    }
+    this.applyCombinationAvailability(group);
+  }
+
+  private combinationGroup(data: {
+    key: string;
+    label: string;
+    picks: CombinationPermutation;
+    priceEgp: number | null;
+    isAvailable: boolean;
+    stockQuantity: number | null;
+  }): FormGroup {
+    const group = this.fb.group({
+      key: [data.key],
+      label: [data.label],
+      picksJson: [JSON.stringify(data.picks)],
+      priceEgp: [data.priceEgp as number | null],
+      stockQuantity: [data.stockQuantity as number | null],
+      isAvailable: [data.isAvailable],
+    });
+    this.applyCombinationAvailability(group);
     return group;
   }
 
-  /** Keep untouched option rows equal to the main product price while the admin is typing it. */
-  private syncOptionPricesToBase(): void {
-    const base = this.currentBasePriceEgp();
-    this.applyingBasePrice = true;
-    for (const variant of this.variants.controls) {
-      const options = variant.controls['options'] as FormArray<FormGroup>;
-      for (const option of options.controls) {
-        if (!this.optionPriceFollowsBase.get(option)) {
-          continue;
+  /** Price and quantity are required only while the combination is available. */
+  private applyCombinationAvailability(group: FormGroup): void {
+    const available = group.controls['isAvailable'].value === true;
+    for (const name of ['priceEgp', 'stockQuantity'] as const) {
+      const control = group.controls[name];
+      if (available) {
+        control.enable({ emitEvent: false });
+        control.setValidators([Validators.required, Validators.min(0)]);
+      } else {
+        control.clearValidators();
+        control.disable({ emitEvent: false });
+      }
+      control.updateValueAndValidity({ emitEvent: false });
+    }
+  }
+
+  private revealCombinationErrors(): void {
+    for (const group of this.combinations.controls) {
+      for (const name of ['priceEgp', 'stockQuantity'] as const) {
+        const control = group.controls[name];
+        if (control.enabled && control.invalid) {
+          control.markAsDirty();
+          control.markAsTouched();
         }
-        option.controls['price'].setValue(base);
       }
     }
-    this.applyingBasePrice = false;
-  }
-
-  private absoluteOptionPrice(option: ProductOption | undefined, basePricePiastres?: number): number {
-    if (option) {
-      const absolute = piastresToEgp((basePricePiastres ?? 0) + option.priceDeltaPiastres);
-      if (absolute <= 0 && (basePricePiastres ?? 0) > 0) {
-        return piastresToEgp(basePricePiastres ?? 0);
-      }
-      return Math.max(0, absolute);
-    }
-    if (basePricePiastres !== undefined) {
-      return piastresToEgp(basePricePiastres);
-    }
-    return this.currentBasePriceEgp();
-  }
-
-  private currentBasePriceEgp(): number {
-    const amount = readOptionalEgp(this.form.controls.price.value);
-    return amount !== null && amount >= 0 ? amount : 0;
   }
 
   private specificationGroup(spec?: ProductSpecification): FormGroup {
@@ -654,6 +825,26 @@ export class ProductFormComponent implements OnInit {
     this.attributeCommitTimers.clear();
   }
 
+  private loadShop(vendorId: string): void {
+    if (!vendorId) {
+      this.shopName.set('');
+      this.shopLoading.set(false);
+      return;
+    }
+    this.shopLoading.set(true);
+    this.shopName.set('');
+    this.vendors
+      .getVendorById(vendorId)
+      .pipe(
+        catchError(() => of(null)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((vendor) => {
+        this.shopLoading.set(false);
+        this.shopName.set(vendor?.name?.trim() ?? '');
+      });
+  }
+
   private loadSections(vendorId: string): void {
     this.sectionsLoading.set(true);
     this.sectionsError.set(null);
@@ -720,10 +911,39 @@ function isConflict(error: unknown): boolean {
   return error instanceof HttpErrorResponse && error.status === 409;
 }
 
+interface CombinationSection {
+  key: string;
+  header: string;
+  rows: Array<{ index: number; key: string; detail: string }>;
+}
+
 function readOptionalEgp(value: unknown): number | null {
   if (value === null || value === undefined || value === '') {
     return null;
   }
   const amount = Number(value);
   return Number.isFinite(amount) ? amount : null;
+}
+
+function resolveProductCategoryIds(product: Product, prefilledSectionId: string): string[] {
+  if (prefilledSectionId) {
+    return [prefilledSectionId];
+  }
+  if (product.categoryIds.length) {
+    return [...product.categoryIds];
+  }
+  const legacy = product.sectionId.trim();
+  return legacy ? [legacy] : [];
+}
+
+function parseCombinationPicks(value: unknown): CombinationPermutation {
+  if (typeof value !== 'string' || !value.trim()) {
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(value) as CombinationPermutation;
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 }

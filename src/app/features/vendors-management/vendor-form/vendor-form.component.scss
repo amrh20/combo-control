@@ -84,6 +84,20 @@
     color: var(--Combo-text-text-primary-paragraph);
   }
 
+  &__hint {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--Combo-text-text-secondary-paragraph);
+  }
+
+  // Native time control: keep digits LTR so HH:mm stays readable in an RTL form.
+  &__input--time {
+    direction: ltr;
+    text-align: left;
+    font-variant-numeric: tabular-nums;
+  }
+
   &__required {
     color: var(--Combo-text-text-error);
     margin-left: 2px;

@@ -7,7 +7,7 @@ import { MessageService } from 'primeng/api';
 import { InputTextModule } from 'primeng/inputtext';
 import { ToastModule } from 'primeng/toast';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
-import { GeometryInvalidError, GeometryOverlapError } from '../../../core/models/geometry-error';
+import { geometrySaveErrorToast } from '../../../core/models/geometry-error';
 import { ZoneService } from '../../../core/services/zone.service';
 import {
   normalizeZonePolygon,
@@ -121,8 +121,7 @@ export class ZoneFormComponent implements OnInit {
         this.saving.set(false);
         this.messages.add({
           severity: 'error',
-          summary: 'تعذر الحفظ',
-          detail: saveErrorDetail(error, 'تعذر حفظ المنطقة.'),
+          ...geometrySaveErrorToast(error),
           life: 6000,
         });
       },
@@ -132,14 +131,4 @@ export class ZoneFormComponent implements OnInit {
   cancel(): void {
     this.router.navigate(['/zones']);
   }
-}
-
-function saveErrorDetail(error: unknown, fallback: string): string {
-  if (error instanceof GeometryInvalidError) {
-    return error.message;
-  }
-  if (error instanceof GeometryOverlapError) {
-    return 'الرسمة تتداخل مع منطقة أخرى.';
-  }
-  return fallback;
 }

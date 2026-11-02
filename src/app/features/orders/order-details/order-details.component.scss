@@ -906,6 +906,7 @@
     font-family: 'Alexandria', sans-serif;
     font-size: 10px;
     font-weight: 600;
+    text-decoration: none;
     background: var(--Combo-bg-background-neutral-25);
     border: 1px solid var(--Combo-border-border-neutral-secondary);
     border-radius: 6px;
@@ -1124,12 +1125,21 @@
     p {
       margin: 0;
     }
+  }
 
-    a {
-      color: inherit;
-      font-weight: 700;
-      text-decoration: underline;
-    }
+  &__invoice {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__invoice-thumb {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid var(--Combo-border-border-neutral-secondary);
+    cursor: zoom-in;
   }
 
   &__finance {

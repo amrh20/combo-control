@@ -19,7 +19,10 @@ import { InputNumberModule } from 'primeng/inputnumber';
 import { ToastModule } from 'primeng/toast';
 import { forkJoin, map } from 'rxjs';
 import * as turf from '@turf/turf';
-import { GeometryInvalidError, GeometryOverlapError } from '../../../core/models/geometry-error';
+import {
+  GeometryOverlapError,
+  geometrySaveErrorToast,
+} from '../../../core/models/geometry-error';
 
 import { ZoneService } from '../../../core/services/zone.service';
 import { SubZoneService } from '../../../core/services/sub-zone.service';
@@ -356,12 +359,10 @@ export class SubZoneBuilderComponent implements OnInit {
         this.saving.set(false);
         if (error instanceof GeometryOverlapError) {
           this.overlap.set(error.overlap);
-          return;
         }
         this.messages.add({
           severity: 'error',
-          summary: 'تعذر الحفظ',
-          detail: error instanceof GeometryInvalidError ? error.message : 'تعذر حفظ المنطقة الفرعية.',
+          ...geometrySaveErrorToast(error),
           life: 6000,
         });
       },

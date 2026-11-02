@@ -360,24 +360,38 @@
               </span>
             </summary>
 
-            @if (sub.invoiceUrl) {
+            @if (sub.captainOverrideTotal != null) {
               <div class="order-details__captain-override" role="status">
                 <p>
                   تنبيه: قام الكابتن بتعديل إجمالي هذا المتجر إلى
                   <strong>{{ egp(sub.captainOverrideTotal) | number: '1.0-2' }} {{ currency }}</strong>
                 </p>
-                <a
-                  [href]="invoiceHref(sub.invoiceUrl)"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  عرض الفاتورة
-                </a>
               </div>
             }
 
-            @if (shopActions(sub.status).length) {
+            @if (sub.invoiceUrl || shopActions(sub.status).length || canEditItems(sub.status)) {
               <div class="order-details__shop-actions">
+                @if (sub.invoiceUrl) {
+                  <div class="order-details__invoice">
+                    <p-image
+                      [src]="invoiceHref(sub.invoiceUrl)"
+                      alt="فاتورة الكابتن"
+                      [preview]="true"
+                      width="40"
+                      imageClass="order-details__invoice-thumb"
+                    />
+                    <a
+                      class="order-details__tool-btn order-details__tool-btn--edit"
+                      [href]="invoiceHref(sub.invoiceUrl)"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <i class="pi pi-file"></i>
+                      عرض فاتورة الكابتن
+                    </a>
+                  </div>
+                }
+
                 @for (action of shopActions(sub.status); track action.status) {
                   <button
                     type="button"
@@ -391,20 +405,19 @@
                     {{ action.label }}
                   </button>
                 }
-              </div>
-            }
 
-            @if (canEditItems(sub.status)) {
-              <div class="order-details__shop-actions" *ctrlPermission="'orders.update'">
-                <button
-                  type="button"
-                  class="order-details__tool-btn order-details__tool-btn--edit"
-                  [disabled]="pending()"
-                  (click)="openAddProduct(sub)"
-                >
-                  <i class="pi pi-plus"></i>
-                  إضافة منتج
-                </button>
+                @if (canEditItems(sub.status)) {
+                  <button
+                    type="button"
+                    class="order-details__tool-btn order-details__tool-btn--edit"
+                    *ctrlPermission="'orders.update'"
+                    [disabled]="pending()"
+                    (click)="openAddProduct(sub)"
+                  >
+                    <i class="pi pi-plus"></i>
+                    إضافة منتج
+                  </button>
+                }
               </div>
             }
 

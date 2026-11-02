@@ -14,7 +14,10 @@ import { InputTextModule } from 'primeng/inputtext';
 import { ToastModule } from 'primeng/toast';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { forkJoin, of } from 'rxjs';
-import { GeometryInvalidError, GeometryOverlapError } from '../../../core/models/geometry-error';
+import {
+  GeometryOverlapError,
+  geometrySaveErrorToast,
+} from '../../../core/models/geometry-error';
 import type { HubGeometry } from '../../../core/models/hub.model';
 import { normalizeZonePolygon, type ZonePolygon } from '../../../core/models/zone.model';
 import { HubService } from '../../../core/services/hub.service';
@@ -266,12 +269,10 @@ export class HubFormComponent implements OnInit {
         this.saving.set(false);
         if (error instanceof GeometryOverlapError) {
           this.overlap.set(error.overlap);
-          return;
         }
         this.messages.add({
           severity: 'error',
-          summary: 'تعذر الحفظ',
-          detail: error instanceof GeometryInvalidError ? error.message : 'تعذر حفظ الشارع أو المركز.',
+          ...geometrySaveErrorToast(error),
           life: 6000,
         });
       },

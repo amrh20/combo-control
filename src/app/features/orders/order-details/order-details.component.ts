@@ -17,6 +17,7 @@ import { FormsModule } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
+import { ImageModule } from 'primeng/image';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { SelectModule } from 'primeng/select';
 import { ToastModule } from 'primeng/toast';
@@ -160,6 +161,7 @@ const ORDER_PRIORITIES: Record<OrderStatus, OrderPriority> = {
     ToastModule,
     SelectModule,
     InputNumberModule,
+    ImageModule,
     AssignCaptainModalComponent,
     AddOrderItemModalComponent,
   ],

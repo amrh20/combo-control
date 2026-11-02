@@ -10,10 +10,12 @@ import {
   OpsOrderingHub,
   OpsOrderingSubZone,
   OpsOrderingVendor,
+  OpsOrderCalculateResponse,
   OpsPlaceOrderPayload,
   OpsPlaceOrderResponse,
 } from '../models/ops-create-order.model';
 import { formatCartProblems } from '../utils/cart-problem.utils';
+import { displayImage } from './product.service';
 
 const OPS_URL = `${API_BASE_URL}/v1/ops`;
 
@@ -74,6 +76,13 @@ export class OpsCreateOrderService {
         return throwError(() => error);
       }),
     );
+  }
+
+  /** `POST /v1/ops/orders/calculate` — exact fee breakdown for the draft cart. */
+  calculateOrder(payload: OpsPlaceOrderPayload): Observable<OpsOrderCalculateResponse> {
+    return this.http
+      .post<unknown>(`${OPS_URL}/orders/calculate`, payload)
+      .pipe(map(parseOrderCalculate));
   }
 
   /** `POST /v1/ops/orders` with `Idempotency-Key`. */
@@ -276,6 +285,55 @@ function parsePlacedOrder(body: unknown): OpsPlaceOrderResponse {
   return { id, orderNumber };
 }
 
+function parseOrderCalculate(body: unknown): OpsOrderCalculateResponse {
+  const record = asRecord(body);
+  const nested = asRecord(record['totals'] ?? record['quote'] ?? record['pricing']);
+  const source = Object.keys(nested).length > 0 ? nested : record;
+  return {
+    subtotalPiastres: readMoneyPiastres(
+      source,
+      'subtotalPiastres',
+      'subtotal_piastres',
+      'subtotal',
+      'itemsSubtotal',
+      'items_subtotal',
+    ),
+    deliveryFeePiastres: readMoneyPiastres(
+      source,
+      'deliveryFeePiastres',
+      'delivery_fee_piastres',
+      'deliveryFee',
+      'delivery_fee',
+    ),
+    serviceFeePiastres: readMoneyPiastres(
+      source,
+      'serviceFeePiastres',
+      'service_fee_piastres',
+      'serviceFee',
+      'service_fee',
+    ),
+    grandTotalPiastres: readMoneyPiastres(
+      source,
+      'grandTotalPiastres',
+      'grand_total_piastres',
+      'grandTotal',
+      'grand_total',
+      'total',
+      'estimatedTotal',
+      'estimated_total',
+    ),
+  };
+}
+
+function readMoneyPiastres(record: Record<string, unknown>, ...keys: string[]): number {
+  for (const key of keys) {
+    if (key in record) {
+      return readInt(record[key]);
+    }
+  }
+  return 0;
+}
+
 function toCatalogProduct(row: unknown): OpsCatalogProduct | null {
   const record = asRecord(row);
   const id = stringOrNull(record['id'] ?? record['productId']);
@@ -287,8 +345,64 @@ function toCatalogProduct(row: unknown): OpsCatalogProduct | null {
     id,
     name,
     pricePiastres: readInt(record['pricePiastres'] ?? record['price_piastres']),
+    imageUrl: readProductImage(record),
     variants: readVariants(record['variants']),
+    combinations: readCombinations(record['combinations']),
   };
+}
+
+function readProductImage(record: Record<string, unknown>): string | null {
+  const direct = stringOrNull(record['imageUrl'] ?? record['image_url'] ?? record['thumbnailUrl']);
+  if (direct) {
+    return displayImage(direct) || null;
+  }
+  const images = record['images'];
+  if (!Array.isArray(images) || images.length === 0) {
+    return null;
+  }
+  const first = images[0];
+  if (typeof first === 'string') {
+    const url = first.trim();
+    return url ? displayImage(url) || null : null;
+  }
+  const row = asRecord(first);
+  const nested = stringOrNull(row['url'] ?? row['imageUrl']);
+  return nested ? displayImage(nested) || null : null;
+}
+
+function readCombinations(value: unknown): OpsCatalogProduct['combinations'] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .map((item) => {
+      const record = asRecord(item);
+      const rawMapping = record['sku_mapping'] ?? record['skuMapping'];
+      if (!rawMapping || typeof rawMapping !== 'object' || Array.isArray(rawMapping)) {
+        return null;
+      }
+      const skuMapping: Record<string, string> = {};
+      for (const [key, mapped] of Object.entries(rawMapping as Record<string, unknown>)) {
+        const variantKey = String(key).trim();
+        const optionValue = String(mapped ?? '').trim();
+        if (variantKey && optionValue) {
+          skuMapping[variantKey] = optionValue;
+        }
+      }
+      if (!Object.keys(skuMapping).length) {
+        return null;
+      }
+      const stockRaw = record['stockQuantity'] ?? record['stock_quantity'];
+      const stockParsed = readOptionalInt(stockRaw);
+      const availableRaw = record['is_available'] ?? record['isAvailable'];
+      return {
+        skuMapping,
+        pricePiastres: readInt(record['pricePiastres'] ?? record['price_piastres'] ?? record['price']),
+        isAvailable: availableRaw !== false,
+        stockQuantity: stockParsed === undefined ? null : stockParsed,
+      };
+    })
+    .filter((row): row is OpsCatalogProduct['combinations'][number] => row !== null);
 }
 
 function readVariants(value: unknown): OpsCatalogProduct['variants'] {

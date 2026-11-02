@@ -10,11 +10,20 @@ export interface ProductFilters {
   sectionId?: string;
 }
 
-/** One choice inside a variant. `priceDeltaPiastres` is added to the base price. */
+/** One choice inside a variant (pricing lives on `ProductCombination`). */
 export interface ProductOption {
   id?: string;
   label: string;
   priceDeltaPiastres: number;
+}
+
+/** Sellable SKU for a specific option permutation (`POST/PATCH` combinations). */
+export interface ProductCombination {
+  skuMapping: Record<string, string>;
+  pricePiastres: number;
+  isAvailable: boolean;
+  /** Units on hand. Required by the form when the combination is available. */
+  stockQuantity: number | null;
 }
 
 /** A required choice group, such as weight or size. */
@@ -33,7 +42,9 @@ export interface ProductSpecification {
 export interface Product {
   id: string;
   vendorId: string;
+  /** Primary section for list views; first of `categoryIds` when present. */
   sectionId: string;
+  categoryIds: string[];
   name: string;
   description: string;
   /** First image, ready to display. */
@@ -47,13 +58,13 @@ export interface Product {
   price: number;
   sectionName: string;
   variants: ProductVariant[];
+  combinations: ProductCombination[];
   specifications: ProductSpecification[];
 }
 
 export interface ProductWritePayload {
   vendorId: string;
-  /** Shop section. Omitted categories are sent as `shopCategoryId: null`. */
-  sectionId: string | null;
+  categoryIds: string[];
   name: string;
   description: string;
   images: string[];
@@ -62,6 +73,7 @@ export interface ProductWritePayload {
   pricePiastres: number;
   oldPricePiastres: number | null;
   variants: ProductVariant[];
+  combinations: ProductCombination[];
   specifications: ProductSpecification[];
 }
 
@@ -78,6 +90,9 @@ interface ProductApiRecord {
   vendorId?: string | null;
   shopCategoryId?: string | null;
   sectionId?: string | null;
+  shopCategoryIds?: Array<string | null> | null;
+  categoryIds?: Array<string | null> | null;
+  categories?: Array<ProductApiSection | null> | null;
   name?: string | null;
   description?: string | null;
   imageUrl?: string | null;
@@ -89,6 +104,7 @@ interface ProductApiRecord {
   sectionName?: string | null;
   section?: ProductApiSection | null;
   variants?: unknown;
+  combinations?: unknown;
   specifications?: unknown;
 }
 
@@ -172,8 +188,8 @@ function toApiBody(payload: ProductUpdatePayload): Record<string, unknown> {
   if (payload.description !== undefined) {
     body['description'] = payload.description.trim() || null;
   }
-  if (payload.sectionId !== undefined) {
-    body['shopCategoryId'] = payload.sectionId?.trim() || null;
+  if (payload.categoryIds !== undefined) {
+    body['categoryIds'] = payload.categoryIds.map((id) => id.trim()).filter(Boolean);
   }
   if (payload.pricePiastres !== undefined) {
     body['pricePiastres'] = payload.pricePiastres;
@@ -201,6 +217,14 @@ function toApiBody(payload: ProductUpdatePayload): Record<string, unknown> {
       })),
     }));
   }
+  if (payload.combinations !== undefined) {
+    body['combinations'] = payload.combinations.map((combo) => ({
+      skuMapping: combo.skuMapping,
+      price: combo.pricePiastres,
+      isAvailable: combo.isAvailable,
+      stockQuantity: combo.stockQuantity,
+    }));
+  }
   if (payload.specifications !== undefined) {
     body['specifications'] = payload.specifications.map((item) => ({
       label: item.label.trim(),
@@ -214,10 +238,13 @@ function productFromPayload(payload: ProductUpdatePayload, id = ''): Product {
   const pricePiastres = Number(payload.pricePiastres);
   const piastres = Number.isFinite(pricePiastres) ? pricePiastres : 0;
   const images = payload.images?.map((image) => image.trim()).filter(Boolean) ?? [];
+  const categoryIds =
+    payload.categoryIds?.map((id) => id.trim()).filter(Boolean) ?? [];
   return {
     id,
     vendorId: payload.vendorId?.trim() ?? '',
-    sectionId: payload.sectionId?.trim() ?? '',
+    sectionId: categoryIds[0] ?? '',
+    categoryIds,
     name: payload.name?.trim() ?? '',
     description: payload.description?.trim() ?? '',
     imageUrl: images[0] ? displayImage(images[0]) : '',
@@ -229,6 +256,7 @@ function productFromPayload(payload: ProductUpdatePayload, id = ''): Product {
     price: piastresToEgp(piastres),
     sectionName: '',
     variants: payload.variants ?? [],
+    combinations: payload.combinations ?? [],
     specifications: payload.specifications ?? [],
   };
 }
@@ -310,6 +338,46 @@ function readOptionalPiastres(value: unknown): number | null {
   return Number.isFinite(amount) ? amount : null;
 }
 
+function readCombinations(value: unknown): ProductCombination[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const combinations: ProductCombination[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== 'object') {
+      continue;
+    }
+    const row = item as Record<string, unknown>;
+    const rawMapping = row['sku_mapping'] ?? row['skuMapping'];
+    if (!rawMapping || typeof rawMapping !== 'object' || Array.isArray(rawMapping)) {
+      continue;
+    }
+    const skuMapping: Record<string, string> = {};
+    for (const [key, mapped] of Object.entries(rawMapping as Record<string, unknown>)) {
+      const variantKey = String(key).trim();
+      const optionValue = String(mapped ?? '').trim();
+      if (variantKey && optionValue) {
+        skuMapping[variantKey] = optionValue;
+      }
+    }
+    if (!Object.keys(skuMapping).length) {
+      continue;
+    }
+    const priceRaw = row['price'] ?? row['pricePiastres'] ?? row['price_piastres'];
+    const pricePiastres = Number(priceRaw);
+    const availableRaw = row['is_available'] ?? row['isAvailable'];
+    const stockRaw = row['stockQuantity'] ?? row['stock_quantity'];
+    const stockQuantity = Number(stockRaw);
+    combinations.push({
+      skuMapping,
+      pricePiastres: Number.isFinite(pricePiastres) ? pricePiastres : 0,
+      isAvailable: availableRaw !== false,
+      stockQuantity: Number.isFinite(stockQuantity) ? stockQuantity : null,
+    });
+  }
+  return combinations;
+}
+
 function readVariants(value: unknown): ProductVariant[] {
   if (!Array.isArray(value)) {
     return [];
@@ -350,6 +418,32 @@ function readVariants(value: unknown): ProductVariant[] {
   return variants;
 }
 
+function readCategoryIds(row: ProductApiRecord, fallbackSectionId: string | null): string[] {
+  const fromList = readIdList(row.categoryIds ?? row.shopCategoryIds);
+  if (fromList.length) {
+    return fromList;
+  }
+  if (Array.isArray(row.categories)) {
+    const fromCategories = row.categories
+      .map((item) => (item && typeof item === 'object' ? String(item.id ?? '').trim() : ''))
+      .filter(Boolean);
+    if (fromCategories.length) {
+      return fromCategories;
+    }
+  }
+  const single = String(row.shopCategoryId ?? row.sectionId ?? fallbackSectionId ?? '').trim();
+  return single ? [single] : [];
+}
+
+function readIdList(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .map((item) => String(item ?? '').trim())
+    .filter(Boolean);
+}
+
 function readSpecifications(value: unknown): ProductSpecification[] {
   if (!Array.isArray(value)) {
     return [];
@@ -376,13 +470,16 @@ function toProduct(row: ProductApiRecord): Product | null {
     return null;
   }
   const section = row.section && typeof row.section === 'object' ? row.section : null;
+  const categoryIds = readCategoryIds(row, section?.id ?? null);
+  const legacySectionId = String(row.shopCategoryId ?? row.sectionId ?? section?.id ?? '').trim();
   const pricePiastres = Number(row.pricePiastres);
   const piastres = Number.isFinite(pricePiastres) ? pricePiastres : 0;
   const images = readImages(row);
   return {
     id,
     vendorId: String(row.vendorId ?? '').trim(),
-    sectionId: String(row.shopCategoryId ?? row.sectionId ?? section?.id ?? '').trim(),
+    sectionId: categoryIds[0] ?? legacySectionId,
+    categoryIds,
     name,
     description: String(row.description ?? '').trim(),
     imageUrl: images[0] ? displayImage(images[0]) : '',
@@ -394,6 +491,7 @@ function toProduct(row: ProductApiRecord): Product | null {
     price: piastresToEgp(piastres),
     sectionName: String(row.sectionName ?? section?.name ?? '').trim(),
     variants: readVariants(row.variants),
+    combinations: readCombinations(row.combinations),
     specifications: readSpecifications(row.specifications),
   };
 }

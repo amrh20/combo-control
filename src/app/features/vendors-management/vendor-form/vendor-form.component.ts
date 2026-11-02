@@ -46,6 +46,9 @@ const OUTSIDE_HUB_MESSAGE =
 
 const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 
+/** 24-hour `HH:mm` only — rejects 12-hour / AM-PM shaped values. */
+const CLOCK_24H = /^([01]\d|2[0-3]):[0-5]\d$/;
+
 interface PinPoint {
   lat: number;
   lng: number;
@@ -149,8 +152,8 @@ export class VendorFormComponent implements OnInit, OnDestroy {
     minOrder:      [30, [Validators.required, Validators.min(0)]],
     discountPercent:   [0, [Validators.required, Validators.min(0), Validators.max(100)]],
     commissionPercent: [10, [Validators.required, Validators.min(0), Validators.max(100)]],
-    opens:         ['09:00', Validators.required],
-    closes:        ['23:00', Validators.required],
+    opens:         ['09:00', [Validators.required, Validators.pattern(CLOCK_24H)]],
+    closes:        ['23:00', [Validators.required, Validators.pattern(CLOCK_24H)]],
     isActive:      [true],
     autoAccept:    [false],
     liveStatusOverride: ['AUTO' as VendorLiveStatusOverride],

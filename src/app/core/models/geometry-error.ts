@@ -20,13 +20,15 @@ const GEOMETRY_MESSAGES: Record<GeometryProblem, string> = {
   SUB_ZONES_OUTSIDE: 'تصغير المنطقة هيطلّع مناطق فرعية براها',
 };
 
-/** 409 `GEOMETRY_OVERLAP`. `overlap` is the intersecting GeoJSON polygon. */
+/** 4xx `GEOMETRY_OVERLAP`. Carries conflicting names and optional overlap polygon. */
 export class GeometryOverlapError extends Error {
-  readonly overlap: ZonePolygon;
+  readonly conflictNames: string[];
+  readonly overlap: ZonePolygon | null;
 
-  constructor(overlap: ZonePolygon) {
+  constructor(conflictNames: string[], overlap: ZonePolygon | null = null) {
     super('GEOMETRY_OVERLAP');
     this.name = 'GeometryOverlapError';
+    this.conflictNames = conflictNames;
     this.overlap = overlap;
   }
 }
@@ -40,6 +42,36 @@ export class GeometryInvalidError extends Error {
     this.name = 'GeometryInvalidError';
     this.reason = reason;
   }
+}
+
+export interface GeometrySaveToast {
+  summary: string;
+  detail: string;
+}
+
+/** Toast copy for zone / sub-zone / hub geometry save failures. */
+export function geometrySaveErrorToast(error: unknown): GeometrySaveToast {
+  if (error instanceof GeometryOverlapError) {
+    const names = error.conflictNames.join('، ');
+    return {
+      summary: 'تداخل في الخريطة',
+      detail: names
+        ? `لا يمكن الحفظ. هذه المنطقة تتداخل مع: ${names}`
+        : 'لا يمكن الحفظ. هذه المنطقة تتداخل مع منطقة أخرى.',
+    };
+  }
+
+  if (error instanceof GeometryInvalidError) {
+    return {
+      summary: 'تعذر الحفظ',
+      detail: error.message,
+    };
+  }
+
+  return {
+    summary: 'حدث خطأ',
+    detail: 'حدث خطأ',
+  };
 }
 
 /**
@@ -58,11 +90,13 @@ export function mapGeometryError(error: unknown): Observable<never> {
   const code = body?.error?.code;
   const details = body?.error?.details;
 
-  if (error.status === 409 && code === 'GEOMETRY_OVERLAP') {
-    const overlap = details?.conflicts?.[0]?.overlap;
-    if (isPolygon(overlap)) {
-      return throwError(() => new GeometryOverlapError(overlap));
-    }
+  if (error.status >= 400 && error.status < 500 && code === 'GEOMETRY_OVERLAP') {
+    const conflicts = Array.isArray(details?.conflicts) ? details.conflicts : [];
+    const conflictNames = conflicts
+      .map((conflict) => conflict.name?.trim())
+      .filter((name): name is string => !!name);
+    const overlap = conflicts.map((conflict) => conflict.overlap).find(isPolygon) ?? null;
+    return throwError(() => new GeometryOverlapError(conflictNames, overlap));
   }
 
   if (error.status === 400 && code === 'GEOMETRY_INVALID') {

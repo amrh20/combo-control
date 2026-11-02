@@ -5,6 +5,24 @@
       {{ backLabel }}
     </button>
     <h1 class="product-form__title">{{ title }}</h1>
+    @if (shopLoading()) {
+      <p class="product-form__shop product-form__shop--loading" aria-live="polite">
+        <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        جاري تحميل المتجر...
+      </p>
+    } @else if (shopName(); as name) {
+      <p class="product-form__shop" aria-live="polite">
+        @if (isEditMode()) {
+          يتم تعديل هذا المنتج في متجر:
+        } @else {
+          يتم إضافة هذا المنتج إلى متجر:
+        }
+        <span class="product-form__shop-badge">
+          <i class="pi pi-shop" aria-hidden="true"></i>
+          {{ name }}
+        </span>
+      </p>
+    }
     <p class="product-form__subtitle">
       الاسم والسعر والفئة، مع الصور والاختيارات.
     </p>
@@ -47,17 +65,20 @@
 
         <div class="product-form__field">
           <label class="product-form__label" for="productSection">الفئة</label>
-          <p-select
+          <p-multiselect
             inputId="productSection"
-            [options]="sectionOptions()"
-            optionLabel="label"
-            optionValue="value"
-            formControlName="sectionId"
+            [options]="categoryOptions()"
+            optionLabel="name"
+            optionValue="id"
+            formControlName="categoryIds"
+            [filter]="true"
+            filterPlaceHolder="بحث..."
             [showClear]="!sectionLocked()"
-            [placeholder]="sectionsLoading() ? 'جاري تحميل الفئات...' : 'اختر الفئة (اختياري)'"
+            [placeholder]="sectionsLoading() ? 'جاري تحميل الفئات...' : 'اختر الفئات (اختياري)'"
             appendTo="body"
-            styleClass="product-form__select"
+            styleClass="product-form__select product-form__multiselect"
             panelStyleClass="product-form__section-panel"
+            display="chip"
           />
           @if (sectionLocked()) {
             <span class="product-form__hint">الفئة محددة من التصنيف الحالي.</span>
@@ -200,7 +221,7 @@
         الاختيارات
       </h2>
       <p class="product-form__hint">
-        لكل خيار سعره النهائي بالجنيه. مثال: السعر الأساسي 100 ج.م، وخيار 2 كجم = 190 ج.م.
+        عرّف مجموعات الخيارات (مثل الوزن واللون)، ثم حدّد السعر والتوفر لكل تركيبة في الجدول أدناه.
         اضغط داخل الحقل لعرض الاقتراحات، أو اكتب اسماً جديداً.
       </p>
 
@@ -270,22 +291,6 @@
                         scrollHeight="240px"
                       />
                     </div>
-                    <div class="product-form__choice-field">
-                      @if (first) {
-                        <span class="product-form__label">السعر النهائي للخيار (ج.م)</span>
-                      }
-                      <input
-                        type="number"
-                        pInputText
-                        formControlName="price"
-                        class="product-form__input"
-                        placeholder="0"
-                        min="0"
-                        step="0.5"
-                         
-                        aria-label="السعر النهائي للخيار بالجنيه"
-                      />
-                    </div>
                     <button
                       type="button"
                       class="product-form__icon-btn product-form__choice-remove"
@@ -298,9 +303,6 @@
                   </div>
                   @if (option.get('label')?.touched && option.get('label')?.invalid) {
                     <span class="product-form__field-error">القيمة مطلوبة</span>
-                  }
-                  @if (option.get('price')?.touched && option.get('price')?.invalid) {
-                    <span class="product-form__field-error">أدخل سعراً صالحاً</span>
                   }
                 </div>
               }
@@ -328,6 +330,80 @@
           + إضافة مجموعة خيارات جديدة
         </button>
       </div>
+
+      @if (combinations.length > 0) {
+        <h2 class="product-form__section-title product-form__section-title--compact">
+          <i class="pi pi-table"></i>
+          تركيبات الخيارات
+        </h2>
+        <p class="product-form__hint">
+          تُجمَّع التركيبات حسب الخيار الأول. السعر والكمية مطلوبان لكل تركيبة متوفرة.
+        </p>
+        <div formArrayName="combinations" class="product-form__combo-table-wrap">
+          <table class="product-form__combo-table">
+            <thead>
+              <tr>
+                <th scope="col">التركيبة</th>
+                <th scope="col">السعر (ج.م)</th>
+                <th scope="col">الكمية</th>
+                <th scope="col">متوفر؟</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (section of combinationSections; track section.key) {
+                <tr class="product-form__combo-group">
+                  <th scope="colgroup" colspan="4">{{ section.header }}</th>
+                </tr>
+                @for (row of section.rows; track row.index) {
+                  <ng-container [formGroupName]="row.index">
+                  <tr [class.product-form__combo-row--invalid]="combinationRowInvalid(row.index)">
+                    <th scope="row" class="product-form__combo-label">{{ row.detail }}</th>
+                    <td [class.product-form__combo-cell--invalid]="combinationFieldInvalid(row.index, 'priceEgp')">
+                      <p-inputnumber
+                        formControlName="priceEgp"
+                        [min]="0"
+                        [minFractionDigits]="0"
+                        [maxFractionDigits]="2"
+                        mode="decimal"
+                        locale="en-US"
+                        styleClass="product-form__combo-price"
+                        [inputId]="'comboPrice' + row.index"
+                        (onInput)="commitCombinationNumber(row.index, 'priceEgp', $event.value)"
+                      />
+                      @if (combinationFieldInvalid(row.index, 'priceEgp')) {
+                        <span class="product-form__field-error">أدخل السعر</span>
+                      }
+                    </td>
+                    <td [class.product-form__combo-cell--invalid]="combinationFieldInvalid(row.index, 'stockQuantity')">
+                      <p-inputnumber
+                        formControlName="stockQuantity"
+                        [min]="0"
+                        [maxFractionDigits]="0"
+                        [useGrouping]="false"
+                        locale="en-US"
+                        styleClass="product-form__combo-qty"
+                        [inputId]="'comboQty' + row.index"
+                        (onInput)="commitCombinationNumber(row.index, 'stockQuantity', $event.value)"
+                      />
+                      @if (combinationFieldInvalid(row.index, 'stockQuantity')) {
+                        <span class="product-form__field-error">أدخل الكمية</span>
+                      }
+                    </td>
+                    <td class="product-form__combo-toggle">
+                      <p-toggleswitch
+                        formControlName="isAvailable"
+                        [inputId]="'comboAvail' + row.index"
+                        (onChange)="onCombinationAvailabilityChange(row.index)"
+                      />
+                    </td>
+                  </tr>
+                  </ng-container>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+      }
 
       <!--
         المواصفات مخفية مؤقتاً. القيم تبقى في FormArray وتُرسل مع الحفظ

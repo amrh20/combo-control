@@ -215,29 +215,38 @@
       <div class="row g-4">
         <div class="col-md-6">
           <div class="vendor-form__field">
-            <label class="vendor-form__label" for="openingTime">وقت الفتح</label>
+            <label class="vendor-form__label" for="openingTime">وقت الفتح (24 ساعة)</label>
+            <!-- lang=en-GB + dir=ltr force a 24h HH:mm picker even when the page is ar/RTL. -->
             <input
               id="openingTime"
               type="time"
+              lang="en-GB"
+              dir="ltr"
+              step="60"
               pInputText
               formControlName="opens"
-              class="vendor-form__input"
-               
+              class="vendor-form__input vendor-form__input--time"
+              autocomplete="off"
             />
+            <p class="vendor-form__hint">صيغة 24 ساعة، مثال 09:00 أو 21:00 — من غير صباح/مساء.</p>
           </div>
         </div>
 
         <div class="col-md-6">
           <div class="vendor-form__field">
-            <label class="vendor-form__label" for="closingTime">وقت الإغلاق</label>
+            <label class="vendor-form__label" for="closingTime">وقت الإغلاق (24 ساعة)</label>
             <input
               id="closingTime"
               type="time"
+              lang="en-GB"
+              dir="ltr"
+              step="60"
               pInputText
               formControlName="closes"
-              class="vendor-form__input"
-               
+              class="vendor-form__input vendor-form__input--time"
+              autocomplete="off"
             />
+            <p class="vendor-form__hint">صيغة 24 ساعة، مثال 09:00 أو 21:00 — من غير صباح/مساء.</p>
           </div>
         </div>
 

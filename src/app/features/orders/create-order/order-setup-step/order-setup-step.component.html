@@ -1,0 +1,157 @@
+<section class="rounded-lg border border-gray-200 bg-white p-4">
+  <header class="mb-3">
+    <p class="m-0 text-sm font-bold text-[var(--Combo-text-text-display)]">بيانات العميل والموقع</p>
+    <p class="m-0 mt-0.5 text-[11px] text-gray-500">ابحث بالهاتف، ثم اختر المنطقة والشارع.</p>
+  </header>
+
+  <form class="grid gap-3 md:grid-cols-2" [formGroup]="form" autocomplete="off" novalidate>
+    <div>
+      <label class="mb-1 block text-xs font-medium text-gray-700" for="order-phone">
+        رقم الهاتف <span class="text-red-600">*</span>
+      </label>
+      <input
+        id="order-phone"
+        type="tel"
+        inputmode="numeric"
+        formControlName="phone"
+        placeholder="01xxxxxxxxx"
+        autocomplete="off"
+        class="h-10 w-full rounded-md border border-gray-200 bg-white px-2.5 text-sm outline-none focus:border-[#00846A]"
+      />
+      @if (customerSearchLoading()) {
+        <p class="m-0 mt-1 text-[11px] text-gray-400">جاري البحث عن العميل…</p>
+      } @else if (form.controls.customerId.value) {
+        <p class="m-0 mt-1 text-[11px] text-emerald-700">تم العثور على عميل مسجّل.</p>
+      }
+      @if (customerBlocked()) {
+        <p class="m-0 mt-1 text-[11px] font-medium text-red-700">هذا الرقم لعميل محظور ولا يمكن إرسال الطلب.</p>
+      } @else if (showErrors() && form.controls.phone.invalid) {
+        <p class="m-0 mt-1 text-[11px] text-red-600">أدخل رقم موبايل مصري من 11 رقمًا يبدأ بـ 01.</p>
+      }
+    </div>
+
+    <div>
+      <label class="mb-1 block text-xs font-medium text-gray-700" for="order-name">
+        اسم العميل <span class="text-red-600">*</span>
+      </label>
+      <input
+        id="order-name"
+        type="text"
+        formControlName="customerName"
+        placeholder="اسم المستلم"
+        class="h-10 w-full rounded-md border border-gray-200 bg-white px-2.5 text-sm outline-none focus:border-[#00846A]"
+      />
+      @if (showErrors() && form.controls.customerName.invalid) {
+        <p class="m-0 mt-1 text-[11px] text-red-600">اسم العميل مطلوب.</p>
+      }
+    </div>
+
+    @if (searchedCustomer(); as customer) {
+      <div
+        class="flex items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-xs md:col-span-2"
+        [class.bg-red-50]="customer.status === 'BLOCKED'"
+        [class.text-red-800]="customer.status === 'BLOCKED'"
+        [class.bg-gray-50]="customer.status !== 'BLOCKED'"
+      >
+        <span>عميل مسجّل: <strong>{{ customer.name }}</strong></span>
+        <button type="button" class="text-[11px] font-semibold underline" (click)="clearCustomerLink()">إلغاء الربط</button>
+      </div>
+    }
+
+    @if (savedAddresses().length > 0) {
+      <div class="md:col-span-2">
+        <p class="m-0 mb-1.5 text-xs font-semibold text-gray-700">العناوين المحفوظة</p>
+        <ul class="m-0 grid list-none grid-cols-1 gap-1.5 p-0 sm:grid-cols-2">
+          @for (address of savedAddresses(); track address.id) {
+            <li>
+              <button
+                type="button"
+                class="w-full rounded-md border px-2.5 py-1.5 text-start text-xs"
+                [class.border-[#00846A]]="selectedAddressId() === address.id"
+                [class.border-gray-200]="selectedAddressId() !== address.id"
+                (click)="selectSavedAddress(address)"
+              >
+                <span class="font-semibold">{{ address.label || 'عنوان' }}</span>
+                <span class="mt-0.5 block text-gray-500">{{ address.line }}</span>
+              </button>
+            </li>
+          }
+        </ul>
+      </div>
+    }
+
+    <div>
+      <label class="mb-1 block text-xs font-medium text-gray-700" for="order-region">المنطقة <span class="text-red-600">*</span></label>
+      <p-select
+        inputId="order-region"
+        formControlName="parentZoneId"
+        [options]="parentZones()"
+        optionLabel="name"
+        optionValue="id"
+        appendTo="body"
+        styleClass="order-select"
+        [placeholder]="lookupsLoading() ? 'جاري التحميل…' : 'اختر المنطقة'"
+        [filter]="true"
+        filterPlaceholder="ابحث عن المنطقة..."
+        emptyMessage="لا توجد مناطق"
+      />
+    </div>
+
+    <div>
+      <label class="mb-1 block text-xs font-medium text-gray-700" for="order-subregion">
+        المنطقة الفرعية <span class="text-red-600">*</span>
+      </label>
+      <p-select
+        inputId="order-subregion"
+        formControlName="subZoneId"
+        [options]="childSubZones()"
+        optionLabel="name"
+        optionValue="id"
+        appendTo="body"
+        styleClass="order-select"
+        placeholder="اختر المنطقة الفرعية"
+        [disabled]="!form.controls.parentZoneId.value"
+        [filter]="true"
+        filterPlaceholder="ابحث عن المنطقة الفرعية..."
+        emptyMessage="لا توجد مناطق فرعية"
+      />
+    </div>
+
+    <div class="md:col-span-2">
+      <label class="mb-1 block text-xs font-medium text-gray-700" for="order-address">
+        تفاصيل العنوان <span class="text-red-600">*</span>
+      </label>
+      <textarea
+        id="order-address"
+        rows="2"
+        formControlName="addressDetails"
+        placeholder="عمارة، دور، علامة مميزة"
+        class="w-full rounded-md border border-gray-200 px-2.5 py-2 text-sm outline-none focus:border-[#00846A]"
+      ></textarea>
+      @if (showErrors() && form.controls.addressDetails.invalid) {
+        <p class="m-0 mt-1 text-[11px] text-red-600">أدخل 3 أحرف على الأقل.</p>
+      }
+    </div>
+
+    <div class="md:col-span-2">
+      <label class="mb-1 block text-xs font-medium text-gray-700" for="order-street">الشارع <span class="text-red-600">*</span></label>
+      <p-select
+        inputId="order-street"
+        formControlName="hubId"
+        [options]="eligibleHubs()"
+        optionLabel="name"
+        optionValue="id"
+        appendTo="body"
+        styleClass="order-select"
+        placeholder="اختر الشارع"
+        [disabled]="!form.controls.subZoneId.value"
+        [filter]="true"
+        filterPlaceholder="ابحث عن الشارع..."
+        emptyMessage="لا يوجد شارع يخدم هذه المنطقة"
+      />
+      @if (showErrors() && form.controls.hubId.invalid) {
+        <p class="m-0 mt-1 text-[11px] text-red-600">اختر الشارع.</p>
+      }
+    </div>
+  </form>
+</section>
