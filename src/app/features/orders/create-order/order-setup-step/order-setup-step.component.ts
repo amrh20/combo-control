@@ -59,7 +59,7 @@ export class OrderSetupStepComponent {
 
   readonly form = this.fb.nonNullable.group({
     phone: ['', [Validators.required, Validators.pattern(/^01[0125]\d{8}$/)]],
-    customerName: ['', Validators.required],
+    customerName: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(100)]],
     customerId: [''],
     parentZoneId: this.fb.control<string | null>(null, Validators.required),
     subZoneId: this.fb.control<string | null>(null, Validators.required),

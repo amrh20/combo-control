@@ -41,8 +41,12 @@
         placeholder="اسم المستلم"
         class="h-10 w-full rounded-md border border-gray-200 bg-white px-2.5 text-sm outline-none focus:border-[#00846A]"
       />
-      @if (showErrors() && form.controls.customerName.invalid) {
+      @if (showErrors() && form.controls.customerName.errors?.['required']) {
         <p class="m-0 mt-1 text-[11px] text-red-600">اسم العميل مطلوب.</p>
+      } @else if (showErrors() && form.controls.customerName.errors?.['minlength']) {
+        <p class="m-0 mt-1 text-[11px] text-red-600">اسم العميل يجب ألا يقل عن 3 أحرف.</p>
+      } @else if (showErrors() && form.controls.customerName.errors?.['maxlength']) {
+        <p class="m-0 mt-1 text-[11px] text-red-600">اسم العميل طويل جداً.</p>
       }
     </div>
 

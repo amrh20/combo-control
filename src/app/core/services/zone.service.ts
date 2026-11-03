@@ -23,8 +23,8 @@ interface SubZoneApiBody {
   geometry: ZonePolygon;
   color: string;
   minOrderPiastres: number;
-  /** Fixed delivery fee in piastres — matches API `deliveryFee`. */
-  deliveryFee: number;
+  /** Base delivery fee in piastres — matches API `baseDeliveryFeePiastres`. */
+  baseDeliveryFeePiastres: number;
   /** Extra delivery fee per additional shop, in piastres. */
   extraShopDeliveryFeePiastres: number;
   isActive: boolean;
@@ -182,7 +182,9 @@ function toZone(row: ZoneApiRecord): Zone {
 
 function toSubZone(row: SubZoneApiRecord): SubZone {
   const minOrderEGP = piastresToEgp(row.effectiveMinOrderPiastres);
-  const deliveryFee = piastresToEgp(row.deliveryFee ?? 0);
+  const deliveryFee = piastresToEgp(
+    row.baseDeliveryFeePiastres ?? row.deliveryFee ?? 0,
+  );
   const extraShopDeliveryFee = piastresToEgp(row.extraShopDeliveryFeePiastres ?? 0);
   return {
     id: row.id,
@@ -204,7 +206,7 @@ function toSubZoneBody(payload: SubZoneBatchItem): SubZoneApiBody {
     geometry: requirePolygon(payload.geometry),
     color: payload.color.toLowerCase(),
     minOrderPiastres: egpToPiastres(payload.minOrder),
-    deliveryFee: egpToPiastres(payload.deliveryFee),
+    baseDeliveryFeePiastres: egpToPiastres(payload.deliveryFee),
     extraShopDeliveryFeePiastres: egpToPiastres(payload.extraShopDeliveryFee),
     isActive: payload.isActive,
   };
