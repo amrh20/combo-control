@@ -1,6 +1,6 @@
 import { Injectable, NgZone, effect, inject } from '@angular/core';
 import { Observable, Subject, filter, map } from 'rxjs';
-import { API_BASE_URL } from '../api-config';
+import { environment } from '../../../environments/environment';
 import { AuthService } from './auth.service';
 
 const CLOSE_UNAUTHORIZED = 4401;
@@ -151,7 +151,7 @@ export class RealtimeService {
 
 /** `ws(s)://<host>/v1/realtime?access_token=…` */
 export function staffRealtimeUrl(accessToken: string): string {
-  const base = API_BASE_URL.replace(/^http/i, 'ws');
+  const base = environment.apiUrl.replace(/^http/i, 'ws');
   return `${base}/v1/realtime?access_token=${encodeURIComponent(accessToken)}`;
 }
 

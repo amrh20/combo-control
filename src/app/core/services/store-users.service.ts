@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map, throwError } from 'rxjs';
-import { API_BASE_URL } from '../api-config';
+import { environment } from '../../../environments/environment';
 import {
   CreateStoreUserPayload,
   StoreUser,
@@ -124,7 +124,7 @@ export function storeUserErrorMessage(error: unknown, fallback: string): string 
 
 /** `GET` / `POST /v1/ops/stores/{storeId}/users` */
 export function storeUsersUrl(storeId: string): string {
-  return `${API_BASE_URL}/v1/ops/stores/${encodeURIComponent(storeId)}/users`;
+  return `${environment.apiUrl}/v1/ops/stores/${encodeURIComponent(storeId)}/users`;
 }
 
 function storeUserUrl(storeId: string, userId: string): string {

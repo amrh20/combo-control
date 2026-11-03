@@ -53,7 +53,7 @@ import {
   ROLE_OPTIONS,
   VEHICLE_OPTIONS,
   getInitials,
-} from '../data/drivers.mock';
+} from '../data/captain-display';
 
 @Component({
   selector: 'ctrl-driver-details',

@@ -1,11 +1,11 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { API_BASE_URL } from '../api-config';
+import { environment } from '../../../environments/environment';
 import { ApiErrorBody } from '../models/auth.model';
 import { Customer, CustomerPage, CustomerStatus } from '../models/customer.model';
 
-const CUSTOMERS_URL = `${API_BASE_URL}/v1/customers`;
+const CUSTOMERS_URL = `${environment.apiUrl}/v1/customers`;
 const STATUSES = new Set<CustomerStatus>(['ACTIVE', 'BLOCKED']);
 
 interface CustomerApiRecord {

@@ -399,7 +399,7 @@ export class ProductFormComponent implements OnInit {
 
     const payload: ProductWritePayload = {
       vendorId: this.vendorId,
-      categoryIds: (raw.categoryIds ?? []).map((id) => id.trim()).filter(Boolean),
+      shopCategoryIds: (raw.categoryIds ?? []).map((id) => id.trim()).filter(Boolean),
       name: raw.name.trim(),
       description: raw.description.trim(),
       images: raw.images.map((image) => image.trim()).filter(Boolean),
@@ -588,7 +588,7 @@ export class ProductFormComponent implements OnInit {
           picks: permutation,
           priceEgp: previousPrice,
           isAvailable: previous?.['isAvailable'] !== false,
-          stockQuantity: readOptionalEgp(previous?.['stockQuantity']),
+          stockQuantity: readOptionalStockQuantity(previous?.['stockQuantity']),
         }),
       );
     }
@@ -652,6 +652,9 @@ export class ProductFormComponent implements OnInit {
     if (!control?.enabled || (!control.touched && !control.dirty)) {
       return false;
     }
+    if (field === 'stockQuantity') {
+      return readOptionalStockQuantity(control.value) === null;
+    }
     return readOptionalEgp(control.value) === null;
   }
 
@@ -660,7 +663,8 @@ export class ProductFormComponent implements OnInit {
     if (!control || control.disabled) {
       return;
     }
-    const amount = readOptionalEgp(value);
+    const amount =
+      field === 'stockQuantity' ? readOptionalStockQuantity(value) : readOptionalEgp(value);
     if (control.value !== amount) {
       control.setValue(amount);
     }
@@ -923,6 +927,18 @@ function readOptionalEgp(value: unknown): number | null {
   }
   const amount = Number(value);
   return Number.isFinite(amount) ? amount : null;
+}
+
+/** Stock is a whole unit count — never pass through EGP/currency helpers. */
+function readOptionalStockQuantity(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+  const amount = Number(value);
+  if (!Number.isFinite(amount) || amount < 0) {
+    return null;
+  }
+  return Math.trunc(amount);
 }
 
 function resolveProductCategoryIds(product: Product, prefilledSectionId: string): string[] {

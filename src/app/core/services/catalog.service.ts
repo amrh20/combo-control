@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { API_BASE_URL } from '../api-config';
+import { environment } from '../../../environments/environment';
 
 export interface Product {
   id: string;
@@ -297,7 +297,7 @@ interface SectionApiRecord {
   parentId?: string | null;
 }
 
-const VENDORS_URL = `${API_BASE_URL}/v1/vendors`;
+const VENDORS_URL = `${environment.apiUrl}/v1/vendors`;
 
 /**
  * Vendor catalog sections (`/v1/vendors/{vendorId}/sections`).

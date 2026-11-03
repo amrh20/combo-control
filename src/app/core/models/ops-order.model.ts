@@ -178,6 +178,11 @@ export interface OpsOrder {
   previousFees: Piastres;
   estimatedTotal: Piastres;
   finalTotal: Piastres | null;
+  /**
+   * Ops invoice goods total in piastres. When set, customer grand total is
+   * opsAdjustedTotal + deliveryFee + serviceFee + previousFees (discount 0).
+   */
+  opsAdjustedTotal: Piastres | null;
   customerNotes: string | null;
   callBeforeDelivery: boolean;
   cancellationReason: string | null;
@@ -252,6 +257,30 @@ export interface AddOrderItemModalSubmit {
 export interface CancelOrderPayload {
   reason: string;
   chargeFee: boolean;
+}
+
+/** One line in `PATCH /v1/ops/orders/{id}/adjust`. Amounts in piastres. */
+export interface AdjustOrderLinePayload {
+  orderLineId: string;
+  /** 0 removes the line; 1+ updates quantity. */
+  quantity?: number;
+  /** Replaces the unit price for this line (piastres). */
+  pricePiastres?: number;
+}
+
+/**
+ * `PATCH /v1/ops/orders/{id}/adjust` — reconcile lines against the captain invoice.
+ * Requires an `Idempotency-Key` header.
+ */
+export interface AdjustOrderPayload {
+  version: number;
+  lines?: AdjustOrderLinePayload[];
+  /**
+   * Manual goods total from the invoice(s), in piastres.
+   * Customer grand total becomes override + delivery + service + previousFees.
+   * `null` clears a previous override.
+   */
+  overrideTotalPiastres?: number | null;
 }
 
 export interface StatusDisplay {
@@ -375,6 +404,14 @@ export function shopStatusActions(status: SubOrderStatus): readonly ShopStatusAc
 
 export function itemsEditable(status: SubOrderStatus): boolean {
   return status === 'PENDING' || status === 'PREPARING';
+}
+
+/**
+ * Ops may settle line items + invoice goods total until the order is terminal.
+ * Most useful once shops are picked up / consolidating, but the API allows any open status.
+ */
+export function canAdjustOrder(order: OpsOrder): boolean {
+  return !CLOSED_ORDER_STATUSES.includes(order.status);
 }
 
 export function isActiveTrip(trip: OpsTrip): boolean {

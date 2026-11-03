@@ -42,6 +42,10 @@ interface SubZoneDraft {
   layerId: number;
   name: string;
   minOrder: number;
+  /** `null` while empty — required before save. */
+  deliveryFee: number | null;
+  /** Extra per additional shop, in EGP. Defaults to 0. */
+  extraShopDeliveryFee: number;
   color: string;
   geometry: ZonePolygon;
   areaSqKm: number;
@@ -179,6 +183,14 @@ export class SubZoneBuilderComponent implements OnInit {
       if (!Number.isFinite(draft.minOrder) || draft.minOrder < 0) {
         messages.push('الحد الأدنى يجب أن يكون صفراً أو أكثر.');
       }
+      if (draft.deliveryFee === null || !Number.isFinite(draft.deliveryFee)) {
+        messages.push('سعر التوصيل مطلوب.');
+      } else if (draft.deliveryFee < 0) {
+        messages.push('سعر التوصيل يجب أن يكون صفراً أو أكثر.');
+      }
+      if (!Number.isFinite(draft.extraShopDeliveryFee) || draft.extraShopDeliveryFee < 0) {
+        messages.push('رسوم التوصيل لكل متجر إضافي يجب أن تكون صفراً أو أكثر.');
+      }
 
       const geometry = normalizeZonePolygon(draft.geometry);
       if (!geometry || !parent || !this.isWithin(geometry, parent)) {
@@ -288,6 +300,8 @@ export class SubZoneBuilderComponent implements OnInit {
         ...polygon,
         name: '',
         minOrder: this.parentZone()?.minOrder ?? 0,
+        deliveryFee: null,
+        extraShopDeliveryFee: 0,
         color,
       },
     ]);
@@ -313,6 +327,14 @@ export class SubZoneBuilderComponent implements OnInit {
     this.updateDraft(layerId, { minOrder: value ?? 0 });
   }
 
+  updateDeliveryFee(layerId: number, value: number | null): void {
+    this.updateDraft(layerId, { deliveryFee: value });
+  }
+
+  updateExtraShopDeliveryFee(layerId: number, value: number | null): void {
+    this.updateDraft(layerId, { extraShopDeliveryFee: value ?? 0 });
+  }
+
   updateColor(layerId: number, color: string): void {
     this.updateDraft(layerId, { color });
     this.map()?.updateLayerColor(layerId, color);
@@ -336,10 +358,14 @@ export class SubZoneBuilderComponent implements OnInit {
 
     // getRawValue() includes the disabled (locked) parent control, which `.value` omits.
     const { parentZoneId } = this.subZoneForm.getRawValue();
-    const payloads = this.subZones().map(({ layerId: _layerId, areaSqKm: _area, ...draft }) => ({
-      ...draft,
-      isActive: true,
-    }));
+    const payloads = this.subZones().map(
+      ({ layerId: _layerId, areaSqKm: _area, deliveryFee, extraShopDeliveryFee, ...draft }) => ({
+        ...draft,
+        deliveryFee: deliveryFee ?? 0,
+        extraShopDeliveryFee: extraShopDeliveryFee ?? 0,
+        isActive: true,
+      }),
+    );
 
     const draft = payloads[0];
     if (!draft) {
@@ -397,6 +423,8 @@ export class SubZoneBuilderComponent implements OnInit {
       ...created,
       name: existing.name,
       minOrder: existing.minOrderEGP,
+      deliveryFee: existing.deliveryFee,
+      extraShopDeliveryFee: existing.extraShopDeliveryFee,
       color: existing.color,
     }]);
   }

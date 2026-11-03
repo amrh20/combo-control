@@ -13,7 +13,7 @@ import { CatalogSection, VendorCatalogService } from '../../core/services/catalo
 import { Product, ProductService } from '../../core/services/product.service';
 import { categoryIconSrc } from '../../core/services/vendor-category.service';
 import { vendorErrorMessage, VendorService } from '../../core/services/vendor.service';
-import { getVendorInitials } from '../vendors-management/data/vendors.mock';
+import { getVendorInitials } from '../vendors-management/data/vendor-display';
 
 @Component({
   selector: 'ctrl-catalog-management',

@@ -28,13 +28,13 @@ import {
   storeUserStatusLabel,
 } from '../../../core/models/store-user.model';
 import { StoreUsersService, storeUserErrorMessage } from '../../../core/services/store-users.service';
+import { VendorProfile } from '../../../core/models/vendor-profile.model';
 import {
   getEffectiveLiveStatus,
   getVendorInitials,
   LIVE_OVERRIDE_CONFIG,
   LIVE_STATUS_CONFIG,
-  VendorProfile,
-} from '../data/vendors.mock';
+} from '../data/vendor-display';
 
 const ORDERS_PAGE_SIZE = 20;
 /** Same rule as the API: 8–128 characters, at least one letter and one digit. */

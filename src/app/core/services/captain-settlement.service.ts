@@ -1,14 +1,14 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { API_BASE_URL } from '../api-config';
+import { environment } from '../../../environments/environment';
 import { ApiErrorBody } from '../models/auth.model';
 import {
   CaptainCashSettlement,
   CaptainSettlementStatus,
 } from '../models/captain-settlement.model';
 
-const OPS_CAPTAINS_URL = `${API_BASE_URL}/v1/ops/captains`;
+const OPS_CAPTAINS_URL = `${environment.apiUrl}/v1/ops/captains`;
 
 const STATUSES = new Set<CaptainSettlementStatus>(['PENDING', 'CONFIRMED', 'REJECTED']);
 

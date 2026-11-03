@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { EMPTY, Observable, catchError, expand, map, of, reduce, throwError } from 'rxjs';
-import { API_BASE_URL } from '../api-config';
+import { environment } from '../../../environments/environment';
 import { ApiErrorBody } from '../models/auth.model';
 import {
   CartProblem,
@@ -17,7 +17,7 @@ import {
 import { formatCartProblems } from '../utils/cart-problem.utils';
 import { displayImage } from './product.service';
 
-const OPS_URL = `${API_BASE_URL}/v1/ops`;
+const OPS_URL = `${environment.apiUrl}/v1/ops`;
 
 @Injectable({ providedIn: 'root' })
 export class OpsCreateOrderService {
@@ -233,8 +233,9 @@ function parseSubZones(body: unknown): OpsOrderingSubZone[] {
           record['baseDeliveryFeePiastres'] ?? record['base_delivery_fee_piastres'],
           2500,
         ),
-        extraShopFeePiastres: readInt(
-          record['extraShopFeePiastres'] ?? record['extra_shop_fee_piastres'],
+        extraShopDeliveryFeePiastres: readInt(
+          record['extraShopDeliveryFeePiastres'] ??
+            record['extra_shop_delivery_fee_piastres'],
           500,
         ),
         baseServiceFeePiastres: readInt(

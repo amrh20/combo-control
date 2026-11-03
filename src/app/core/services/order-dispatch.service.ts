@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { API_BASE_URL } from '../api-config';
+import { environment } from '../../../environments/environment';
 import { CaptainRole } from '../models/captain.model';
 import {
   AssignCaptainPayload,
@@ -71,14 +71,14 @@ export class OrderDispatchService {
    */
   getAssignableCaptains(orderId: string): Observable<AssignableCaptain[]> {
     return this.http
-      .get<unknown>(`${API_BASE_URL}/v1/orders/${encodeURIComponent(orderId)}/assignable-captains`)
+      .get<unknown>(`${environment.apiUrl}/v1/orders/${encodeURIComponent(orderId)}/assignable-captains`)
       .pipe(map(unwrapAssignableCaptains));
   }
 
   /** `POST /v1/orders/{orderId}/assign` */
   assignCaptain(orderId: string, payload: AssignCaptainPayload): Observable<void> {
     return this.http.post<void>(
-      `${API_BASE_URL}/v1/orders/${encodeURIComponent(orderId)}/assign`,
+      `${environment.apiUrl}/v1/orders/${encodeURIComponent(orderId)}/assign`,
       payload,
     );
   }
@@ -86,14 +86,14 @@ export class OrderDispatchService {
   /** `POST /v1/tasks/{taskId}/reassign` — offers the same trip to another captain. */
   reassignTask(taskId: string, payload: AssignCaptainPayload): Observable<void> {
     return this.http.post<void>(
-      `${API_BASE_URL}/v1/tasks/${encodeURIComponent(taskId)}/reassign`,
+      `${environment.apiUrl}/v1/tasks/${encodeURIComponent(taskId)}/reassign`,
       payload,
     );
   }
 
   /** `POST /v1/tasks/{taskId}/cancel` */
   cancelTask(taskId: string, reason: string): Observable<void> {
-    return this.http.post<void>(`${API_BASE_URL}/v1/tasks/${encodeURIComponent(taskId)}/cancel`, {
+    return this.http.post<void>(`${environment.apiUrl}/v1/tasks/${encodeURIComponent(taskId)}/cancel`, {
       reason: reason.trim(),
     });
   }

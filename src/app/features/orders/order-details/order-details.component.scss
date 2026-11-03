@@ -1127,18 +1127,44 @@
     }
   }
 
-  &__invoice {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
+  &__invoice-card {
+    display: flex;
+    align-items: stretch;
+    gap: 14px;
+    margin: 12px 0 0;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--Combo-border-border-primary-light);
+    background: var(--Combo-bg-background-primary-50);
+  }
+
+  &__invoice-copy {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 6px;
+    min-width: 0;
+
+    strong {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--Combo-text-text-display);
+    }
+
+    span {
+      font-size: 12px;
+      color: var(--Combo-text-text-secondary-paragraph);
+    }
   }
 
   &__invoice-thumb {
-    width: 40px;
-    height: 40px;
+    width: 120px;
+    height: 120px;
     object-fit: cover;
-    border-radius: 6px;
+    border-radius: 10px;
     border: 1px solid var(--Combo-border-border-neutral-secondary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     cursor: zoom-in;
   }
 

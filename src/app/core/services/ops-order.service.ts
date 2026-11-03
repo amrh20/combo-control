@@ -1,12 +1,13 @@
 import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, filter, map, merge, share } from 'rxjs';
-import { API_BASE_URL } from '../api-config';
+import { environment } from '../../../environments/environment';
 import {
   AssignmentMode,
   CancelOrderPayload,
   CursorPage,
   AddOrderShopItemPayload,
+  AdjustOrderPayload,
   EditOrderItemPayload,
   OfferStatus,
   OpsOrder,
@@ -22,7 +23,7 @@ import {
 } from '../models/ops-order.model';
 import { RealtimeService } from './realtime.service';
 
-const ORDERS_URL = `${API_BASE_URL}/v1/ops/orders`;
+const ORDERS_URL = `${environment.apiUrl}/v1/ops/orders`;
 
 const ORDER_TOUCH_EVENTS = [
   'order.updated',
@@ -158,6 +159,15 @@ export class OpsOrderService {
       })
       .pipe(map(normalizeOpsOrder));
   }
+
+  /** `PATCH /v1/ops/orders/{id}/adjust` — lines + invoice goods total (piastres). Needs Idempotency-Key. */
+  adjustOrder(orderId: string, payload: AdjustOrderPayload): Observable<OpsOrder> {
+    return this.http
+      .patch<unknown>(`${orderUrl(orderId)}/adjust`, payload, {
+        headers: new HttpHeaders({ 'Idempotency-Key': crypto.randomUUID() }),
+      })
+      .pipe(map(normalizeOpsOrder));
+  }
 }
 
 export function isStaleVersion(error: unknown): boolean {
@@ -238,7 +248,11 @@ function normalizeOpsOrder(body: unknown): OpsOrder {
   const trips = Array.isArray(order.trips)
     ? order.trips.map((trip) => withEventReason(normalizeTrip(trip), events))
     : [];
-  return { ...order, trips };
+  return {
+    ...order,
+    trips,
+    opsAdjustedTotal: order.opsAdjustedTotal == null ? null : Number(order.opsAdjustedTotal),
+  };
 }
 
 const DECLINE_EVENT_TYPES = new Set([

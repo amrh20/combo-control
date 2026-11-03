@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, catchError, defer, map, of, tap } from 'rxjs';
-import { API_BASE_URL } from '../api-config';
+import { environment } from '../../../environments/environment';
 import { GeometryInvalidError, mapGeometryError } from '../models/geometry-error';
 import { SubZone, SubZoneApiRecord, SubZoneBatchItem } from '../models/sub-zone.model';
 import {
@@ -15,14 +15,18 @@ import {
 } from '../models/zone.model';
 import { SubZoneService } from './sub-zone.service';
 
-const ZONES_URL = `${API_BASE_URL}/v1/zones`;
-const SUB_ZONES_URL = `${API_BASE_URL}/v1/sub-zones`;
+const ZONES_URL = `${environment.apiUrl}/v1/zones`;
+const SUB_ZONES_URL = `${environment.apiUrl}/v1/sub-zones`;
 
 interface SubZoneApiBody {
   name: string;
   geometry: ZonePolygon;
   color: string;
   minOrderPiastres: number;
+  /** Fixed delivery fee in piastres — matches API `deliveryFee`. */
+  deliveryFee: number;
+  /** Extra delivery fee per additional shop, in piastres. */
+  extraShopDeliveryFeePiastres: number;
   isActive: boolean;
 }
 
@@ -178,12 +182,16 @@ function toZone(row: ZoneApiRecord): Zone {
 
 function toSubZone(row: SubZoneApiRecord): SubZone {
   const minOrderEGP = piastresToEgp(row.effectiveMinOrderPiastres);
+  const deliveryFee = piastresToEgp(row.deliveryFee ?? 0);
+  const extraShopDeliveryFee = piastresToEgp(row.extraShopDeliveryFeePiastres ?? 0);
   return {
     id: row.id,
     parentZoneId: row.zoneId,
     name: row.name,
     minOrder: minOrderEGP,
     minOrderEGP,
+    deliveryFee,
+    extraShopDeliveryFee,
     color: row.color,
     isActive: row.isActive,
     geometry: row.geometry,
@@ -196,6 +204,8 @@ function toSubZoneBody(payload: SubZoneBatchItem): SubZoneApiBody {
     geometry: requirePolygon(payload.geometry),
     color: payload.color.toLowerCase(),
     minOrderPiastres: egpToPiastres(payload.minOrder),
+    deliveryFee: egpToPiastres(payload.deliveryFee),
+    extraShopDeliveryFeePiastres: egpToPiastres(payload.extraShopDeliveryFee),
     isActive: payload.isActive,
   };
 }

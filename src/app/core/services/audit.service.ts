@@ -1,10 +1,10 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { API_BASE_URL } from '../api-config';
+import { environment } from '../../../environments/environment';
 import { AuditLogPage } from '../models/audit.model';
 
-const AUDIT_URL = `${API_BASE_URL}/v1/audit-log`;
+const AUDIT_URL = `${environment.apiUrl}/v1/audit-log`;
 
 @Injectable({ providedIn: 'root' })
 export class AuditService {

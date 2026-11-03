@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, map, tap } from 'rxjs';
-import { API_BASE_URL } from '../api-config';
+import { environment } from '../../../environments/environment';
 import { ApiErrorBody } from '../models/auth.model';
 import {
   Captain,
@@ -15,7 +15,7 @@ import {
 } from '../models/captain.model';
 import { parseCaptainSettlement } from './captain-settlement.service';
 
-const CAPTAINS_URL = `${API_BASE_URL}/v1/captains`;
+const CAPTAINS_URL = `${environment.apiUrl}/v1/captains`;
 
 const ROLES = new Set<CaptainRole>(['COLLECTOR', 'DELIVERY', 'BOTH']);
 const STATUSES = new Set<CaptainStatus>(['ACTIVE', 'BLOCKED']);

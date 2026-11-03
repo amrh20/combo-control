@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
-import { API_BASE_URL } from '../api-config';
+import { environment } from '../../../environments/environment';
 import {
   CreateRolePayload,
   PermissionDefinition,
@@ -9,8 +9,8 @@ import {
   RolePermissionsUpdate,
 } from '../models/role.model';
 
-const ROLES_URL = `${API_BASE_URL}/v1/roles`;
-const PERMISSIONS_URL = `${API_BASE_URL}/v1/permissions`;
+const ROLES_URL = `${environment.apiUrl}/v1/roles`;
+const PERMISSIONS_URL = `${environment.apiUrl}/v1/permissions`;
 
 interface RoleApiError {
   error?: {

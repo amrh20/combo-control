@@ -3,7 +3,7 @@ import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { MessageService } from 'primeng/api';
 import { firstValueFrom } from 'rxjs';
-import { API_BASE_URL } from '../api-config';
+import { environment } from '../../../environments/environment';
 import {
   OpsNotification,
   OpsNotificationList,
@@ -12,7 +12,7 @@ import {
 import { AuthService } from './auth.service';
 import { RealtimeService } from './realtime.service';
 
-const NOTIFICATIONS_URL = `${API_BASE_URL}/v1/ops/notifications`;
+const NOTIFICATIONS_URL = `${environment.apiUrl}/v1/ops/notifications`;
 const NEW_ORDER_SOUND = 'assets/sounds/new-order.mp3';
 const TOAST_KEY = 'ops';
 

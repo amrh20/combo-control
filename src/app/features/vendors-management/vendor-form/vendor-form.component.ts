@@ -39,7 +39,8 @@ import {
   toApiLiveStatusOverride,
   vendorErrorMessage,
 } from '../../../core/services/vendor.service';
-import { getVendorInitials, VendorProfile } from '../data/vendors.mock';
+import { VendorProfile } from '../../../core/models/vendor-profile.model';
+import { getVendorInitials } from '../data/vendor-display';
 
 const OUTSIDE_HUB_MESSAGE =
   'موقع المتجر يقع خارج حدود نقطة التجميع المحددة. الرجاء اختيار موقع صحيح.';

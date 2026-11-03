@@ -134,40 +134,68 @@
                     />
                   </div>
 
+                  <div class="sub-zone-builder__field">
+                    <label class="sub-zone-builder__label" [for]="'draftMin-' + draft.layerId">
+                      الحد الأدنى
+                    </label>
+                    <p-inputnumber
+                      [inputId]="'draftMin-' + draft.layerId"
+                      [ngModel]="draft.minOrder"
+                      [ngModelOptions]="{ standalone: true }"
+                      [min]="0"
+                      [useGrouping]="false"
+                      styleClass="sub-zone-builder__number"
+                      (ngModelChange)="updateMinOrder(draft.layerId, $event)"
+                    />
+                  </div>
+
                   <div class="sub-zone-builder__draft-row">
                     <div class="sub-zone-builder__field">
-                      <label class="sub-zone-builder__label" [for]="'draftMin-' + draft.layerId">
-                        الحد الأدنى
+                      <label class="sub-zone-builder__label" [for]="'draftFee-' + draft.layerId">
+                        سعر التوصيل (ج.م) <span class="sub-zone-builder__required">*</span>
                       </label>
                       <p-inputnumber
-                        [inputId]="'draftMin-' + draft.layerId"
-                        [ngModel]="draft.minOrder"
+                        [inputId]="'draftFee-' + draft.layerId"
+                        [ngModel]="draft.deliveryFee"
                         [ngModelOptions]="{ standalone: true }"
                         [min]="0"
-                        mode="currency"
-                        currency="EGP"
-                        locale="ar-EG-u-nu-latn"
+                        [useGrouping]="false"
                         styleClass="sub-zone-builder__number"
-                        (ngModelChange)="updateMinOrder(draft.layerId, $event)"
+                        (ngModelChange)="updateDeliveryFee(draft.layerId, $event)"
                       />
                     </div>
 
-                    <div class="sub-zone-builder__field sub-zone-builder__field--color">
-                      <label class="sub-zone-builder__label" [for]="'draftColor-' + draft.layerId">
-                        لون التمييز
+                    <div class="sub-zone-builder__field">
+                      <label class="sub-zone-builder__label" [for]="'draftExtraFee-' + draft.layerId">
+                        رسوم التوصيل لكل متجر إضافي (ج.م)
                       </label>
-                      <label
-                        class="sub-zone-builder__color-picker"
-                        [style.background-color]="draft.color"
-                      >
-                        <input
-                          [id]="'draftColor-' + draft.layerId"
-                          type="color"
-                          [value]="draft.color"
-                          (input)="updateColor(draft.layerId, $any($event.target).value)"
-                        />
-                      </label>
+                      <p-inputnumber
+                        [inputId]="'draftExtraFee-' + draft.layerId"
+                        [ngModel]="draft.extraShopDeliveryFee"
+                        [ngModelOptions]="{ standalone: true }"
+                        [min]="0"
+                        [useGrouping]="false"
+                        styleClass="sub-zone-builder__number"
+                        (ngModelChange)="updateExtraShopDeliveryFee(draft.layerId, $event)"
+                      />
                     </div>
+                  </div>
+
+                  <div class="sub-zone-builder__field sub-zone-builder__field--color">
+                    <label class="sub-zone-builder__label" [for]="'draftColor-' + draft.layerId">
+                      لون التمييز
+                    </label>
+                    <label
+                      class="sub-zone-builder__color-picker"
+                      [style.background-color]="draft.color"
+                    >
+                      <input
+                        [id]="'draftColor-' + draft.layerId"
+                        type="color"
+                        [value]="draft.color"
+                        (input)="updateColor(draft.layerId, $any($event.target).value)"
+                      />
+                    </label>
                   </div>
 
                   @if (issuesFor(draft.layerId).length > 0) {

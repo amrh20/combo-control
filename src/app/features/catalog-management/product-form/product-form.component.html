@@ -378,8 +378,10 @@
                       <p-inputnumber
                         formControlName="stockQuantity"
                         [min]="0"
+                        [minFractionDigits]="0"
                         [maxFractionDigits]="0"
                         [useGrouping]="false"
+                        mode="decimal"
                         locale="en-US"
                         styleClass="product-form__combo-qty"
                         [inputId]="'comboQty' + row.index"

@@ -25,6 +25,7 @@ import { EMPTY, Observable, catchError, debounceTime, filter, map, switchMap, ti
 import { PermissionDirective } from '../../../core/directives/permission.directive';
 import {
   AddOrderItemModalSubmit,
+  AdjustOrderPayload,
   CANCELLABLE_ORDER_STATUSES,
   ORDER_STATUS_CONFIG,
   OpsOrder,
@@ -37,6 +38,7 @@ import {
   TASK_STATUS_CONFIG,
   actorTypeLabel,
   assignmentModeLabel,
+  canAdjustOrder,
   canForceCompleteOrder,
   canReassignTrip,
   egpFromPiastres,
@@ -75,6 +77,7 @@ import {
   orderMutationMessage,
 } from '../../../core/services/ops-order.service';
 import { AddOrderItemModalComponent } from '../add-order-item-modal/add-order-item-modal.component';
+import { AdjustOrderModalComponent } from '../adjust-order-modal/adjust-order-modal.component';
 import { AssignCaptainModalComponent } from '../assign-captain-modal/assign-captain-modal.component';
 
 /** Silent refresh of the open order on the live board. */
@@ -164,6 +167,7 @@ const ORDER_PRIORITIES: Record<OrderStatus, OrderPriority> = {
     ImageModule,
     AssignCaptainModalComponent,
     AddOrderItemModalComponent,
+    AdjustOrderModalComponent,
   ],
   providers: [MessageService],
   templateUrl: './order-details.component.html',
@@ -232,6 +236,8 @@ export class OrderDetailsComponent {
   readonly reassignTaskId = signal<string | null>(null);
   readonly addItemSubOrderId = signal<string | null>(null);
   readonly addItemError = signal<string | null>(null);
+  readonly showAdjust = signal(false);
+  readonly adjustError = signal<string | null>(null);
   readonly editCatalogProduct = signal<OpsCatalogProduct | null>(null);
   readonly editCatalogLoading = signal(false);
   readonly activeSection = signal<DetailSection>('shops');
@@ -325,6 +331,15 @@ export class OrderDetailsComponent {
   readonly canForceComplete = computed(() => {
     const order = this.order();
     return !!order && this.auth.hasPermission('orders.assign') && canForceCompleteOrder(order);
+  });
+
+  readonly canSettleOrder = computed(() => {
+    const order = this.order();
+    return (
+      !!order &&
+      this.auth.hasPermission('orders.update') &&
+      canAdjustOrder(order)
+    );
   });
 
   readonly displayTotal = computed(() => {
@@ -694,6 +709,36 @@ export class OrderDetailsComponent {
     this.mutate(this.ordersApi.forceComplete(order.id), 'تم إنهاء التوصيل وتسجيل الطلب كمُسلّم.');
   }
 
+  openAdjust(): void {
+    this.adjustError.set(null);
+    this.showAdjust.set(true);
+  }
+
+  closeAdjust(): void {
+    if (this.pending()) {
+      return;
+    }
+    this.showAdjust.set(false);
+    this.adjustError.set(null);
+  }
+
+  confirmAdjust(payload: AdjustOrderPayload): void {
+    const order = this.order();
+    if (!order) {
+      return;
+    }
+    this.adjustError.set(null);
+    this.mutate(
+      this.ordersApi.adjustOrder(order.id, payload),
+      'تم حفظ تسوية الطلب.',
+      () => {
+        this.showAdjust.set(false);
+        this.adjustError.set(null);
+      },
+      (message) => this.adjustError.set(message),
+    );
+  }
+
   openAssign(): void {
     this.reassignTaskId.set(null);
     this.isDriverModalOpen.set(true);
@@ -911,6 +956,8 @@ export class OrderDetailsComponent {
     this.editVariantOptions = {};
     this.addItemSubOrderId.set(null);
     this.addItemError.set(null);
+    this.showAdjust.set(false);
+    this.adjustError.set(null);
     this.rejectingSubOrderId.set(null);
     this.showCancel.set(false);
     this.cancellingTaskId.set(null);

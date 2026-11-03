@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { API_BASE_URL } from '../api-config';
+import { environment } from '../../../environments/environment';
 
 /** One entry in a vendor's product-attribute dictionary. */
 export interface Attribute {
@@ -11,7 +11,7 @@ export interface Attribute {
   suggestedValues: string[];
 }
 
-const VENDORS_URL = `${API_BASE_URL}/v1/vendors`;
+const VENDORS_URL = `${environment.apiUrl}/v1/vendors`;
 
 /**
  * Vendor attribute dictionary (`/v1/vendors/{vendorId}/attributes`).

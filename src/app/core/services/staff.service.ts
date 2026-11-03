@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { EMPTY, Observable, expand, map, reduce, tap } from 'rxjs';
-import { API_BASE_URL } from '../api-config';
+import { environment } from '../../../environments/environment';
 import { ApiErrorBody } from '../models/auth.model';
 import {
   CreateStaffPayload,
@@ -12,7 +12,7 @@ import {
   StaffStatus,
 } from '../models/staff.model';
 
-const STAFF_URL = `${API_BASE_URL}/v1/staff`;
+const STAFF_URL = `${environment.apiUrl}/v1/staff`;
 
 @Injectable({ providedIn: 'root' })
 export class StaffService {
@@ -74,7 +74,7 @@ export class StaffService {
 
   /** Hubs the scope picker can assign. Empty when this account cannot read hubs. */
   loadScopeHubs(): Observable<ScopeHub[]> {
-    return this.http.get<ScopeHub[]>(`${API_BASE_URL}/v1/hubs`).pipe(
+    return this.http.get<ScopeHub[]>(`${environment.apiUrl}/v1/hubs`).pipe(
       map((hubs) => hubs.map((hub) => ({ id: hub.id, name: hub.name, isActive: hub.isActive }))),
       tap((hubs) => this.scopeHubs.set(hubs)),
     );

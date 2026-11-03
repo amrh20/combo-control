@@ -1,5 +1,5 @@
 import { Injectable, computed, signal } from '@angular/core';
-import { API_BASE_URL } from '../api-config';
+import { environment } from '../../../environments/environment';
 
 export interface VendorCategory {
   id: string;
@@ -36,7 +36,7 @@ export function isCategoryIconImage(iconUrl: string): boolean {
 
 /** Resolve a stored icon path against the API origin. Absolute and data URLs are unchanged. */
 export function categoryIconSrc(iconUrl: string): string {
-  return iconUrl.startsWith('/') ? `${API_BASE_URL}${iconUrl}` : iconUrl;
+  return iconUrl.startsWith('/') ? `${environment.apiUrl}${iconUrl}` : iconUrl;
 }
 
 const RGBA_PATTERN =

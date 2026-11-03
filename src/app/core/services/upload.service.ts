@@ -1,13 +1,13 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { API_BASE_URL } from '../api-config';
+import { environment } from '../../../environments/environment';
 
 export interface UploadedFile {
   url: string;
 }
 
-const UPLOADS_URL = `${API_BASE_URL}/v1/uploads`;
+const UPLOADS_URL = `${environment.apiUrl}/v1/uploads`;
 
 @Injectable({ providedIn: 'root' })
 export class UploadService {

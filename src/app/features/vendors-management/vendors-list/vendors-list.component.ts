@@ -43,7 +43,7 @@ import {
   isCategoryIconImage,
 } from '../../../core/services/vendor-category.service';
 import { VendorService, vendorErrorMessage } from '../../../core/services/vendor.service';
-import { getVendorInitials } from '../data/vendors.mock';
+import { getVendorInitials } from '../data/vendor-display';
 
 const PAGE_SIZE = 20;
 

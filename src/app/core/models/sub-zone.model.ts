@@ -9,6 +9,10 @@ export interface SubZone {
   minOrder: number;
   /** Effective minimum in pounds: the sub-zone value, or the parent zone's when unset. */
   minOrderEGP: number;
+  /** Fixed delivery fee in pounds (`deliveryFee` piastres / 100). */
+  deliveryFee: number;
+  /** Extra per additional shop, in pounds (`extraShopDeliveryFeePiastres` / 100). */
+  extraShopDeliveryFee: number;
   /** Polygon highlight color, `#rrggbb`. */
   color: string;
   isActive: boolean;
@@ -23,6 +27,10 @@ export interface SubZoneApiRecord {
   color: string;
   minOrderPiastres: number | null;
   effectiveMinOrderPiastres: number;
+  /** Fixed delivery fee in piastres. */
+  deliveryFee?: number | null;
+  /** Extra delivery fee per additional shop, in piastres. */
+  extraShopDeliveryFeePiastres?: number | null;
   isActive: boolean;
   geometry: ZonePolygon;
   createdAt: string;

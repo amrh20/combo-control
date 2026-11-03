@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { API_BASE_URL } from '../api-config';
+import { environment } from '../../../environments/environment';
 import {
   AnalyticsKpis,
   DailyBreakdownPoint,
@@ -10,8 +10,8 @@ import {
 } from '../models/analytics.model';
 import { piastresToEgp } from '../models/zone.model';
 
-const KPIS_URL = `${API_BASE_URL}/v1/ops/analytics/kpis`;
-const STORES_REPORT_URL = `${API_BASE_URL}/v1/ops/analytics/stores-report`;
+const KPIS_URL = `${environment.apiUrl}/v1/ops/analytics/kpis`;
+const STORES_REPORT_URL = `${environment.apiUrl}/v1/ops/analytics/stores-report`;
 
 @Injectable({ providedIn: 'root' })
 export class AnalyticsService {

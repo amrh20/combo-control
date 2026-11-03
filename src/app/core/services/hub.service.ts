@@ -1,13 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, catchError, defer, map, of, tap } from 'rxjs';
-import { API_BASE_URL } from '../api-config';
+import { environment } from '../../../environments/environment';
 import { GeometryInvalidError, mapGeometryError } from '../models/geometry-error';
 import { Hub, HubApiRecord, HubInput } from '../models/hub.model';
 import { ZonePolygon, normalizeZonePolygon } from '../models/zone.model';
 import { SubZoneService } from './sub-zone.service';
 
-const HUBS_URL = `${API_BASE_URL}/v1/hubs`;
+const HUBS_URL = `${environment.apiUrl}/v1/hubs`;
 
 @Injectable({ providedIn: 'root' })
 export class HubService {

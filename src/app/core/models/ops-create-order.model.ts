@@ -16,7 +16,7 @@ export interface OpsOrderingSubZone {
   minOrderPiastres: number;
   hubIds: string[];
   baseDeliveryFeePiastres: number;
-  extraShopFeePiastres: number;
+  extraShopDeliveryFeePiastres: number;
   baseServiceFeePiastres: number;
   extraShopServiceFeePiastres: number;
 }

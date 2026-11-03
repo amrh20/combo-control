@@ -7,10 +7,10 @@ import {
 } from '@angular/common/http';
 import { Injector, inject } from '@angular/core';
 import { BehaviorSubject, Observable, catchError, filter, finalize, switchMap, take, throwError } from 'rxjs';
-import { API_BASE_URL } from '../api-config';
+import { environment } from '../../../environments/environment';
 import { ACCESS_TOKEN_KEY, AuthService } from '../services/auth.service';
 
-const API_ROOT = `${API_BASE_URL}/v1`;
+const API_ROOT = `${environment.apiUrl}/v1`;
 const LOGIN_URL = `${API_ROOT}/auth/staff/login`;
 const REFRESH_URL = `${API_ROOT}/auth/refresh`;
 

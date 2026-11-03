@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, map, tap } from 'rxjs';
-import { API_BASE_URL } from '../api-config';
+import { environment } from '../../../environments/environment';
 import { ApiErrorBody } from '../models/auth.model';
 import { Hub } from '../models/hub.model';
 import {
@@ -21,20 +21,19 @@ import {
   percentToBasisPoints,
   isVendorLiveStatus,
 } from '../models/vendor.model';
-import { egpToPiastres, piastresToEgp } from '../models/zone.model';
 import {
   LiveStatus,
   LiveStatusOverride,
   VendorProfile,
-  VENDORS_DATA,
-} from '../../features/vendors-management/data/vendors.mock';
+} from '../models/vendor-profile.model';
+import { egpToPiastres, piastresToEgp } from '../models/zone.model';
 import { HubService } from './hub.service';
 import { VendorCategory, VendorCategoryService } from './vendor-category.service';
 
 export type VendorInput = Omit<VendorProfile, 'id' | 'hubName'>;
 
-const CATEGORIES_URL = `${API_BASE_URL}/v1/vendor-categories`;
-const VENDORS_URL = `${API_BASE_URL}/v1/vendors`;
+const CATEGORIES_URL = `${environment.apiUrl}/v1/vendor-categories`;
+const VENDORS_URL = `${environment.apiUrl}/v1/vendors`;
 
 type CategoryListResponse =
   | VendorCategoryApiRecord[]
@@ -77,7 +76,7 @@ export class VendorService {
   private readonly http = inject(HttpClient);
   private readonly hubs = inject(HubService);
   private readonly categoryStore = inject(VendorCategoryService);
-  private readonly vendorsSignal = signal<VendorProfile[]>(structuredClone(VENDORS_DATA));
+  private readonly vendorsSignal = signal<VendorProfile[]>([]);
   /** Bumps when a category is created so an older list response cannot wipe it. */
   private categoryFetchId = 0;
 

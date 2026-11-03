@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { EMPTY, Observable, expand, map, reduce } from 'rxjs';
-import { API_BASE_URL } from '../api-config';
+import { environment } from '../../../environments/environment';
 import { piastresToEgp } from '../models/zone.model';
 
 export interface ProductFilters {
@@ -64,7 +64,7 @@ export interface Product {
 
 export interface ProductWritePayload {
   vendorId: string;
-  categoryIds: string[];
+  shopCategoryIds: string[];
   name: string;
   description: string;
   images: string[];
@@ -113,8 +113,8 @@ interface ProductPage {
   nextCursor: string | null;
 }
 
-const VENDORS_URL = `${API_BASE_URL}/v1/vendors`;
-const PRODUCTS_URL = `${API_BASE_URL}/v1/products`;
+const VENDORS_URL = `${environment.apiUrl}/v1/vendors`;
+const PRODUCTS_URL = `${environment.apiUrl}/v1/products`;
 
 @Injectable({ providedIn: 'root' })
 export class ProductService {
@@ -188,8 +188,8 @@ function toApiBody(payload: ProductUpdatePayload): Record<string, unknown> {
   if (payload.description !== undefined) {
     body['description'] = payload.description.trim() || null;
   }
-  if (payload.categoryIds !== undefined) {
-    body['categoryIds'] = payload.categoryIds.map((id) => id.trim()).filter(Boolean);
+  if (payload.shopCategoryIds !== undefined) {
+    body['shopCategoryIds'] = payload.shopCategoryIds.map((id) => id.trim()).filter(Boolean);
   }
   if (payload.pricePiastres !== undefined) {
     body['pricePiastres'] = payload.pricePiastres;
@@ -239,7 +239,7 @@ function productFromPayload(payload: ProductUpdatePayload, id = ''): Product {
   const piastres = Number.isFinite(pricePiastres) ? pricePiastres : 0;
   const images = payload.images?.map((image) => image.trim()).filter(Boolean) ?? [];
   const categoryIds =
-    payload.categoryIds?.map((id) => id.trim()).filter(Boolean) ?? [];
+    payload.shopCategoryIds?.map((id) => id.trim()).filter(Boolean) ?? [];
   return {
     id,
     vendorId: payload.vendorId?.trim() ?? '',
@@ -327,7 +327,7 @@ export function displayImage(url: string): string {
   if (!raw) {
     return '';
   }
-  return raw.startsWith('/') ? `${API_BASE_URL}${raw}` : raw;
+  return raw.startsWith('/') ? `${environment.apiUrl}${raw}` : raw;
 }
 
 function readOptionalPiastres(value: unknown): number | null {

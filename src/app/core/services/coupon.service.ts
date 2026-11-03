@@ -1,11 +1,11 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
 import { Observable, map, tap } from 'rxjs';
-import { API_BASE_URL } from '../api-config';
+import { environment } from '../../../environments/environment';
 import { ApiErrorBody } from '../models/auth.model';
 import { Coupon, CouponApiRecord, CouponInput } from '../models/coupon.model';
 
-const COUPONS_URL = `${API_BASE_URL}/v1/coupons`;
+const COUPONS_URL = `${environment.apiUrl}/v1/coupons`;
 
 @Injectable({ providedIn: 'root' })
 export class CouponService {

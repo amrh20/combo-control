@@ -1,0 +1,124 @@
+@if (open()) {
+  <div class="adjust-order__overlay" role="presentation" (click)="close()">
+    <div
+      class="adjust-order__dialog"
+      dir="rtl"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="adjust-order-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="adjust-order__header">
+        <div>
+          <h2 id="adjust-order-title" class="adjust-order__title">تسوية الطلب</h2>
+          @if (order(); as o) {
+            <p class="adjust-order__subtitle">{{ o.orderNumber }} — راجع الفاتورة وعدّل الأصناف والإجمالي</p>
+          }
+        </div>
+        <button
+          type="button"
+          class="adjust-order__close"
+          aria-label="إغلاق"
+          [disabled]="submitting()"
+          (click)="close()"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      @if (submitError(); as message) {
+        <p class="adjust-order__alert" role="alert">{{ message }}</p>
+      }
+
+      <div class="adjust-order__body">
+        <div class="adjust-order__lines" role="list">
+          @for (line of editableLines(); track line.id) {
+            <article class="adjust-order__line" role="listitem">
+              <div class="adjust-order__line-main">
+                <strong class="adjust-order__line-name">{{ line.name }}</strong>
+                <span class="adjust-order__line-shop">{{ line.vendorName }}</span>
+              </div>
+              <div class="adjust-order__line-fields">
+                <label class="adjust-order__field">
+                  <span class="adjust-order__label">الكمية</span>
+                  <p-inputnumber
+                    [ngModel]="line.quantity"
+                    (ngModelChange)="updateQuantity(line.id, $event)"
+                    [min]="1"
+                    [max]="50"
+                    [showButtons]="false"
+                    [useGrouping]="false"
+                    inputStyleClass="adjust-order__number-input"
+                    styleClass="adjust-order__number"
+                    [disabled]="submitting()"
+                  />
+                </label>
+                <label class="adjust-order__field">
+                  <span class="adjust-order__label">السعر (ج.م)</span>
+                  <p-inputnumber
+                    [ngModel]="line.priceEgp"
+                    (ngModelChange)="updatePrice(line.id, $event)"
+                    [min]="0"
+                    [minFractionDigits]="0"
+                    [maxFractionDigits]="2"
+                    mode="decimal"
+                    locale="en-US"
+                    inputStyleClass="adjust-order__number-input"
+                    styleClass="adjust-order__number"
+                    [disabled]="submitting()"
+                  />
+                </label>
+                <div class="adjust-order__line-total">
+                  <span class="adjust-order__label">الإجمالي</span>
+                  <strong>{{ lineTotalEgp(line) | number: '1.0-2' }} {{ currency }}</strong>
+                </div>
+              </div>
+            </article>
+          } @empty {
+            <p class="adjust-order__empty">لا توجد أصناف قابلة للتسوية.</p>
+          }
+        </div>
+
+        <div class="adjust-order__summary">
+          <div class="adjust-order__summary-row">
+            <span>مجموع الأصناف الحالي</span>
+            <strong>{{ draftSubtotalEgp() | number: '1.0-2' }} {{ currency }}</strong>
+          </div>
+          <label class="adjust-order__field adjust-order__field--total">
+            <span class="adjust-order__label">إجمالي الفاتورة الفعلي (ج.م)</span>
+            <p-inputnumber
+              inputId="adjust-actual-total"
+              [ngModel]="actualTotalEgp()"
+              (ngModelChange)="setActualTotal($event)"
+              [min]="0"
+              [minFractionDigits]="0"
+              [maxFractionDigits]="2"
+              mode="decimal"
+              locale="en-US"
+              inputStyleClass="adjust-order__number-input"
+              styleClass="adjust-order__number adjust-order__number--wide"
+              [disabled]="submitting()"
+            />
+          </label>
+        </div>
+      </div>
+
+      <div class="adjust-order__footer">
+        <button type="button" class="adjust-order__ghost-btn" [disabled]="submitting()" (click)="close()">
+          إلغاء
+        </button>
+        <button
+          type="button"
+          class="adjust-order__primary-btn"
+          [disabled]="!canSubmit() || submitting()"
+          (click)="confirm()"
+        >
+          @if (submitting()) {
+            <i class="pi pi-spin pi-spinner"></i>
+          }
+          حفظ التسوية
+        </button>
+      </div>
+    </div>
+  </div>
+}

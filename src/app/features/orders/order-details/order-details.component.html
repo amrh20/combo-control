@@ -118,6 +118,18 @@
               إنهاء التوصيل يدوياً
             </button>
           }
+          @if (canSettleOrder()) {
+            <button
+              type="button"
+              class="order-details__primary-btn"
+              *ctrlPermission="'orders.update'"
+              [disabled]="pending()"
+              (click)="openAdjust()"
+            >
+              <i class="pi pi-calculator"></i>
+              تسوية الطلب
+            </button>
+          }
           @if (canCancelOrder() && !showCancel()) {
             <button
               type="button"
@@ -369,29 +381,33 @@
               </div>
             }
 
-            @if (sub.invoiceUrl || shopActions(sub.status).length || canEditItems(sub.status)) {
-              <div class="order-details__shop-actions">
-                @if (sub.invoiceUrl) {
-                  <div class="order-details__invoice">
-                    <p-image
-                      [src]="invoiceHref(sub.invoiceUrl)"
-                      alt="فاتورة الكابتن"
-                      [preview]="true"
-                      width="40"
-                      imageClass="order-details__invoice-thumb"
-                    />
-                    <a
-                      class="order-details__tool-btn order-details__tool-btn--edit"
-                      [href]="invoiceHref(sub.invoiceUrl)"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <i class="pi pi-file"></i>
-                      عرض فاتورة الكابتن
-                    </a>
-                  </div>
-                }
+            @if (sub.invoiceUrl) {
+              <div class="order-details__invoice-card">
+                <p-image
+                  [src]="invoiceHref(sub.invoiceUrl)"
+                  alt="فاتورة الكابتن"
+                  [preview]="true"
+                  width="120"
+                  imageClass="order-details__invoice-thumb"
+                />
+                <div class="order-details__invoice-copy">
+                  <strong>فاتورة الكابتن</strong>
+                  <span>اضغط على الصورة لفتحها بالحجم الكامل</span>
+                  <a
+                    class="order-details__tool-btn order-details__tool-btn--edit"
+                    [href]="invoiceHref(sub.invoiceUrl)"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <i class="pi pi-external-link"></i>
+                    فتح في تبويب جديد
+                  </a>
+                </div>
+              </div>
+            }
 
+            @if (shopActions(sub.status).length || canEditItems(sub.status)) {
+              <div class="order-details__shop-actions">
                 @for (action of shopActions(sub.status); track action.status) {
                   <button
                     type="button"
@@ -695,6 +711,12 @@
           <dt>إجمالي المنتجات</dt>
           <dd>{{ egp(o.itemsSubtotal) | number: '1.0-2' }} {{ currency }}</dd>
         </div>
+        @if (o.opsAdjustedTotal != null) {
+          <div class="order-details__dl-row">
+            <dt>إجمالي الفاتورة (تسوية)</dt>
+            <dd>{{ egp(o.opsAdjustedTotal) | number: '1.0-2' }} {{ currency }}</dd>
+          </div>
+        }
         <div class="order-details__dl-row">
           <dt>رسوم التوصيل</dt>
           <dd>{{ egp(o.deliveryFee) | number: '1.0-2' }} {{ currency }}</dd>
@@ -798,3 +820,12 @@
     (submitted)="confirmAddProduct($event)"
   />
 }
+
+<ctrl-adjust-order-modal
+  [open]="showAdjust()"
+  [order]="order()"
+  [submitting]="pending()"
+  [submitError]="adjustError()"
+  (closed)="closeAdjust()"
+  (submitted)="confirmAdjust($event)"
+/>

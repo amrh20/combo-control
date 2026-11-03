@@ -2,7 +2,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, Injector, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, ReplaySubject, catchError, switchMap, take, tap, throwError } from 'rxjs';
-import { API_BASE_URL } from '../api-config';
+import { environment } from '../../../environments/environment';
 import {
   ApiErrorBody,
   StaffLoginResponse,
@@ -54,7 +54,7 @@ export class AuthService {
 
   login(email: string, password: string): Observable<StaffProfile> {
     return this.http
-      .post<StaffLoginResponse>(`${API_BASE_URL}/v1/auth/staff/login`, {
+      .post<StaffLoginResponse>(`${environment.apiUrl}/v1/auth/staff/login`, {
         email: email.trim().toLowerCase(),
         password,
       })
@@ -77,7 +77,7 @@ export class AuthService {
   loadUserProfile(): Observable<StaffProfile> {
     const token = this.accessToken();
     return this.http
-      .get<StaffProfile>(`${API_BASE_URL}/v1/auth/staff/me`, {
+      .get<StaffProfile>(`${environment.apiUrl}/v1/auth/staff/me`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       })
       .pipe(tap((profile) => this.currentUser.set(profile)));
@@ -93,7 +93,7 @@ export class AuthService {
       return throwError(() => new Error('Missing refresh token'));
     }
     return this.http
-      .post<StaffTokenPair>(`${API_BASE_URL}/v1/auth/refresh`, { refreshToken })
+      .post<StaffTokenPair>(`${environment.apiUrl}/v1/auth/refresh`, { refreshToken })
       .pipe(tap((tokens) => this.persistSession(tokens)));
   }
 
