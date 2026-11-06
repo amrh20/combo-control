@@ -68,6 +68,15 @@
     align-items: center;
     gap: 12px;
     flex-wrap: wrap;
+
+    @media (max-width: 575px) {
+      width: 100%;
+
+      .vendor-details__btn {
+        flex: 1 1 100%;
+        justify-content: center;
+      }
+    }
   }
 
   &__avatar {

@@ -541,3 +541,26 @@
     font-family: 'Alexandria', sans-serif;
   }
 }
+
+@media (max-width: 720px) {
+  .drivers-list {
+    &__title {
+      font-size: 18px;
+    }
+
+    &__add-btn {
+      width: 100%;
+      justify-content: center;
+    }
+
+    &__search-wrap {
+      max-width: none;
+      min-width: 0;
+      width: 100%;
+    }
+
+    &__modal-overlay {
+      padding: 12px;
+    }
+  }
+}

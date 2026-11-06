@@ -81,12 +81,28 @@ body {
 // ────────────────────────────────────────────────
 // Global responsive helpers (all admin pages)
 // ────────────────────────────────────────────────
+.p-datatable,
+.p-datatable-table-container {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-responsive {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 @media (max-width: 991px) {
   .p-datatable {
     .p-datatable-thead > tr > th,
     .p-datatable-tbody > tr > td {
       padding: 10px 12px !important;
       font-size: 13px;
+      white-space: nowrap;
     }
 
     .p-paginator {
@@ -95,6 +111,16 @@ body {
       gap: 8px;
       padding: 10px 12px !important;
     }
+  }
+
+  .p-dialog {
+    width: min(100%, calc(100vw - 1.5rem)) !important;
+    max-width: calc(100vw - 1.5rem) !important;
+    margin: 0.75rem !important;
+  }
+
+  .p-steps .p-steps-item {
+    flex: 1 1 auto;
   }
 }
 
@@ -143,6 +169,11 @@ body {
       padding: 8px 10px !important;
       font-size: 12px;
     }
+  }
+
+  .p-toast {
+    width: calc(100vw - 1.5rem) !important;
+    max-width: calc(100vw - 1.5rem);
   }
 }
 

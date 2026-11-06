@@ -209,6 +209,28 @@
   }
 }
 
+@media (max-width: 767px) {
+  .zone-form {
+    &__title {
+      font-size: 18px;
+    }
+
+    &__map {
+      min-height: 280px;
+    }
+
+    &__actions {
+      flex-direction: column-reverse;
+      align-items: stretch;
+    }
+
+    &__btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // PrimeNG overrides
 // ═══════════════════════════════════════════════════════════════════

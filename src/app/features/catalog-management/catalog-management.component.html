@@ -47,6 +47,16 @@
       </div>
 
       <button
+        type="button"
+        class="catalog__import-btn"
+        [disabled]="!selectedShopId()"
+        (click)="openImport()"
+      >
+        <i class="pi pi-file-excel"></i>
+        استيراد إكسيل
+      </button>
+
+      <button
         *ctrlPermission="'catalog.write'"
         type="button"
         class="catalog__add-btn"

@@ -36,6 +36,12 @@
     overflow-x: auto;
   }
 
+  @media (max-width: 720px) {
+    &__title {
+      font-size: 18px;
+    }
+  }
+
   &__th { white-space: nowrap; }
   &__th--center { text-align: center !important; }
 

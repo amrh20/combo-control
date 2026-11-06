@@ -44,7 +44,8 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
-    min-width: 320px;
+    min-width: min(320px, 100%);
+    flex: 1 1 240px;
   }
 
   &__vendor-option {
@@ -120,6 +121,31 @@
     color: var(--Combo-text-text-primary-paragraph);
   }
 
+  &__import-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 18px;
+    font-family: 'Alexandria', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--Combo-text-text-primary-paragraph);
+    background: #ffffff;
+    border: 1px solid var(--Combo-border-border-neutral-primary);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.18s ease, opacity 0.18s ease;
+
+    &:hover:not(:disabled) {
+      background: var(--Combo-bg-background-neutral-100);
+    }
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  }
+
   &__add-btn {
     display: inline-flex;
     align-items: center;
@@ -179,7 +205,7 @@
   // ── Product grid ────────────────────────────────────────────────
   &__grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
     gap: 16px;
   }
 
@@ -435,7 +461,8 @@
 
 :host ::ng-deep {
   .catalog__vendor-select {
-    min-width: 320px;
+    min-width: min(320px, 100%);
+    width: 100%;
 
     &.p-select {
       background: var(--Combo-bg-background-card) !important;
@@ -512,6 +539,29 @@
   }
 }
 
+@media (max-width: 991px) {
+  .catalog {
+    &__header {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    &__header-text {
+      max-width: none;
+    }
+
+    &__header-actions {
+      width: 100%;
+    }
+
+    &__vendor-select-wrap {
+      min-width: 0;
+      width: 100%;
+      flex: 1 1 100%;
+    }
+  }
+}
+
 @media (max-width: 575px) {
   .catalog {
     &__title {
@@ -519,7 +569,7 @@
     }
 
     &__vendor-select-wrap {
-      min-width: 100%;
+      min-width: 0;
       width: 100%;
     }
 
@@ -527,7 +577,8 @@
       width: 100%;
     }
 
-    &__add-btn {
+    &__add-btn,
+    &__import-btn {
       width: 100%;
       justify-content: center;
     }

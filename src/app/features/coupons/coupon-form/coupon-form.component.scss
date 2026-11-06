@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  width: 100%;
   max-width: 960px;
 
   &__header {
@@ -138,5 +139,26 @@
     --bs-btn-disabled-bg: var(--Combo-button-button-background-primary-default);
     --bs-btn-disabled-border-color: var(--Combo-button-button-background-primary-default);
     font-weight: 600;
+  }
+}
+
+@media (max-width: 720px) {
+  .coupon-form {
+    &__title {
+      font-size: 18px;
+    }
+
+    &__card {
+      padding: 16px;
+    }
+
+    &__actions {
+      flex-direction: column-reverse;
+      align-items: stretch;
+    }
+
+    &__actions .btn {
+      width: 100%;
+    }
   }
 }

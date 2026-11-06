@@ -104,6 +104,13 @@ export class VendorCatalogComponent implements OnInit {
     });
   }
 
+  openImport(): void {
+    if (!this.vendorId) {
+      return;
+    }
+    void this.router.navigate(['/vendors', this.vendorId, 'catalog', 'import']);
+  }
+
   openAddProduct(): void {
     const sectionId = this.selectedSectionId();
     if (!sectionId || !this.vendorId) {

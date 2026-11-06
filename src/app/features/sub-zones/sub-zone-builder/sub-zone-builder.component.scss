@@ -47,7 +47,7 @@
 
   &__layout {
     display: grid;
-    grid-template-columns: minmax(340px, 420px) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
     gap: 20px;
     align-items: stretch;
 

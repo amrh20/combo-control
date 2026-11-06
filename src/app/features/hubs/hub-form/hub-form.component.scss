@@ -407,6 +407,32 @@
   }
 }
 
+@media (max-width: 720px) {
+  .hub-form {
+    &__title {
+      font-size: 18px;
+    }
+
+    &__card {
+      padding: 16px;
+    }
+
+    &__layout {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    &__actions {
+      flex-direction: column-reverse;
+      align-items: stretch;
+    }
+
+    &__btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hub-form__children,
   .hub-form__no-sub-zones,

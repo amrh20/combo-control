@@ -32,7 +32,7 @@
       } @else if (pageProducts().length === 0) {
         <p class="m-0 text-sm text-gray-500">لا توجد منتجات.</p>
       } @else {
-        <div class="grid grid-cols-2 gap-2 xl:grid-cols-4">
+        <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
           @for (product of pageProducts(); track product.id) {
             <article class="flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white">
               <div class="flex h-24 items-center justify-center bg-gray-50">

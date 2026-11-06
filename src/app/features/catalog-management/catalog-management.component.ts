@@ -137,6 +137,14 @@ export class CatalogManagementComponent implements OnInit {
       });
   }
 
+  openImport(): void {
+    const vendorId = this.selectedShopId();
+    if (!vendorId) {
+      return;
+    }
+    void this.router.navigate(['/vendors', vendorId, 'catalog', 'import']);
+  }
+
   openAddModal(): void {
     const vendorId = this.selectedShopId();
     if (!vendorId) {

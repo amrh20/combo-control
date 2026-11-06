@@ -10,6 +10,13 @@
   color: var(--Combo-text-text-display);
 }
 
+@media (max-width: 575px) {
+  .analytics-title,
+  .page-title {
+    font-size: 18px;
+  }
+}
+
 .analytics-lead,
 .report-lead {
   margin: 0;

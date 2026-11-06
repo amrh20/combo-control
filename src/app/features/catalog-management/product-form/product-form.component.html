@@ -64,6 +64,23 @@
         </div>
 
         <div class="product-form__field">
+          <label class="product-form__label" for="productBarcode">الباركود</label>
+          <input
+            id="productBarcode"
+            type="text"
+            pInputText
+            formControlName="barcode"
+            class="product-form__input"
+            placeholder="اختياري"
+            dir="ltr"
+            maxlength="64"
+          />
+          @if (form.controls.barcode.touched && form.controls.barcode.invalid) {
+            <span class="product-form__field-error">الباركود 64 حرفاً على الأكثر</span>
+          }
+        </div>
+
+        <div class="product-form__field">
           <label class="product-form__label" for="productSection">الفئة</label>
           <p-multiselect
             inputId="productSection"
@@ -286,7 +303,7 @@
                         [minLength]="0"
                         [showEmptyMessage]="false"
                         [delay]="150"
-                        placeholder="مثال: 1 كجم"
+                        [placeholder]="optionPlaceholder(vi)"
                         [ariaLabel]="'قيمة ' + (oi + 1)"
                         scrollHeight="240px"
                       />

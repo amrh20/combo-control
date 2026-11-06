@@ -10,6 +10,7 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  width: 100%;
   max-width: 960px;
 
   // ── Page header ───────────────────────────────────
@@ -533,5 +534,27 @@
 
   .p-toggleswitch:not(.p-toggleswitch-checked) .p-toggleswitch-slider {
     background: var(--Combo-bg-background-neutral-300) !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .vendor-form {
+    &__title {
+      font-size: 18px;
+    }
+
+    &__card {
+      padding: 16px;
+    }
+
+    &__actions {
+      flex-direction: column-reverse;
+      align-items: stretch;
+    }
+
+    &__btn {
+      width: 100%;
+      justify-content: center;
+    }
   }
 }

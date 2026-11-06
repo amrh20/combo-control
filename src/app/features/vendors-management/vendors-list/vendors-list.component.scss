@@ -594,4 +594,13 @@
   .vendors-list__filters {
     grid-template-columns: 1fr;
   }
+
+  .vendors-list__title {
+    font-size: 18px;
+  }
+
+  .vendors-list__add-btn {
+    width: 100%;
+    justify-content: center;
+  }
 }

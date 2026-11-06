@@ -22,6 +22,12 @@
     color: var(--Combo-text-text-display);
   }
 
+  @media (max-width: 720px) {
+    &__title {
+      font-size: 18px;
+    }
+  }
+
   &__subtitle {
     margin: 0;
     font-size: 13px;

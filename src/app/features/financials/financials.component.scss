@@ -6,6 +6,12 @@
   color: var(--Combo-text-text-display);
 }
 
+@media (max-width: 575px) {
+  .page-title {
+    font-size: 18px;
+  }
+}
+
 .page-lead {
   margin: 0;
   font-size: 13px;

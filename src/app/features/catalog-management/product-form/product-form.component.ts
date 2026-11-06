@@ -47,6 +47,27 @@ const MAX_VARIANTS = 10;
 const MAX_OPTIONS = 30;
 const MAX_SPECS = 30;
 
+/** The seven standard variant groups. Custom names are still allowed. */
+const STANDARD_VARIANT_GROUPS = [
+  'الوزن',
+  'اللون',
+  'المقاس',
+  'الحجم',
+  'النكهة',
+  'الخامة',
+  'السعة',
+] as const;
+
+const VARIANT_VALUE_HINTS: Record<string, { placeholder: string; suggestions: readonly string[] }> = {
+  الوزن: { placeholder: 'مثال: ١ كجم', suggestions: ['كيلو', 'نصف كيلو', 'جرام', '200 جرام'] },
+  اللون: { placeholder: 'مثال: أحمر', suggestions: ['أحمر', 'أزرق', 'أسود', 'أبيض'] },
+  المقاس: { placeholder: 'مثال: كبير', suggestions: ['صغير', 'متوسط', 'كبير', 'XL'] },
+  الحجم: { placeholder: 'مثال: 1 لتر', suggestions: ['1 لتر', '2 لتر', '500 مل'] },
+  النكهة: { placeholder: 'مثال: شواء', suggestions: ['شواء', 'ملح', 'جبنة', 'فانيليا'] },
+  الخامة: { placeholder: 'مثال: قطن', suggestions: ['قطن', 'بلاستيك', 'زجاج', 'خشب'] },
+  السعة: { placeholder: 'مثال: 32 جيجا', suggestions: ['16 جيجا', '32 جيجا', '64 جيجا'] },
+};
+
 function optionalNonNegative(control: AbstractControl): ValidationErrors | null {
   const value = control.value;
   if (value === null || value === undefined || value === '') {
@@ -113,6 +134,7 @@ export class ProductFormComponent implements OnInit {
 
   readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(120)]],
+    barcode: ['', Validators.maxLength(64)],
     categoryIds: this.fb.nonNullable.control<string[]>([]),
     price: [0, [Validators.required, Validators.min(0)]],
     oldPrice: [null as number | null, optionalNonNegative],
@@ -245,9 +267,13 @@ export class ProductFormComponent implements OnInit {
 
   filterAttributeNames(event: AutoCompleteCompleteEvent): void {
     const query = suggestionQuery(event);
-    this.attributeNameSuggestions = this.availableAttributes()
-      .map((attribute) => attribute.name)
-      .filter((name) => includesQuery(name, query));
+    this.attributeNameSuggestions = STANDARD_VARIANT_GROUPS.filter((name) =>
+      includesQuery(name, query),
+    );
+  }
+
+  optionPlaceholder(variantIndex: number): string {
+    return this.variantHints(variantIndex)?.placeholder ?? 'مثال: 1 كجم';
   }
 
   filterOptionValues(variantIndex: number, event: AutoCompleteCompleteEvent): void {
@@ -401,6 +427,7 @@ export class ProductFormComponent implements OnInit {
       vendorId: this.vendorId,
       shopCategoryIds: (raw.categoryIds ?? []).map((id) => id.trim()).filter(Boolean),
       name: raw.name.trim(),
+      barcode: raw.barcode.trim() || null,
       description: raw.description.trim(),
       images: raw.images.map((image) => image.trim()).filter(Boolean),
       isAvailable: raw.isAvailable,
@@ -509,6 +536,7 @@ export class ProductFormComponent implements OnInit {
     const categoryIds = resolveProductCategoryIds(product, prefilledSectionId);
     this.form.reset({
       name: product.name,
+      barcode: product.barcode ?? '',
       categoryIds,
       price: piastresToEgp(product.pricePiastres),
       oldPrice: product.oldPricePiastres === null ? null : piastresToEgp(product.oldPricePiastres),
@@ -742,9 +770,26 @@ export class ProductFormComponent implements OnInit {
     });
   }
 
+  private variantHints(variantIndex: number): (typeof VARIANT_VALUE_HINTS)[string] | undefined {
+    const name = String(this.variants.at(variantIndex)?.get('name')?.value ?? '').trim();
+    return VARIANT_VALUE_HINTS[name];
+  }
+
   private suggestedValuesFor(variantIndex: number): string[] {
     const name = String(this.variants.at(variantIndex)?.get('name')?.value ?? '');
-    return this.findAttribute(name)?.suggestedValues ?? [];
+    const standard = this.variantHints(variantIndex)?.suggestions ?? [];
+    const saved = this.findAttribute(name)?.suggestedValues ?? [];
+    const seen = new Set<string>();
+    const values: string[] = [];
+    for (const value of [...standard, ...saved]) {
+      const key = value.trim().toLocaleLowerCase('ar');
+      if (!key || seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      values.push(value);
+    }
+    return values;
   }
 
   private findAttribute(name: string): Attribute | undefined {

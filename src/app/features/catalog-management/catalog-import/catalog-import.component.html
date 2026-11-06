@@ -1,0 +1,257 @@
+<div class="catalog-import">
+  <header class="catalog-import__header">
+    <button type="button" class="catalog-import__back" (click)="goBack()">
+      <i class="pi pi-arrow-right"></i>
+      الكتالوج
+    </button>
+    <h1 class="catalog-import__title">استيراد المنتجات</h1>
+    <p class="catalog-import__subtitle">ارفع ملف Excel أو CSV لإنشاء المنتجات وتحديثها دفعة واحدة.</p>
+  </header>
+
+  <ol class="catalog-import__steps" aria-label="خطوات الاستيراد">
+    @for (label of ['رفع الملف', 'معاينة البيانات', 'التنفيذ']; track label; let index = $index) {
+      <li
+        class="catalog-import__step"
+        [class.catalog-import__step--current]="stepIndex() === index"
+        [class.catalog-import__step--done]="stepIndex() > index"
+      >
+        <span class="catalog-import__step-index">{{ index + 1 }}</span>
+        {{ label }}
+      </li>
+    }
+  </ol>
+
+  @if (step() === 'upload') {
+    <section class="catalog-import__card">
+      <div class="catalog-import__card-head">
+        <h2>رفع الملف</h2>
+        <button
+          type="button"
+          class="catalog-import__btn catalog-import__btn--ghost"
+          [disabled]="downloadingTemplate()"
+          (click)="downloadTemplate()"
+        >
+          <i class="pi pi-download"></i>
+          {{ downloadingTemplate() ? 'جاري التنزيل...' : 'تنزيل النموذج' }}
+        </button>
+      </div>
+
+      <label
+        class="catalog-import__drop"
+        [class.catalog-import__drop--active]="dragging()"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave($event)"
+        (drop)="onDrop($event)"
+      >
+        <input
+          class="catalog-import__file"
+          type="file"
+          accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          [disabled]="uploading()"
+          (change)="onFilePicked($event)"
+        />
+        <i class="pi pi-file-excel" aria-hidden="true"></i>
+        <span class="catalog-import__drop-title">
+          {{ uploading() ? 'جاري رفع الملف...' : 'اسحب الملف هنا أو اختره' }}
+        </span>
+        <span class="catalog-import__drop-hint">xlsx أو csv — بحد أقصى 10 ميجابايت</span>
+      </label>
+
+      <label class="catalog-import__field">
+        <span>اسم الورقة (اختياري)</span>
+        <input type="text" [value]="sheetName()" placeholder="الورقة الأولى إن تُركت فارغة" (input)="onSheet($event)" />
+      </label>
+
+      @if (uploadError(); as message) {
+        <p class="catalog-import__alert" role="alert">{{ message }}</p>
+      }
+    </section>
+  }
+
+  @if (step() === 'preview') {
+    <section class="catalog-import__card">
+      <div class="catalog-import__card-head">
+        <div>
+          <h2>معاينة البيانات</h2>
+          <p class="catalog-import__meta">{{ fileLabel() }}</p>
+        </div>
+        <button type="button" class="catalog-import__btn catalog-import__btn--ghost" (click)="resetUpload()">
+          ملف آخر
+        </button>
+      </div>
+
+      @if (previewing()) {
+        <p class="catalog-import__meta">جاري قراءة الملف...</p>
+      }
+
+      @if (previewResult(); as result) {
+        <p class="catalog-import__summary">
+          تم التعرف على {{ result.productCount }} منتج. راجع البيانات أدناه قبل التنفيذ.
+        </p>
+
+        <div class="catalog-import__table-wrap">
+          <table class="catalog-import__table catalog-import__table--readonly">
+            <thead>
+              <tr>
+                <th>الاسم</th>
+                <th>الباركود</th>
+                <th>السعر</th>
+                <th>الكمية</th>
+                <th>التصنيف</th>
+                <th>التصنيف الفرعي</th>
+                <th>الاختيارات</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (product of result.products; track $index) {
+                <tr>
+                  <td class="catalog-import__header-cell">{{ product.name }}</td>
+                  <td>{{ product.barcode }}</td>
+                  <td>{{ product.priceLabel }}</td>
+                  <td>{{ product.quantityLabel }}</td>
+                  <td>{{ product.sectionName }}</td>
+                  <td>{{ product.subSection }}</td>
+                  <td>{{ product.variants }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="7">لا توجد منتجات صالحة في الملف.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        @if (result.productCount > result.products.length) {
+          <p class="catalog-import__meta">الجدول يعرض أول {{ result.products.length }} منتج من {{ result.productCount }}.</p>
+        }
+
+        @if (result.sectionsToCreate.length) {
+          <div class="catalog-import__block">
+            <h3>تصنيفات ستُنشأ</h3>
+            <ul class="catalog-import__pills">
+              @for (section of result.sectionsToCreate; track section) {
+                <li>{{ section }}</li>
+              }
+            </ul>
+          </div>
+        }
+
+        @if (result.issues.length) {
+          <div class="catalog-import__block">
+            <h3>صفوف بها ملاحظات</h3>
+            <div class="catalog-import__table-wrap">
+              <table class="catalog-import__table">
+                <thead>
+                  <tr>
+                    <th>الصف</th>
+                    <th>العمود</th>
+                    <th>الرسالة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (issue of result.issues; track $index) {
+                    <tr>
+                      <td>{{ issue.row || '—' }}</td>
+                      <td>{{ issue.column || '—' }}</td>
+                      <td>{{ issue.message }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+      }
+
+      @if (previewError(); as message) {
+        <p class="catalog-import__alert" role="alert">{{ message }}</p>
+      }
+      @if (actionError(); as message) {
+        <p class="catalog-import__alert" role="alert">{{ message }}</p>
+      }
+
+      <div class="catalog-import__actions">
+        <button type="button" class="catalog-import__btn catalog-import__btn--ghost" (click)="resetUpload()">
+          رجوع
+        </button>
+        <button
+          type="button"
+          class="catalog-import__btn catalog-import__btn--primary"
+          [disabled]="committing() || previewing() || !previewResult()"
+          (click)="commit()"
+        >
+          {{ committing() ? 'جاري البدء...' : 'تأكيد واستيراد' }}
+        </button>
+      </div>
+    </section>
+  }
+
+  @if (step() === 'progress') {
+    <section class="catalog-import__card catalog-import__card--center">
+      <h2>جاري الاستيراد</h2>
+      <p class="catalog-import__meta">
+        {{ job()?.summary?.processed ?? 0 }} / {{ job()?.summary?.total ?? 0 }}
+      </p>
+      <div class="catalog-import__bar" role="progressbar" [attr.aria-valuenow]="progressPercent()" aria-valuemin="0" aria-valuemax="100">
+        <span class="catalog-import__bar-fill" [style.width.%]="progressPercent()"></span>
+      </div>
+      @if (pollError(); as message) {
+        <p class="catalog-import__alert" role="alert">{{ message }}</p>
+      }
+    </section>
+  }
+
+  @if (step() === 'done') {
+    <section class="catalog-import__card">
+      <h2>{{ job()?.status === 'FAILED' ? 'تعذّر إكمال الاستيراد' : 'اكتمل الاستيراد' }}</h2>
+      @if (job(); as result) {
+        <div class="catalog-import__stats">
+          <article>
+            <strong>{{ result.summary.created }}</strong>
+            <span>منتجات جديدة</span>
+          </article>
+          <article>
+            <strong>{{ result.summary.updated }}</strong>
+            <span>تحديثات</span>
+          </article>
+          <article [class.catalog-import__stat--warn]="result.summary.errors > 0 || result.issues.length > 0">
+            <strong>{{ result.summary.errors || result.issues.length }}</strong>
+            <span>أخطاء</span>
+          </article>
+        </div>
+      }
+
+      @if (actionError(); as message) {
+        <p class="catalog-import__alert" role="alert">{{ message }}</p>
+      }
+
+      <div class="catalog-import__actions">
+        <button type="button" class="catalog-import__btn catalog-import__btn--ghost" (click)="goBack()">
+          العودة للكتالوج
+        </button>
+        @if (job()?.issues?.length) {
+          <button
+            type="button"
+            class="catalog-import__btn catalog-import__btn--ghost"
+            [disabled]="downloadingErrors()"
+            (click)="downloadErrors()"
+          >
+            <i class="pi pi-download"></i>
+            {{ downloadingErrors() ? 'جاري التنزيل...' : 'تنزيل الصفوف التي بها أخطاء' }}
+          </button>
+        }
+        @if (job()?.status === 'FAILED') {
+          <button
+            type="button"
+            class="catalog-import__btn catalog-import__btn--primary"
+            [disabled]="committing()"
+            (click)="resume()"
+          >
+            {{ committing() ? 'جاري الاستكمال...' : 'استكمال الاستيراد' }}
+          </button>
+        }
+      </div>
+    </section>
+  }
+</div>

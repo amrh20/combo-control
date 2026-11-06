@@ -23,7 +23,9 @@
   display: flex;
   flex-direction: column;
   gap: 14px;
+  width: 100%;
   max-width: 1100px;
+  min-width: 0;
 
   &__not-found {
     display: flex;
@@ -109,8 +111,10 @@
 
   &__action-bar-controls {
     display: flex;
+    flex-wrap: wrap;
     justify-content: flex-end;
-    flex-shrink: 0;
+    gap: 8px;
+    min-width: 0;
   }
 
   &__primary-btn {
@@ -1390,6 +1394,27 @@
 :host ::ng-deep .order-details__variant-select {
   width: 100%;
   min-width: 160px;
+}
+
+@media (max-width: 720px) {
+  .order-details {
+    &__action-bar-controls {
+      width: 100%;
+    }
+
+    &__primary-btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  :host ::ng-deep .order-details__variant-select {
+    min-width: 0;
+  }
+
+  :host ::ng-deep .order-details__inline-price {
+    width: 100%;
+  }
 }
 
 :host ::ng-deep .order-details__inline-price {

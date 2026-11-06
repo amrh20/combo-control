@@ -120,15 +120,26 @@
         @if (selectedSectionId(); as sectionId) {
           <div class="vendor-catalog__main-head">
             <h2 class="vendor-catalog__main-title">{{ sectionName(sectionId) }}</h2>
-            <button
-              *ctrlPermission="'catalog.write'"
-              type="button"
-              class="vendor-catalog__add vendor-catalog__add--solid"
-              (click)="openAddProduct()"
-            >
-              <i class="pi pi-plus"></i>
-              إضافة منتج
-            </button>
+            <div class="vendor-catalog__main-actions">
+              <button
+                *ctrlPermission="'catalog.write'"
+                type="button"
+                class="vendor-catalog__import"
+                (click)="openImport()"
+              >
+                <i class="pi pi-file-excel"></i>
+                استيراد إكسيل
+              </button>
+              <button
+                *ctrlPermission="'catalog.write'"
+                type="button"
+                class="vendor-catalog__add vendor-catalog__add--solid"
+                (click)="openAddProduct()"
+              >
+                <i class="pi pi-plus"></i>
+                إضافة منتج
+              </button>
+            </div>
           </div>
 
           @if (productsError(); as message) {

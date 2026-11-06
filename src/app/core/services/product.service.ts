@@ -46,6 +46,8 @@ export interface Product {
   sectionId: string;
   categoryIds: string[];
   name: string;
+  /** Shop barcode or item code. Empty when the product has none. */
+  barcode: string | null;
   description: string;
   /** First image, ready to display. */
   imageUrl: string;
@@ -66,6 +68,7 @@ export interface ProductWritePayload {
   vendorId: string;
   shopCategoryIds: string[];
   name: string;
+  barcode?: string | null;
   description: string;
   images: string[];
   isAvailable: boolean;
@@ -94,6 +97,7 @@ interface ProductApiRecord {
   categoryIds?: Array<string | null> | null;
   categories?: Array<ProductApiSection | null> | null;
   name?: string | null;
+  barcode?: string | null;
   description?: string | null;
   imageUrl?: string | null;
   images?: Array<string | null> | null;
@@ -185,6 +189,10 @@ function toApiBody(payload: ProductUpdatePayload): Record<string, unknown> {
   if (payload.name !== undefined) {
     body['name'] = payload.name.trim();
   }
+  if (payload.barcode !== undefined) {
+    const barcode = payload.barcode?.trim() ?? '';
+    body['barcode'] = barcode || null;
+  }
   if (payload.description !== undefined) {
     body['description'] = payload.description.trim() || null;
   }
@@ -246,6 +254,7 @@ function productFromPayload(payload: ProductUpdatePayload, id = ''): Product {
     sectionId: categoryIds[0] ?? '',
     categoryIds,
     name: payload.name?.trim() ?? '',
+    barcode: payload.barcode?.trim() || null,
     description: payload.description?.trim() ?? '',
     imageUrl: images[0] ? displayImage(images[0]) : '',
     images,
@@ -481,6 +490,7 @@ function toProduct(row: ProductApiRecord): Product | null {
     sectionId: categoryIds[0] ?? legacySectionId,
     categoryIds,
     name,
+    barcode: String(row.barcode ?? '').trim() || null,
     description: String(row.description ?? '').trim(),
     imageUrl: images[0] ? displayImage(images[0]) : '',
     images,

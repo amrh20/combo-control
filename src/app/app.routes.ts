@@ -183,6 +183,15 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'vendors/:id/catalog/import',
+        canActivate: [permissionGuard],
+        data: { permission: Permission.CatalogWrite, permissionFallback: '/vendors' },
+        loadComponent: () =>
+          import('./features/catalog-management/catalog-import/catalog-import.component').then(
+            (m) => m.CatalogImportComponent,
+          ),
+      },
+      {
         path: 'vendors/:id/catalog/products/create',
         canActivate: [permissionGuard],
         data: { permission: Permission.CatalogWrite, permissionFallback: '/vendors' },

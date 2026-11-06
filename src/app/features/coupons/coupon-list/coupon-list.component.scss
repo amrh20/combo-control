@@ -48,7 +48,7 @@
     background: var(--Combo-bg-background-card);
     border: 1px solid var(--Combo-border-border-neutral-secondary);
     border-radius: 12px;
-    overflow: hidden;
+    overflow-x: auto;
   }
 
   .table {
@@ -181,4 +181,17 @@
 
 .coupons-list__modal + .modal-backdrop {
   z-index: 1050;
+}
+
+@media (max-width: 720px) {
+  .coupons-list {
+    &__title {
+      font-size: 18px;
+    }
+
+    &__add {
+      width: 100%;
+      justify-content: center;
+    }
+  }
 }

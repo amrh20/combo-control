@@ -642,6 +642,20 @@
   .product-form__option {
     gap: 0.5rem;
   }
+
+  .product-form__title {
+    font-size: 18px;
+  }
+
+  .product-form__footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .product-form__btn {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 .product-form__toggle-label {
