@@ -7,49 +7,52 @@
         اختر متجراً لعرض وإدارة قائمة منتجاته وتوفّرها في التطبيق.
       </p>
     </div>
+  </div>
 
-    <div class="catalog__header-actions">
-      <div class="catalog__vendor-select-wrap">
-        <label class="catalog__vendor-label" for="vendorSelect">اختر المتجر</label>
-        <p-select
-          inputId="vendorSelect"
-          [options]="vendors()"
-          optionLabel="name"
-          optionValue="id"
-          [ngModel]="selectedShopId()"
-          (ngModelChange)="onVendorChange($event)"
-          [disabled]="vendorsLoading()"
-          placeholder="اختر المتجر لعرض القائمة..."
-          [showClear]="true"
-          [filter]="true"
-          filterBy="name"
-          filterPlaceholder="ابحث باسم المتجر..."
-          filterMatchMode="contains"
-          emptyFilterMessage="لا توجد متاجر مطابقة"
-          emptyMessage="لا توجد متاجر"
-          scrollHeight="280px"
-          panelStyleClass="catalog__vendor-panel"
-          styleClass="catalog__vendor-select"
-        >
-          <ng-template pTemplate="item" let-vendor>
+  <div class="catalog__toolbar">
+    <div class="catalog__vendor-select-wrap">
+      <label class="catalog__vendor-label" for="vendorSelect">اختر المتجر</label>
+      <p-select
+        inputId="vendorSelect"
+        [options]="vendors()"
+        optionLabel="name"
+        optionValue="id"
+        [ngModel]="selectedShopId()"
+        (ngModelChange)="onVendorChange($event)"
+        [disabled]="vendorsLoading()"
+        placeholder="اختر المتجر لعرض القائمة..."
+        [showClear]="true"
+        [filter]="true"
+        filterBy="name"
+        filterPlaceholder="ابحث باسم المتجر..."
+        filterMatchMode="contains"
+        emptyFilterMessage="لا توجد متاجر مطابقة"
+        emptyMessage="لا توجد متاجر"
+        scrollHeight="280px"
+        panelStyleClass="catalog__vendor-panel"
+        styleClass="catalog__vendor-select"
+      >
+        <ng-template pTemplate="item" let-vendor>
+          <ng-container
+            *ngTemplateOutlet="vendorOption; context: { $implicit: vendor, showSubtitle: true }"
+          />
+        </ng-template>
+        <ng-template pTemplate="selectedItem" let-vendor>
+          @if (vendor) {
             <ng-container
-              *ngTemplateOutlet="vendorOption; context: { $implicit: vendor, showSubtitle: true }"
+              *ngTemplateOutlet="vendorOption; context: { $implicit: vendor, showSubtitle: false }"
             />
-          </ng-template>
-          <ng-template pTemplate="selectedItem" let-vendor>
-            @if (vendor) {
-              <ng-container
-                *ngTemplateOutlet="vendorOption; context: { $implicit: vendor, showSubtitle: false }"
-              />
-            }
-          </ng-template>
-        </p-select>
-      </div>
+          }
+        </ng-template>
+      </p-select>
+    </div>
 
+    <div class="catalog__toolbar-actions">
       <button
         type="button"
         class="catalog__import-btn"
         [disabled]="!selectedShopId()"
+        [attr.title]="!selectedShopId() ? 'اختر متجراً أولاً' : null"
         (click)="openImport()"
       >
         <i class="pi pi-file-excel"></i>
@@ -61,6 +64,7 @@
         type="button"
         class="catalog__add-btn"
         [disabled]="!selectedShopId()"
+        [attr.title]="!selectedShopId() ? 'اختر متجراً أولاً' : null"
         (click)="openAddModal()"
       >
         <i class="pi pi-plus"></i>
@@ -75,20 +79,29 @@
 
   @if (vendorsLoading()) {
     <div class="catalog__empty">
-      <i class="pi pi-spin pi-spinner"></i>
+      <div class="catalog__empty-icon" aria-hidden="true">
+        <i class="pi pi-spin pi-spinner"></i>
+      </div>
       <p class="catalog__empty-title">جاري تحميل المتاجر...</p>
     </div>
   } @else if (selectedVendor(); as vendor) {
-    <div class="catalog__context">
+    <!-- <div class="catalog__context">
       <div class="catalog__context-vendor">
         <ng-container
-          *ngTemplateOutlet="vendorOption; context: { $implicit: vendor, showSubtitle: false }"
+          *ngTemplateOutlet="vendorOption; context: { $implicit: vendor, showSubtitle: true }"
         />
       </div>
-      <span class="catalog__context-meta">
-        {{ products().length }} منتج · {{ availableCount() }} متوفر
-      </span>
-    </div>
+      <div class="catalog__context-stats">
+        <span class="catalog__stat">
+          <strong>{{ products().length }}</strong>
+          منتج
+        </span>
+        <span class="catalog__stat catalog__stat--success">
+          <strong>{{ availableCount() }}</strong>
+          متوفر
+        </span>
+      </div>
+    </div> -->
 
     @if (productsError(); as message) {
       <p class="catalog__alert" role="alert">{{ message }}</p>
@@ -96,8 +109,10 @@
 
     @if (productsLoading()) {
       <div class="catalog__empty catalog__empty--selected">
-        <i class="pi pi-spin pi-spinner"></i>
-        <p>جاري تحميل المنتجات...</p>
+        <div class="catalog__empty-icon" aria-hidden="true">
+          <i class="pi pi-spin pi-spinner"></i>
+        </div>
+        <p class="catalog__empty-title">جاري تحميل المنتجات...</p>
       </div>
     } @else if (products().length) {
       <div class="catalog__grid">
@@ -177,22 +192,55 @@
       </div>
     } @else {
       <div class="catalog__empty catalog__empty--selected">
-        <i class="pi pi-inbox"></i>
-        <p>لا توجد منتجات لهذا المتجر بعد.</p>
-        <button *ctrlPermission="'catalog.write'" type="button" class="catalog__add-btn" (click)="openAddModal()">
-          <i class="pi pi-plus"></i>
-          إضافة منتج جديد
-        </button>
+        <div class="catalog__empty-icon catalog__empty-icon--soft" aria-hidden="true">
+          <i class="pi pi-inbox"></i>
+        </div>
+        <p class="catalog__empty-title">لا توجد منتجات لهذا المتجر بعد</p>
+        <p class="catalog__empty-hint">
+          ابدأ بإضافة منتج يدوياً أو استورد قائمة المنتجات من ملف إكسيل.
+        </p>
+        <div class="catalog__empty-actions">
+          <button
+            type="button"
+            class="catalog__import-btn"
+            (click)="openImport()"
+          >
+            <i class="pi pi-file-excel"></i>
+            استيراد إكسيل
+          </button>
+          <button
+            *ctrlPermission="'catalog.write'"
+            type="button"
+            class="catalog__add-btn"
+            (click)="openAddModal()"
+          >
+            <i class="pi pi-plus"></i>
+            إضافة منتج جديد
+          </button>
+        </div>
       </div>
     }
   } @else {
     <div class="catalog__empty">
-      <i class="pi pi-shop"></i>
+      <div class="catalog__empty-icon catalog__empty-icon--accent" aria-hidden="true">
+        <i class="pi pi-shop"></i>
+      </div>
       <p class="catalog__empty-title">اختر متجراً للبدء</p>
       <p class="catalog__empty-hint">
-        يجب اختيار متجر من القائمة أعلاه لعرض وإدارة منتجاته.
-        يمكنك أيضاً الانتقال من صفحة المتاجر عبر «تصنيفات المنتجات المتجر».
+        استخدم قائمة المتاجر أعلاه لعرض المنتجات وإدارتها.
+        يمكنك أيضاً فتح تصنيفات المنتجات من صفحة المتاجر.
       </p>
+      <div class="catalog__empty-steps" aria-hidden="true">
+        <span class="catalog__empty-step">
+          <span class="catalog__empty-step-num">1</span>
+          اختر المتجر
+        </span>
+        <span class="catalog__empty-step-sep"></span>
+        <span class="catalog__empty-step">
+          <span class="catalog__empty-step-num">2</span>
+          أدر المنتجات
+        </span>
+      </div>
     </div>
   }
 

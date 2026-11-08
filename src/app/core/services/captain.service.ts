@@ -13,6 +13,7 @@ import {
   CreateCaptainPayload,
   UpdateCaptainPayload,
 } from '../models/captain.model';
+import { httpErrorToastMessage } from '../utils/api-error-message';
 import { parseCaptainSettlement } from './captain-settlement.service';
 
 const CAPTAINS_URL = `${environment.apiUrl}/v1/captains`;
@@ -30,6 +31,8 @@ interface CaptainApiRecord {
   status?: string | null;
   hubId?: string | null;
   vehicleType?: string | null;
+  licenseExpiresOn?: string | null;
+  license_expires_on?: string | null;
   companyCashBalance?: number | string | null;
   company_cash_balance?: number | string | null;
   pendingSettlement?: unknown;
@@ -150,16 +153,7 @@ export function captainErrorMessage(error: unknown, fallback: string): string {
   }
 
   if (error.status === 400) {
-    if (arabic) {
-      return arabic;
-    }
-    if (/phone/i.test(message)) {
-      return 'رقم الهاتف غير صالح أو مستخدم مسبقاً.';
-    }
-    if (/password/i.test(message)) {
-      return 'كلمة المرور غير مطابقة للشروط.';
-    }
-    return 'البيانات غير مقبولة. راجع الحقول وحاول مرة أخرى.';
+    return httpErrorToastMessage(error, arabic || 'البيانات غير مقبولة. راجع الحقول وحاول مرة أخرى.');
   }
 
   return fallback;
@@ -179,6 +173,7 @@ function toCaptain(row: CaptainApiRecord): Captain {
     status: asStatus(row.status),
     hubId: row.hubId?.trim() ?? '',
     vehicleType: asVehicle(row.vehicleType),
+    licenseExpiresOn: asLicenseDate(row.licenseExpiresOn ?? row.license_expires_on),
     companyCashBalance: asPiastres(row.companyCashBalance ?? row.company_cash_balance),
     pendingSettlement:
       parseCaptainSettlement(row.pendingSettlement ?? row.pending_settlement, row.id) ?? null,
@@ -323,6 +318,16 @@ function asVehicle(value: string | null | undefined): CaptainVehicleType {
   return value && VEHICLE_TYPES.has(value as CaptainVehicleType)
     ? (value as CaptainVehicleType)
     : 'NONE';
+}
+
+/** API sends `YYYY-MM-DD`; tolerate a longer ISO timestamp by keeping the date part. */
+function asLicenseDate(value: string | null | undefined): string | null {
+  const raw = value?.trim() ?? '';
+  if (!raw) {
+    return null;
+  }
+  const match = /^(\d{4}-\d{2}-\d{2})/.exec(raw);
+  return match?.[1] ?? null;
 }
 
 function asEmploymentType(value: string | null | undefined): CaptainEmploymentType | undefined {

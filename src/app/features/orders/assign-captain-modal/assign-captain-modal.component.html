@@ -53,7 +53,9 @@
                   class="assign-captain__card"
                   [class.assign-captain__card--expanded]="isCaptainSelected(captain.id)"
                   [class.assign-captain__card--disabled]="!isCaptainSelectable(captain)"
-                  [class.assign-captain__card--offline]="availability(captain) === 'offline'"
+                  [class.assign-captain__card--offline]="
+                    isCaptainSelectable(captain) && availability(captain) === 'offline'
+                  "
                 >
                   @if (isCaptainSelectable(captain)) {
                     <button
@@ -72,7 +74,7 @@
                         @if (selectedModeLabel(captain); as modeLabel) {
                           <p class="assign-captain__mode">{{ modeLabel }}</p>
                         }
-                        @if (canDelegateFullTrip(captain)) {
+                        @if (captain.hasApp !== false && canDelegateFullTrip(captain)) {
                           <label class="assign-captain__override">
                             <input
                               type="checkbox"
@@ -101,7 +103,13 @@
                       <ng-container *ngTemplateOutlet="identity; context: { $implicit: captain }" />
                     </div>
                     @if (getCaptainDisabledReason(captain); as reason) {
-                      <p class="assign-captain__reason">{{ reason }}</p>
+                      <p
+                        class="assign-captain__reason"
+                        [class.assign-captain__reason--same-order]="isSameOrderOfferReason(captain)"
+                        role="status"
+                      >
+                        {{ reason }}
+                      </p>
                     }
                   }
                 </div>
@@ -129,12 +137,21 @@
   <span class="assign-captain__icon" aria-hidden="true">
     <i class="pi pi-user"></i>
   </span>
+
   <span class="assign-captain__info">
-    <span class="assign-captain__name-row">
-      <span class="assign-captain__name">{{ captain.fullName }}</span>
-      @if (!captain.hasApp) {
-        <p-tag severity="warn" value="خارجي / بدون تطبيق" />
-      }
+    <span class="assign-captain__name">{{ captain.fullName }}</span>
+    <span class="assign-captain__phone">{{ captain.phone }}</span>
+  </span>
+
+  <span class="assign-captain__badges">
+    @if (!captain.hasApp) {
+      <span class="assign-captain__badge assign-captain__badge--external">خارجي / بدون تطبيق</span>
+    }
+    @if (hasOfferForCurrentOrder(captain)) {
+      <span class="assign-captain__badge assign-captain__badge--same-order">
+        عرض معلق لهذا الطلب
+      </span>
+    } @else if (captain.hasApp !== false) {
       <span
         class="assign-captain__badge"
         [class.assign-captain__badge--available]="availability(captain) === 'available'"
@@ -144,19 +161,18 @@
       >
         {{ availabilityLabel(captain) }}
       </span>
-      @switch (captain.role) {
-        @case ('COLLECTOR') {
-          <span class="assign-captain__badge assign-captain__badge--role-collector">مُجمّع طلبات</span>
-        }
-        @case ('DELIVERY') {
-          <span class="assign-captain__badge assign-captain__badge--role-delivery">طيار توصيل</span>
-        }
-        @case ('BOTH') {
-          <span class="assign-captain__badge assign-captain__badge--role-collector">مُجمّع طلبات</span>
-          <span class="assign-captain__badge assign-captain__badge--role-delivery">طيار توصيل</span>
-        }
+    }
+    @switch (captain.role) {
+      @case ('COLLECTOR') {
+        <span class="assign-captain__badge assign-captain__badge--role-collector">مُجمّع طلبات</span>
       }
-    </span>
-    <span class="assign-captain__phone"  >{{ captain.phone }}</span>
+      @case ('DELIVERY') {
+        <span class="assign-captain__badge assign-captain__badge--role-delivery">طيار توصيل</span>
+      }
+      @case ('BOTH') {
+        <span class="assign-captain__badge assign-captain__badge--role-collector">مُجمّع طلبات</span>
+        <span class="assign-captain__badge assign-captain__badge--role-delivery">طيار توصيل</span>
+      }
+    }
   </span>
 </ng-template>

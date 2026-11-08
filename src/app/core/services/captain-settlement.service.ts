@@ -46,6 +46,28 @@ export class CaptainSettlementService {
       )
       .pipe(map((body) => (body == null ? undefined : parseCaptainSettlement(body, captainId))));
   }
+
+  /** `POST /v1/ops/captains/{id}/remit-cash` — ops remits company cash for no-app captains. */
+  remitCash(captainId: string): Observable<CaptainCashSettlement | void> {
+    return this.http
+      .post<unknown>(
+        `${OPS_CAPTAINS_URL}/${encodeURIComponent(captainId)}/remit-cash`,
+        {},
+        { headers: { 'Idempotency-Key': crypto.randomUUID() } },
+      )
+      .pipe(map((body) => (body == null ? undefined : parseCaptainSettlement(body, captainId))));
+  }
+
+  /** `POST /v1/ops/captains/{id}/settle-payout` — ops pays earnings for no-app captains. */
+  settlePayout(captainId: string): Observable<void> {
+    return this.http
+      .post<unknown>(
+        `${OPS_CAPTAINS_URL}/${encodeURIComponent(captainId)}/settle-payout`,
+        {},
+        { headers: { 'Idempotency-Key': crypto.randomUUID() } },
+      )
+      .pipe(map(() => undefined));
+  }
 }
 
 export function settlementErrorMessage(error: unknown, fallback: string): string {

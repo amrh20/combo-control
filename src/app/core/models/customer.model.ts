@@ -6,8 +6,10 @@ export interface Customer {
   id: string;
   fullName: string;
   phone: string;
-  totalOrders?: number;
-  totalSpent?: number;
+  /** All orders placed by this customer. */
+  totalOrders: number;
+  /** Delivered orders' paid total, in EGP. */
+  totalSpent: number;
   status: CustomerStatus;
   joinedAt: string;
 }

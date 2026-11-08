@@ -28,6 +28,15 @@ interface AssignmentOptionRecord {
   reason?: string | null;
 }
 
+interface CaptainOfferRef {
+  orderId?: string | null;
+  order_id?: string | null;
+  taskId?: string | null;
+  task_id?: string | null;
+  tripId?: string | null;
+  trip_id?: string | null;
+}
+
 interface AssignableCaptainRecord {
   id?: string | null;
   fullName?: string | null;
@@ -40,6 +49,13 @@ interface AssignableCaptainRecord {
   busy_task_id?: string | null;
   hasOffer?: boolean | null;
   has_offer?: boolean | null;
+  offerOrderId?: string | null;
+  offer_order_id?: string | null;
+  offerTaskId?: string | null;
+  offer_task_id?: string | null;
+  offerTripId?: string | null;
+  offer_trip_id?: string | null;
+  offer?: CaptainOfferRef | null;
   hasApp?: boolean | null;
   has_app?: boolean | null;
   options?: AssignmentOptionRecord[] | null;
@@ -225,6 +241,23 @@ function toAssignableCaptain(row: AssignableCaptainRecord): AssignableCaptain | 
 
   const role = asRole(row.role);
   const busyTaskId = row.busyTaskId?.trim() || row.busy_task_id?.trim() || null;
+  const offer = row.offer ?? null;
+  const offerOrderId =
+    row.offerOrderId?.trim() ||
+    row.offer_order_id?.trim() ||
+    offer?.orderId?.trim() ||
+    offer?.order_id?.trim() ||
+    null;
+  const offerTaskId =
+    row.offerTaskId?.trim() ||
+    row.offer_task_id?.trim() ||
+    row.offerTripId?.trim() ||
+    row.offer_trip_id?.trim() ||
+    offer?.taskId?.trim() ||
+    offer?.task_id?.trim() ||
+    offer?.tripId?.trim() ||
+    offer?.trip_id?.trim() ||
+    null;
 
   return {
     id,
@@ -234,6 +267,8 @@ function toAssignableCaptain(row: AssignableCaptainRecord): AssignableCaptain | 
     isOnline: row.isOnline === true || row.is_online === true,
     busyTaskId,
     hasOffer: row.hasOffer === true || row.has_offer === true,
+    offerOrderId,
+    offerTaskId,
     hasApp: row.hasApp !== false && row.has_app !== false,
     options: toOptions(row.options, role),
   };

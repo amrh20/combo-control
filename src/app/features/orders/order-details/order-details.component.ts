@@ -3,6 +3,7 @@ import {
   Component,
   DestroyRef,
   ElementRef,
+  HostListener,
   computed,
   effect,
   inject,
@@ -45,6 +46,7 @@ import {
   eventNoteLabel,
   eventTypeLabel,
   formatAddress,
+  formatEventAt,
   isActiveTrip,
   isPhoneMasked,
   itemsEditable,
@@ -84,6 +86,9 @@ import { AssignCaptainModalComponent } from '../assign-captain-modal/assign-capt
 const LIVE_ORDER_POLL_MS = 5_000;
 
 type DetailSection = 'shops' | 'delivery' | 'trips' | 'finance' | 'history';
+
+/** Single visible CTA in the priority bar; everything else goes in the ⋮ menu. */
+type PriorityPrimaryAction = 'offer' | 'reassign' | 'forceComplete' | 'settle';
 
 interface OrderPriority {
   icon: string;
@@ -214,6 +219,7 @@ export class OrderDetailsComponent {
   readonly actorLabel = actorTypeLabel;
   readonly noteLabel = eventNoteLabel;
   readonly statusLabel = orderStatusLabel;
+  readonly formatEventAt = formatEventAt;
   readonly payLabel = paymentMethodLabel;
   readonly addressText = formatAddress;
   readonly lineTotal = lineTotalPiastres;
@@ -230,13 +236,16 @@ export class OrderDetailsComponent {
   readonly pending = signal(false);
   readonly editingItemId = signal<string | null>(null);
   readonly rejectingSubOrderId = signal<string | null>(null);
-  readonly showCancel = signal(false);
+  readonly showCancelModal = signal(false);
   readonly cancellingTaskId = signal<string | null>(null);
   readonly isDriverModalOpen = signal(false);
   readonly reassignTaskId = signal<string | null>(null);
   readonly addItemSubOrderId = signal<string | null>(null);
   readonly addItemError = signal<string | null>(null);
   readonly showAdjust = signal(false);
+  readonly showForceCompleteModal = signal(false);
+  readonly actionsMenuOpen = signal(false);
+  private readonly actionsMenu = viewChild<ElementRef<HTMLElement>>('actionsMenu');
   readonly adjustError = signal<string | null>(null);
   readonly editCatalogProduct = signal<OpsCatalogProduct | null>(null);
   readonly editCatalogLoading = signal(false);
@@ -341,6 +350,35 @@ export class OrderDetailsComponent {
       canAdjustOrder(order)
     );
   });
+
+  /** Prefer captain assignment; otherwise elevate the next available ops action. */
+  readonly primaryAction = computed((): PriorityPrimaryAction | null => {
+    if (this.canOfferCaptain()) {
+      return 'offer';
+    }
+    if (this.priorityDispatchTrip()) {
+      return 'reassign';
+    }
+    if (this.canForceComplete()) {
+      return 'forceComplete';
+    }
+    if (this.canSettleOrder()) {
+      return 'settle';
+    }
+    return null;
+  });
+
+  readonly showForceCompleteInMenu = computed(
+    () => this.canForceComplete() && this.primaryAction() !== 'forceComplete',
+  );
+
+  readonly showSettleInMenu = computed(
+    () => this.canSettleOrder() && this.primaryAction() !== 'settle',
+  );
+
+  readonly hasMoreActions = computed(
+    () => this.showForceCompleteInMenu() || this.showSettleInMenu(),
+  );
 
   readonly displayTotal = computed(() => {
     const order = this.order();
@@ -669,13 +707,22 @@ export class OrderDetailsComponent {
   }
 
   openCancel(): void {
-    this.showCancel.set(true);
+    if (!this.order() || !this.canCancelOrder()) {
+      return;
+    }
+    this.closeActionsMenu();
     this.cancelReason = '';
     this.chargeFee = false;
+    this.showCancelModal.set(true);
   }
 
   closeCancel(): void {
-    this.showCancel.set(false);
+    if (this.pending()) {
+      return;
+    }
+    this.showCancelModal.set(false);
+    this.cancelReason = '';
+    this.chargeFee = false;
   }
 
   confirmCancel(): void {
@@ -694,22 +741,34 @@ export class OrderDetailsComponent {
     );
   }
 
-  forceComplete(): void {
+  openForceCompleteModal(): void {
+    if (!this.order() || !this.canForceComplete()) {
+      return;
+    }
+    this.closeActionsMenu();
+    this.showForceCompleteModal.set(true);
+  }
+
+  closeForceCompleteModal(): void {
+    if (this.pending()) {
+      return;
+    }
+    this.showForceCompleteModal.set(false);
+  }
+
+  confirmForceComplete(): void {
     const order = this.order();
     if (!order || !this.canForceComplete()) {
       return;
     }
-    if (
-      !window.confirm(
-        'هل أنت متأكد من إنهاء الطلب وتسجيل العهدة على الكابتن يدوياً؟',
-      )
-    ) {
-      return;
-    }
-    this.mutate(this.ordersApi.forceComplete(order.id), 'تم إنهاء التوصيل وتسجيل الطلب كمُسلّم.');
+    this.mutate(
+      this.ordersApi.forceComplete(order.id),
+      'تم إنهاء التوصيل وتسجيل الطلب كمُسلّم.',
+    );
   }
 
   openAdjust(): void {
+    this.closeActionsMenu();
     this.adjustError.set(null);
     this.showAdjust.set(true);
   }
@@ -739,14 +798,67 @@ export class OrderDetailsComponent {
     );
   }
 
+  toggleActionsMenu(event: MouseEvent): void {
+    event.stopPropagation();
+    this.actionsMenuOpen.update((open) => !open);
+  }
+
+  closeActionsMenu(): void {
+    this.actionsMenuOpen.set(false);
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.showForceCompleteModal()) {
+      this.closeForceCompleteModal();
+      return;
+    }
+    this.closeActionsMenu();
+  }
+
+  @HostListener('document:click', ['$event'])
+  onActionsMenuDocumentClick(event: MouseEvent): void {
+    if (!this.actionsMenuOpen()) {
+      return;
+    }
+    const target = event.target;
+    if (!(target instanceof Node)) {
+      return;
+    }
+    const root = this.actionsMenu()?.nativeElement;
+    if (root && !root.contains(target)) {
+      this.closeActionsMenu();
+    }
+  }
+
   openAssign(): void {
+    this.closeActionsMenu();
     this.reassignTaskId.set(null);
     this.isDriverModalOpen.set(true);
   }
 
   openReassign(trip: OpsTrip): void {
+    this.closeActionsMenu();
     this.reassignTaskId.set(trip.id);
     this.isDriverModalOpen.set(true);
+  }
+
+  /**
+   * Captain holding the pending offer on the trip being reassigned.
+   * Lets the assign modal treat that captain as "same-order offer" even if
+   * assignable-captains omits offer order/task ids.
+   */
+  pendingReassignOfferCaptainId(): string | null {
+    const taskId = this.reassignTaskId();
+    const order = this.order();
+    if (!taskId || !order) {
+      return null;
+    }
+    const trip = order.trips.find((item) => item.id === taskId);
+    if (!trip?.captain?.id || trip.offer?.status !== 'PENDING') {
+      return null;
+    }
+    return trip.captain.id;
   }
 
   closeDriverModal(): void {
@@ -958,8 +1070,11 @@ export class OrderDetailsComponent {
     this.addItemError.set(null);
     this.showAdjust.set(false);
     this.adjustError.set(null);
+    this.showForceCompleteModal.set(false);
     this.rejectingSubOrderId.set(null);
-    this.showCancel.set(false);
+    this.showCancelModal.set(false);
+    this.cancelReason = '';
+    this.chargeFee = false;
     this.cancellingTaskId.set(null);
     this.isDriverModalOpen.set(false);
     this.reassignTaskId.set(null);

@@ -71,66 +71,107 @@
           <span>{{ next.hint }}</span>
         </div>
         <div class="order-details__priority-actions">
-          @if (canOfferCaptain()) {
-            <button
-              type="button"
-              class="order-details__primary-btn"
-              *ctrlPermission="'orders.assign'"
-              [disabled]="pending()"
-              (click)="openAssign()"
-            >
-              <i class="pi pi-user-plus"></i>
-              تعيين كابتن
-            </button>
+          @switch (primaryAction()) {
+            @case ('offer') {
+              <button
+                type="button"
+                class="order-details__primary-btn"
+                *ctrlPermission="'orders.assign'"
+                [disabled]="pending()"
+                (click)="openAssign()"
+              >
+                <i class="pi pi-user-plus"></i>
+                تعيين كابتن
+              </button>
+            }
+            @case ('reassign') {
+              @if (priorityDispatchTrip(); as trip) {
+                <button
+                  type="button"
+                  class="order-details__primary-btn"
+                  *ctrlPermission="'orders.assign'"
+                  [disabled]="pending()"
+                  (click)="openReassign(trip)"
+                >
+                  <i class="pi pi-user-plus"></i>
+                  {{ tripDeclined(trip) ? 'إعادة تعيين' : 'تعيين كابتن' }}
+                </button>
+              }
+            }
+            @case ('forceComplete') {
+              <button
+                type="button"
+                class="order-details__primary-btn"
+                *ctrlPermission="'orders.assign'"
+                [disabled]="pending()"
+                (click)="openForceCompleteModal()"
+              >
+                <i class="pi pi-check"></i>
+                إنهاء التوصيل يدوياً
+              </button>
+            }
+            @case ('settle') {
+              <button
+                type="button"
+                class="order-details__primary-btn"
+                *ctrlPermission="'orders.update'"
+                [disabled]="pending()"
+                (click)="openAdjust()"
+              >
+                <i class="pi pi-calculator"></i>
+                تسوية الطلب
+              </button>
+            }
           }
-          @if (priorityDispatchTrip(); as trip) {
-            <button
-              type="button"
-              class="order-details__primary-btn"
-              *ctrlPermission="'orders.assign'"
-              [disabled]="pending()"
-              (click)="openReassign(trip)"
-            >
-              <i class="pi pi-user-plus"></i>
-              {{ tripDeclined(trip) ? 'إعادة تعيين' : 'تعيين كابتن' }}
-            </button>
+
+          @if (hasMoreActions()) {
+            <div class="order-details__actions-menu" #actionsMenu>
+              <button
+                type="button"
+                class="order-details__more-btn"
+                [disabled]="pending()"
+                [attr.aria-expanded]="actionsMenuOpen()"
+                aria-haspopup="menu"
+                aria-label="المزيد من الإجراءات"
+                (click)="toggleActionsMenu($event)"
+              >
+                <i class="pi pi-ellipsis-v" aria-hidden="true"></i>
+              </button>
+
+              @if (actionsMenuOpen()) {
+                <div class="order-details__actions-dropdown" role="menu">
+                  @if (showForceCompleteInMenu()) {
+                    <button
+                      type="button"
+                      role="menuitem"
+                      class="order-details__actions-dropdown-item"
+                      *ctrlPermission="'orders.assign'"
+                      [disabled]="pending()"
+                      (click)="openForceCompleteModal()"
+                    >
+                      <i class="pi pi-check" aria-hidden="true"></i>
+                      <span>إنهاء التوصيل يدوياً</span>
+                    </button>
+                  }
+                  @if (showSettleInMenu()) {
+                    <button
+                      type="button"
+                      role="menuitem"
+                      class="order-details__actions-dropdown-item"
+                      *ctrlPermission="'orders.update'"
+                      [disabled]="pending()"
+                      (click)="closeActionsMenu(); openAdjust()"
+                    >
+                      <i class="pi pi-calculator" aria-hidden="true"></i>
+                      <span>تسوية الطلب</span>
+                    </button>
+                  }
+                </div>
+              }
+            </div>
           }
-          @if (next.section === 'shops' && o.subOrders.length) {
-            <button type="button" class="order-details__focus-btn" (click)="toggleShopDetails()">
-              {{ shopDetailsOpen() ? 'إخفاء التفاصيل' : 'عرض التفاصيل' }}
-              <i class="pi" [class.pi-chevron-up]="shopDetailsOpen()" [class.pi-chevron-down]="!shopDetailsOpen()"></i>
-            </button>
-          } @else if (activeSection() !== next.section) {
-            <button type="button" class="order-details__focus-btn" (click)="showSection(next.section)">
-              عرض القسم
-              <i class="pi pi-arrow-left"></i>
-            </button>
-          }
-          @if (canForceComplete()) {
-            <button
-              type="button"
-              class="order-details__primary-btn"
-              *ctrlPermission="'orders.assign'"
-              [disabled]="pending()"
-              (click)="forceComplete()"
-            >
-              <i class="pi pi-check"></i>
-              إنهاء التوصيل يدوياً
-            </button>
-          }
-          @if (canSettleOrder()) {
-            <button
-              type="button"
-              class="order-details__primary-btn"
-              *ctrlPermission="'orders.update'"
-              [disabled]="pending()"
-              (click)="openAdjust()"
-            >
-              <i class="pi pi-calculator"></i>
-              تسوية الطلب
-            </button>
-          }
-          @if (canCancelOrder() && !showCancel()) {
+
+          @if (canCancelOrder()) {
             <button
               type="button"
               class="order-details__quiet-danger-btn"
@@ -144,33 +185,6 @@
           }
         </div>
       </section>
-    }
-
-    @if (showCancel()) {
-      <div class="order-details__cancel-form" *ctrlPermission="'orders.cancel'">
-        <div class="order-details__inline-edit">
-          <div class="order-details__inline-field order-details__inline-field--grow">
-            <label class="order-details__inline-label" for="cancel-reason">سبب الإلغاء</label>
-            <input
-              id="cancel-reason"
-              class="order-details__inline-input order-details__inline-input--text"
-              maxlength="300"
-              [(ngModel)]="cancelReason"
-              placeholder="سبب الإلغاء"
-            />
-          </div>
-          <label class="order-details__check">
-            <input type="checkbox" [(ngModel)]="chargeFee" [disabled]="pending()" />
-            <span>احتساب رسوم الإلغاء</span>
-          </label>
-          <button type="button" class="order-details__danger-btn" [disabled]="pending()" (click)="confirmCancel()">
-            تأكيد الإلغاء
-          </button>
-          <button type="button" class="order-details__cancel-btn" [disabled]="pending()" (click)="closeCancel()">
-            رجوع
-          </button>
-        </div>
-      </div>
     }
 
     <div class="order-details__snapshot" aria-label="ملخص الطلب">
@@ -655,7 +669,7 @@
                     type="button"
                     class="order-details__tool-btn order-details__tool-btn--edit"
                     [disabled]="pending()"
-                    (click)="forceComplete()"
+                    (click)="openForceCompleteModal()"
                   >
                     إنهاء التوصيل يدوياً
                   </button>
@@ -773,7 +787,7 @@
         <ol class="order-details__events">
           @for (event of o.events; track event.id) {
             <li class="order-details__event">
-              <time class="order-details__muted">{{ event.at | date: 'd MMM y, h:mm a' }}</time>
+              <time class="order-details__muted">{{ formatEventAt(event.at) }}</time>
               <strong>{{ eventLabel(event.type) }}</strong>
               @if (event.fromStatus || event.toStatus) {
                 <span class="order-details__muted">
@@ -804,6 +818,7 @@
 <ctrl-assign-captain-modal
   [orderId]="resolvedOrderId() ?? ''"
   [taskId]="reassignTaskId()"
+  [offerCaptainId]="pendingReassignOfferCaptainId()"
   [open]="isDriverModalOpen()"
   (closed)="closeDriverModal()"
   (assigned)="onCaptainAssigned()"
@@ -829,3 +844,128 @@
   (closed)="closeAdjust()"
   (submitted)="confirmAdjust($event)"
 />
+
+@if (showForceCompleteModal()) {
+  <div
+    class="fixed inset-0 z-[1100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+    role="presentation"
+    (click)="closeForceCompleteModal()"
+  >
+    <div
+      class="w-full max-w-sm rounded-2xl bg-white p-5 text-right shadow-lg"
+      dir="rtl"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="force-complete-title"
+      (click)="$event.stopPropagation()"
+    >
+      <p
+        id="force-complete-title"
+        role="heading"
+        aria-level="2"
+        class="m-0 text-right text-[15px] font-semibold leading-snug text-gray-900"
+      >
+        تأكيد إنهاء التوصيل
+      </p>
+      <p class="mt-2 mb-0 text-right text-[13px] leading-relaxed text-gray-600">
+        هل أنت متأكد من إنهاء الطلب وتسجيل العهدة على الكابتن يدوياً؟
+      </p>
+      <div class="mt-5 flex justify-end gap-2">
+        <button
+          type="button"
+          class="cursor-pointer rounded-lg border border-gray-200 bg-white px-3.5 py-1.5 text-[13px] font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="pending()"
+          (click)="closeForceCompleteModal()"
+        >
+          إلغاء
+        </button>
+        <button
+          type="button"
+          class="cursor-pointer rounded-lg border border-transparent bg-emerald-600 px-3.5 py-1.5 text-[13px] font-medium text-white transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+          [disabled]="pending()"
+          (click)="confirmForceComplete()"
+        >
+          تأكيد
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showCancelModal()) {
+  <div class="order-details__cancel-overlay" role="presentation" (click)="closeCancel()">
+    <div
+      class="order-details__cancel-dialog"
+      dir="rtl"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="cancel-order-title"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="order-details__cancel-header">
+        <div class="order-details__cancel-heading">
+          <span class="order-details__cancel-icon" aria-hidden="true">
+            <i class="pi pi-times-circle"></i>
+          </span>
+          <div>
+            <h2 id="cancel-order-title" class="order-details__cancel-title">إلغاء الطلب</h2>
+            <p class="order-details__cancel-subtitle">
+              سيتم إلغاء الطلب نهائياً. أدخل السبب قبل التأكيد.
+            </p>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="order-details__cancel-close"
+          aria-label="إغلاق"
+          [disabled]="pending()"
+          (click)="closeCancel()"
+        >
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+
+      <div class="order-details__cancel-body">
+        <label class="order-details__cancel-field" for="cancel-reason">
+          <span class="order-details__cancel-label">سبب الإلغاء</span>
+          <input
+            id="cancel-reason"
+            type="text"
+            class="order-details__cancel-input"
+            maxlength="300"
+            [(ngModel)]="cancelReason"
+            [disabled]="pending()"
+            placeholder="اكتب سبب الإلغاء..."
+          />
+        </label>
+
+        <label class="order-details__cancel-check">
+          <input type="checkbox" [(ngModel)]="chargeFee" [disabled]="pending()" />
+          <span>احتساب رسوم الإلغاء</span>
+        </label>
+      </div>
+
+      <div class="order-details__cancel-footer">
+        <button
+          type="button"
+          class="order-details__cancel-ghost-btn"
+          [disabled]="pending()"
+          (click)="closeCancel()"
+        >
+          رجوع
+        </button>
+        <button
+          type="button"
+          class="order-details__cancel-confirm-btn"
+          [disabled]="pending()"
+          (click)="confirmCancel()"
+        >
+          @if (pending()) {
+            <i class="pi pi-spin pi-spinner"></i>
+          }
+          تأكيد الإلغاء
+        </button>
+      </div>
+    </div>
+  </div>
+}

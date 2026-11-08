@@ -1,4 +1,14 @@
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectorRef,
+  Component,
+  DestroyRef,
+  ElementRef,
+  HostListener,
+  computed,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -21,6 +31,8 @@ import { HubService } from '../../../core/services/hub.service';
 import { ComboInputComponent } from '../../../shared/components/combo-input/combo-input.component';
 import { matchesSearch } from '../../../shared/utils/list-filter';
 import { CaptainFormComponent } from '../captain-form/captain-form.component';
+
+type CaptainRow = Captain & { hubName: string };
 
 @Component({
   selector: 'ctrl-captain-list',
@@ -45,6 +57,9 @@ export class CaptainListComponent {
   private readonly hubService = inject(HubService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly messages = inject(MessageService);
+  private readonly cdr = inject(ChangeDetectorRef);
+  /** Rendered in the top layer so the table scroller cannot clip it. */
+  private readonly actionsMenu = viewChild<ElementRef<HTMLElement>>('actionsMenu');
 
   readonly roleLabel = captainRoleLabel;
   readonly roleBadge = captainRoleBadge;
@@ -53,6 +68,7 @@ export class CaptainListComponent {
   readonly searchQuery = signal('');
   readonly formOpen = signal(false);
   readonly editing = signal<Captain | null>(null);
+  readonly actionsCaptain = signal<CaptainRow | null>(null);
   readonly loading = signal(true);
   readonly loadError = signal<string | null>(null);
   readonly pendingId = signal<string | null>(null);
@@ -170,8 +186,83 @@ export class CaptainListComponent {
     this.formOpen.set(true);
   }
 
+  editFromMenu(captain: Captain): void {
+    this.closeActions();
+    this.openEditModal(captain);
+  }
+
   closeForm(): void {
     this.formOpen.set(false);
     this.editing.set(null);
+  }
+
+  toggleActions(captain: CaptainRow, event: Event): void {
+    event.stopPropagation();
+    const panel = this.actionsMenu()?.nativeElement;
+    const button = event.currentTarget;
+    if (!panel || !(button instanceof HTMLElement)) {
+      return;
+    }
+
+    if (panel.matches(':popover-open') && this.actionsCaptain()?.id === captain.id) {
+      panel.hidePopover();
+      return;
+    }
+
+    this.actionsCaptain.set(captain);
+    this.cdr.detectChanges();
+    const alreadyOpen = panel.matches(':popover-open');
+    if (!alreadyOpen) {
+      panel.style.visibility = 'hidden';
+      panel.showPopover();
+    }
+    this.placeActionsMenu(panel, button);
+    panel.style.visibility = 'visible';
+  }
+
+  closeActions(): void {
+    this.actionsMenu()?.nativeElement.hidePopover();
+  }
+
+  onActionsToggle(event: Event): void {
+    if (!(event instanceof ToggleEvent) || event.newState !== 'closed') {
+      return;
+    }
+    // Defer so the router link click still runs on the item that closed the menu.
+    queueMicrotask(() => this.actionsCaptain.set(null));
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const panel = this.actionsMenu()?.nativeElement;
+    if (!panel?.matches(':popover-open')) {
+      return;
+    }
+    if (event.target instanceof Node && panel.contains(event.target)) {
+      return;
+    }
+    panel.hidePopover();
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.actionsMenu()?.nativeElement.hidePopover();
+  }
+
+  private placeActionsMenu(panel: HTMLElement, anchor: HTMLElement): void {
+    const rect = anchor.getBoundingClientRect();
+    const width = panel.offsetWidth || 196;
+    const height = panel.offsetHeight || 44;
+    const gap = 4;
+    let left = rect.left;
+    if (left + width > window.innerWidth - 8) {
+      left = Math.max(8, window.innerWidth - width - 8);
+    }
+    let top = rect.bottom + gap;
+    if (top + height > window.innerHeight - 8) {
+      top = Math.max(8, rect.top - height - gap);
+    }
+    panel.style.top = `${top}px`;
+    panel.style.left = `${left}px`;
   }
 }

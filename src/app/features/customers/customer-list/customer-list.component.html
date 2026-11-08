@@ -94,15 +94,11 @@
               <span   class="inline-block text-gray-800" dir="ltr">{{ formatPhone(customer.phone) }}</span>
             </td>
             <td class="px-4 py-3 text-center font-medium text-gray-800">
-              {{ customer.totalOrders ?? '—' }}
+              {{ customer.totalOrders | number: '1.0-0' }}
             </td>
             <td class="px-4 py-3 whitespace-nowrap font-semibold text-gray-800">
-              @if (customer.totalSpent == null) {
-                —
-              } @else {
-                <span   class="inline-block">{{ customer.totalSpent | number: '1.2-2' }}</span>
-                ج.م
-              }
+              <span class="inline-block" dir="ltr">{{ customer.totalSpent | number: '1.2-2' }}</span>
+              ج.م
             </td>
             <td class="px-4 py-3">
               <span

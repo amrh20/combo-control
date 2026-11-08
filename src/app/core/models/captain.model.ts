@@ -21,6 +21,8 @@ export interface Captain {
   status: CaptainStatus;
   hubId: string;
   vehicleType: CaptainVehicleType;
+  /** License expiry date (`YYYY-MM-DD`) from `licenseExpiresOn`. Null when unset. */
+  licenseExpiresOn: string | null;
   /**
    * Cash the captain still holds, in piastres.
    * From `company_cash_balance` / `companyCashBalance` on the captain payload.
@@ -54,6 +56,8 @@ export interface CreateCaptainPayload {
   hubId: string;
   password: string;
   vehicleType?: CaptainVehicleType;
+  /** `YYYY-MM-DD`, or null to clear. */
+  licenseExpiresOn?: string | null;
   employmentType?: CaptainEmploymentType;
   maxCashLimit?: number;
   fixedSalary?: number;
@@ -67,6 +71,8 @@ export interface UpdateCaptainPayload {
   status?: CaptainStatus;
   hubId?: string;
   vehicleType?: CaptainVehicleType;
+  /** `YYYY-MM-DD`, or null to clear. */
+  licenseExpiresOn?: string | null;
   employmentType?: CaptainEmploymentType;
   maxCashLimit?: number;
   fixedSalary?: number;

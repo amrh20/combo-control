@@ -17,6 +17,7 @@ import {
   CAPTAIN_EMPLOYMENT_OPTIONS,
   Captain,
   CaptainEmploymentType,
+  CaptainVehicleType as ApiCaptainVehicleType,
   captainUsesApp,
 } from '../../../core/models/captain.model';
 import {
@@ -321,8 +322,8 @@ export class DriverDetailsComponent implements OnInit {
         phone: profile.phone,
         role: profile.role,
         hubId: profile.hubId,
-        vehicleType: '',
-        licenseExpiry: '',
+        vehicleType: selectableVehicle(current.vehicleType),
+        licenseExpiry: current.licenseExpiresOn ?? '',
         employmentType,
         maxCashLimitEgp:
           current.maxCashLimit != null
@@ -356,6 +357,9 @@ export class DriverDetailsComponent implements OnInit {
     if (!current) return;
 
     const value = this.profileForm.getRawValue();
+    const vehicleType: ApiCaptainVehicleType =
+      value.role === 'COLLECTOR' ? 'NONE' : selectableVehicle(value.vehicleType);
+    const licenseExpiry = value.licenseExpiry.trim();
     const fleetFields =
       value.employmentType === 'FIXED' && value.fixedSalaryEgp != null
         ? { fixedSalary: egpToPiastres(value.fixedSalaryEgp) }
@@ -366,6 +370,8 @@ export class DriverDetailsComponent implements OnInit {
         fullName: value.name.trim(),
         role: value.role,
         hubId: value.hubId,
+        vehicleType,
+        licenseExpiresOn: licenseExpiry || null,
         employmentType: value.employmentType,
         maxCashLimit: egpToPiastres(value.maxCashLimitEgp),
         hasApp: value.hasApp,
@@ -406,16 +412,21 @@ export class DriverDetailsComponent implements OnInit {
     salary.updateValueAndValidity({ emitEvent: false });
   }
 
-  /** Vehicle stays visible for delivery duties, and is not sent to the API. */
+  /** Vehicle stays visible for delivery duties; collectors send `NONE`. */
   private syncVehicleControl(role: CaptainRole): void {
     const vehicle = this.profileForm.controls.vehicleType;
     const show = role !== 'COLLECTOR';
     this.showVehicle.set(show);
-    vehicle.clearValidators();
-    if (!show) {
+    if (show) {
+      vehicle.setValidators(Validators.required);
+      if (!vehicle.value) {
+        vehicle.setValue('MOTORCYCLE', { emitEvent: false });
+      }
+    } else {
+      vehicle.clearValidators();
       vehicle.setValue('', { emitEvent: false });
     }
-    vehicle.updateValueAndValidity();
+    vehicle.updateValueAndValidity({ emitEvent: false });
   }
 
   goBack(): void {
@@ -512,11 +523,11 @@ function toProfile(captain: Captain, hubName: string): CaptainProfile {
     hubName: hubName || '—',
     availability: 'available',
     accountStatus: captain.status === 'ACTIVE' ? 'active' : 'inactive',
-    vehicleType: '',
+    vehicleType: displayVehicle(captain.vehicleType),
     employmentType: captain.employmentType,
     maxCashLimit: captain.maxCashLimit,
     fixedSalary: captain.fixedSalary,
-    licenseExpiry: '',
+    licenseExpiry: captain.licenseExpiresOn ?? '',
     hasApp: captain.hasApp,
     stats: {
       totalCompletedOrders: 0,
@@ -528,6 +539,16 @@ function toProfile(captain: Captain, hubName: string): CaptainProfile {
     deliveredOrders: [],
     complaints: [],
   };
+}
+
+function displayVehicle(type: ApiCaptainVehicleType): CaptainVehicleType | '' {
+  return type === 'NONE' ? '' : type;
+}
+
+function selectableVehicle(
+  type: ApiCaptainVehicleType | CaptainVehicleType | '',
+): CaptainVehicleType {
+  return type === 'NONE' || !type ? 'MOTORCYCLE' : type;
 }
 
 function mergeSettlements(

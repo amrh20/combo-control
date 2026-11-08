@@ -4,7 +4,6 @@ import { Component, DestroyRef, effect, inject, input, output, signal, untracked
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { MessageService } from 'primeng/api';
-import { TagModule } from 'primeng/tag';
 import { ToastModule } from 'primeng/toast';
 import {
   AssignCaptainPayload,
@@ -20,13 +19,14 @@ import {
 } from '../../../core/services/order-dispatch.service';
 
 const DEFAULT_ASSIGNMENT_ERROR = 'تعذر تعيين الكابتن. حاول مرة أخرى.';
+const SAME_ORDER_OFFER_MESSAGE = 'الكابتن لديه عرض معلق لهذا الطلب بالفعل';
 
 type CaptainAvailability = 'available' | 'offer' | 'busy' | 'offline';
 
 @Component({
   selector: 'ctrl-assign-captain-modal',
   standalone: true,
-  imports: [FormsModule, NgTemplateOutlet, TagModule, ToastModule],
+  imports: [FormsModule, NgTemplateOutlet, ToastModule],
   providers: [MessageService],
   templateUrl: './assign-captain-modal.component.html',
   styleUrl: './assign-captain-modal.component.scss',
@@ -40,6 +40,11 @@ export class AssignCaptainModalComponent {
   readonly orderId = input('');
   /** When set, the confirm action reassigns this trip instead of creating one. */
   readonly taskId = input<string | null>(null);
+  /**
+   * Captain who already holds the pending offer on this trip (from order details).
+   * Used when the assignable-captains payload lacks offer order/task ids.
+   */
+  readonly offerCaptainId = input<string | null>(null);
   readonly open = input(false);
 
   readonly closed = output<void>();
@@ -73,15 +78,44 @@ export class AssignCaptainModalComponent {
   }
 
   /**
-   * True when the API accepts at least one assignment mode for this captain.
-   * External captains (`hasApp === false`) may stay offline in the app but still be assignable manually.
+   * True when this captain's pending offer is for the order/trip we are assigning right now.
+   * Prefer API `offerOrderId` / `offerTaskId`; fall back to the parent-supplied offer captain.
    */
-  isCaptainSelectable(captain: AssignableCaptain): boolean {
-    if (!captain.options.some((option) => option.ok)) {
+  hasOfferForCurrentOrder(captain: AssignableCaptain): boolean {
+    if (!captain.hasOffer) {
       return false;
     }
-    if (captain.hasApp === false) {
+
+    const orderId = this.orderId().trim();
+    const taskId = this.taskId()?.trim() ?? '';
+    const offerOrderId = captain.offerOrderId?.trim() ?? '';
+    const offerTaskId = captain.offerTaskId?.trim() ?? '';
+
+    if (offerOrderId && orderId && offerOrderId === orderId) {
       return true;
+    }
+    if (offerTaskId && taskId && offerTaskId === taskId) {
+      return true;
+    }
+
+    const pendingCaptainId = this.offerCaptainId()?.trim() ?? '';
+    return Boolean(pendingCaptainId && pendingCaptainId === captain.id);
+  }
+
+  /**
+   * True when the API accepts at least one assignment mode for this captain.
+   * External captains (`hasApp === false`) have no app presence — online/offline must not block them.
+   */
+  isCaptainSelectable(captain: AssignableCaptain): boolean {
+    if (this.hasOfferForCurrentOrder(captain)) {
+      return false;
+    }
+    if (this.requiresFullTrip(captain)) {
+      const both = this.bothOption(captain);
+      return Boolean(both && (both.ok || both.reason === 'CAPTAIN_OFFLINE'));
+    }
+    if (!captain.options.some((option) => option.ok)) {
+      return false;
     }
     return captain.isOnline;
   }
@@ -89,6 +123,11 @@ export class AssignCaptainModalComponent {
   /** The full-trip override is offered only when that option is accepted. */
   canDelegateFullTrip(captain: AssignableCaptain): boolean {
     return this.bothOption(captain)?.ok === true;
+  }
+
+  /** Non-app captains cannot update stop statuses, so ops always assign the full trip. */
+  requiresFullTrip(captain: AssignableCaptain): boolean {
+    return captain.hasApp === false;
   }
 
   /** The label names the duty this captain does not already have. */
@@ -100,31 +139,47 @@ export class AssignCaptainModalComponent {
   }
 
   selectedModeLabel(captain: AssignableCaptain): string {
-    const option = this.delegateFullTrip ? this.bothOption(captain) : this.standardOption(captain);
+    const fullTrip = this.requiresFullTrip(captain) || this.delegateFullTrip;
+    const option = fullTrip ? this.bothOption(captain) : this.standardOption(captain);
     return assignmentModeLabel(option?.mode);
   }
 
   /**
    * Arabic reason shown when every option is rejected.
+   * Scenario A (same-order offer) uses only the dedicated warning — no other validation codes.
    * Offline captains are explained by the availability badge only.
    */
   getCaptainDisabledReason(captain: AssignableCaptain): string {
-    if (!captain.isOnline) {
+    if (this.hasOfferForCurrentOrder(captain)) {
+      return SAME_ORDER_OFFER_MESSAGE;
+    }
+    // Offline is shown via the availability badge for app captains only.
+    if (captain.hasApp !== false && !captain.isOnline) {
       return '';
     }
 
     const rejected = captain.options.find((option) => !option.ok && option.reason);
+    if (captain.hasApp === false && rejected?.reason === 'CAPTAIN_OFFLINE') {
+      return '';
+    }
     return assignmentReasonLabel(rejected?.reason) || 'غير متاح للتعيين';
   }
 
+  /** Warning style for Scenario A; error style for other rejection reasons. */
+  isSameOrderOfferReason(captain: AssignableCaptain): boolean {
+    return this.hasOfferForCurrentOrder(captain);
+  }
+
   availability(captain: AssignableCaptain): CaptainAvailability {
-    if (!captain.isOnline) {
+    // Non-app captains have no live presence; never treat them as offline for UI.
+    if (captain.hasApp !== false && !captain.isOnline) {
       return 'offline';
     }
     if (captain.busyTaskId != null) {
       return 'busy';
     }
-    if (captain.hasOffer) {
+    // Scenario A: hide the generic "لديه عرض" badge — the dedicated message covers it.
+    if (captain.hasOffer && !this.hasOfferForCurrentOrder(captain)) {
       return 'offer';
     }
     return 'available';
@@ -155,7 +210,7 @@ export class AssignCaptainModalComponent {
     }
 
     this.selectedCaptainId.set(captain.id);
-    this.delegateFullTrip = false;
+    this.delegateFullTrip = this.requiresFullTrip(captain);
     this.assignError.set(null);
   }
 
@@ -167,7 +222,9 @@ export class AssignCaptainModalComponent {
       return;
     }
 
-    const fullTrip = this.delegateFullTrip && this.canDelegateFullTrip(captain);
+    const fullTrip =
+      this.requiresFullTrip(captain) ||
+      (this.delegateFullTrip && this.canDelegateFullTrip(captain));
     const payload: AssignCaptainPayload = { captainId };
     if (fullTrip) {
       payload.overrideRole = 'BOTH';

@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, computed, effect, inject, input, output, signal, untracked } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -203,6 +204,10 @@ export class CaptainFormComponent {
       },
       error: (error: unknown) => {
         this.saving.set(false);
+        // HTTP 400 is toasted by `errorInterceptor` (details[].message).
+        if (error instanceof HttpErrorResponse && error.status === 400) {
+          return;
+        }
         this.messages.add({
           severity: 'error',
           summary: 'تعذر الحفظ',

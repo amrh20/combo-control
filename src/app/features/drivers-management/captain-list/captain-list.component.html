@@ -57,6 +57,7 @@
       [paginator]="true"
       [rows]="10"
       [rowsPerPageOptions]="[10, 25]"
+      paginatorDropdownAppendTo="body"
       [tableStyle]="{ 'min-width': '80rem' }"
       sortMode="single"
     >
@@ -82,7 +83,7 @@
           <th class="drivers-list__th drivers-list__th--center" style="width: 140px">
             مفعّل
           </th>
-          <th class="drivers-list__th drivers-list__th--center" style="width: 240px">
+          <th class="drivers-list__th drivers-list__th--center" style="width: 72px">
             الإجراءات
           </th>
         </tr>
@@ -139,25 +140,18 @@
             />
           </td>
           <td class="drivers-list__td--center">
-            <div class="drivers-list__actions">
-              <button
-                *ctrlPermission="'drivers.write'"
-                type="button"
-                class="drivers-list__edit-btn"
-                title="تعديل"
-                (click)="openEditModal(captain)"
-              >
-                <i class="pi pi-pencil"></i>
-                تعديل
-              </button>
-              <a
-                [routerLink]="['/drivers', captain.id]"
-                class="drivers-list__profile-btn"
-              >
-                <i class="pi pi-user"></i>
-                عرض الملف
-              </a>
-            </div>
+            <button
+              type="button"
+              class="drivers-list__menu-trigger"
+              [class.drivers-list__menu-trigger--open]="actionsCaptain()?.id === captain.id"
+              [attr.aria-expanded]="actionsCaptain()?.id === captain.id ? 'true' : 'false'"
+              aria-haspopup="menu"
+              aria-controls="captain-actions-menu"
+              [attr.aria-label]="'إجراءات ' + captain.fullName"
+              (click)="toggleActions(captain, $event)"
+            >
+              <i class="pi pi-ellipsis-v" aria-hidden="true"></i>
+            </button>
           </td>
         </tr>
       </ng-template>
@@ -176,6 +170,37 @@
         </tr>
       </ng-template>
     </p-table>
+  </div>
+
+  <div
+    #actionsMenu
+    id="captain-actions-menu"
+    class="drivers-list__menu"
+    popover="manual"
+    role="menu"
+    (toggle)="onActionsToggle($event)"
+  >
+    @if (actionsCaptain(); as captain) {
+      <a
+        role="menuitem"
+        class="drivers-list__menu-item"
+        [routerLink]="['/drivers', captain.id]"
+        (click)="closeActions()"
+      >
+        <i class="pi pi-user" aria-hidden="true"></i>
+        عرض الملف
+      </a>
+      <button
+        *ctrlPermission="'drivers.write'"
+        type="button"
+        role="menuitem"
+        class="drivers-list__menu-item"
+        (click)="editFromMenu(captain)"
+      >
+        <i class="pi pi-pencil" aria-hidden="true"></i>
+        تعديل
+      </button>
+    }
   </div>
 
 </div>

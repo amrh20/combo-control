@@ -25,6 +25,10 @@ export interface AssignableCaptain {
   isOnline: boolean;
   busyTaskId: string | null;
   hasOffer: boolean;
+  /** Order the captain's pending offer belongs to, when the API sends it. */
+  offerOrderId: string | null;
+  /** Trip/task the captain's pending offer belongs to, when the API sends it. */
+  offerTaskId: string | null;
   /** When false, the captain is external and does not use the mobile app. Defaults to true. */
   hasApp?: boolean;
   options: AssignmentOption[];
@@ -44,6 +48,7 @@ export interface CaptainAssignedEvent {
 
 const ASSIGNMENT_REASON_LABELS: Readonly<Record<string, string>> = {
   ORDER_NOT_ASSIGNABLE: 'كابتن التوصيل والطلب لسه بيتجمع',
+  NEEDS_FULL_TRIP_OVERRIDE: 'الكابتن مشغول برحلة أخرى (يتطلب تخطي)',
   CAPTAIN_CANNOT_DELIVER: 'دور الكابتن ما يغطيش الرحلة',
   CAPTAIN_OFFLINE: 'أوفلاين',
   CAPTAIN_BUSY: 'مشغول في رحلة',
@@ -52,13 +57,24 @@ const ASSIGNMENT_REASON_LABELS: Readonly<Record<string, string>> = {
   OTHER_HUB: 'الكابتن تبع هب تاني',
   NOTHING_TO_COLLECT: 'كل المحلات سلّمت شنطها',
   NO_CAPTAIN_AVAILABLE: 'مفيش كابتن متاح',
+  COMPANY_CASH_LIMIT: 'الكابتن وصل حد عهدة الشركة',
 };
 
-/** Arabic label for an assignment rejection code. Unknown text is returned as-is. */
+const RAW_REASON_CODE = /^[A-Z][A-Z0-9_]*$/;
+
+/** Arabic label for an assignment rejection code. Never returns raw backend codes. */
 export function assignmentReasonLabel(reason: string | null | undefined): string {
   const value = reason?.trim() ?? '';
   if (!value) {
     return '';
   }
-  return ASSIGNMENT_REASON_LABELS[value] ?? value;
+  const mapped = ASSIGNMENT_REASON_LABELS[value];
+  if (mapped) {
+    return mapped;
+  }
+  // SCREAMING_SNAKE codes must not leak into the UI.
+  if (RAW_REASON_CODE.test(value)) {
+    return '';
+  }
+  return value;
 }

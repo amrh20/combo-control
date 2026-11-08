@@ -5,7 +5,8 @@ export type DriverAccountStatus = 'active' | 'inactive';
 export type ComplaintSeverity = 'low' | 'medium' | 'high';
 export type ComplaintResolution = 'pending' | 'resolved';
 export type CaptainRole = 'COLLECTOR' | 'DELIVERY' | 'BOTH';
-export type CaptainVehicleType = 'Motorcycle' | 'Car' | 'Bicycle';
+/** Matches `PATCH /v1/captains` vehicle enums (no `NONE` in the dropdown). */
+export type CaptainVehicleType = 'MOTORCYCLE' | 'CAR' | 'BICYCLE';
 
 export interface DriverStats {
   totalCompletedOrders: number;
@@ -83,9 +84,9 @@ export const ROLE_CONFIG: Record<CaptainRole, { labelAr: string }> = {
 };
 
 export const VEHICLE_OPTIONS: { label: string; value: CaptainVehicleType }[] = [
-  { label: 'دراجة نارية', value: 'Motorcycle' },
-  { label: 'سيارة', value: 'Car' },
-  { label: 'دراجة هوائية (عجلة)', value: 'Bicycle' },
+  { label: 'دراجة نارية', value: 'MOTORCYCLE' },
+  { label: 'سيارة', value: 'CAR' },
+  { label: 'دراجة هوائية (عجلة)', value: 'BICYCLE' },
 ];
 
 export function getInitials(name: string): string {

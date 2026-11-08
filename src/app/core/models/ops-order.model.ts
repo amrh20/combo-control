@@ -129,7 +129,7 @@ export interface OpsOrderEvent {
   type: string;
   fromStatus: string | null;
   toStatus: string | null;
-  actorType: 'STAFF' | 'CUSTOMER' | 'CAPTAIN' | null;
+  actorType: 'STAFF' | 'CUSTOMER' | 'CAPTAIN' | 'STORE' | null;
   actorId: string | null;
   note: string | null;
   at: string;
@@ -342,17 +342,40 @@ const ASSIGNMENT_MODE_LABELS: Record<AssignmentMode, string> = {
 
 const EVENT_LABELS: Record<string, string> = {
   'order.placed': 'تم إنشاء الطلب',
-  'sub_order.status_changed': 'تغيّرت حالة المتجر',
+  'order.status_changed': 'تغيّرت حالة الطلب',
+  'order.modified': 'تم تعديل الطلب',
   'order.item_changed': 'تعديل صنف',
   'order.cancelled': 'تم إلغاء الطلب',
-  'offer.declined': 'رفض الكابتن العرض',
+  'order.rated': 'تم تقييم الطلب',
+  'sub_order.status_changed': 'تغيّرت حالة المتجر',
+  'dispatch.offered': 'تم عرض الرحلة على كابتن',
+  'dispatch.accepted': 'قبل الكابتن العرض',
   'dispatch.declined': 'رفض الكابتن العرض',
+  'dispatch.cancelled': 'تم إلغاء التعيين',
+  'delivery.issue_reported': 'تم الإبلاغ عن مشكلة في التوصيل',
+  'delivery.issue_resolved': 'تم حل مشكلة التوصيل',
+  'offer.declined': 'رفض الكابتن العرض',
+  'offer.cancelled': 'تم إلغاء العرض',
 };
 
 const ACTOR_LABELS: Record<string, string> = {
   STAFF: 'موظف',
   CUSTOMER: 'عميل',
   CAPTAIN: 'كابتن',
+  STORE: 'متجر',
+};
+
+/** Known English notes / codes the API stores on events. */
+const EVENT_NOTE_LABELS: Record<string, string> = {
+  'Accepted automatically': 'قُبل تلقائياً',
+  CUSTOMER_UNREACHABLE: 'العميل لا يرد',
+  WRONG_GPS: 'موقع خاطئ',
+  CUSTOMER_REFUSED: 'العميل رفض الاستلام',
+  VEHICLE_BREAKDOWN: 'عطل المركبة',
+  SHOP_PROBLEM: 'مشكلة محل',
+  OTHER: 'أخرى',
+  CONTINUE: 'متابعة التوصيل',
+  FAIL_ORDER: 'إنهاء الطلب بالفشل',
 };
 
 /** Staff may cancel until a captain has accepted the order. */
@@ -499,25 +522,28 @@ export function actorTypeLabel(actor: OpsOrderEvent['actorType']): string {
 
 export function eventNoteLabel(event: OpsOrderEvent): string {
   const note = event.note?.trim() ?? '';
-  if (!note || event.type !== 'order.item_changed') {
-    return note;
+  if (!note) {
+    return '';
   }
-  try {
-    const parsed = JSON.parse(note) as { quantity?: number; isRemoved?: boolean };
-    const parts: string[] = [];
-    if (typeof parsed.quantity === 'number') {
-      parts.push(`الكمية ${parsed.quantity}`);
+  if (event.type === 'order.item_changed') {
+    try {
+      const parsed = JSON.parse(note) as { quantity?: number; isRemoved?: boolean };
+      const parts: string[] = [];
+      if (typeof parsed.quantity === 'number') {
+        parts.push(`الكمية ${parsed.quantity}`);
+      }
+      if (parsed.isRemoved === true) {
+        parts.push('تمت الإزالة');
+      }
+      if (parsed.isRemoved === false) {
+        parts.push('تمت الاستعادة');
+      }
+      return parts.join(' · ') || note;
+    } catch {
+      return EVENT_NOTE_LABELS[note] ?? note;
     }
-    if (parsed.isRemoved === true) {
-      parts.push('تمت الإزالة');
-    }
-    if (parsed.isRemoved === false) {
-      parts.push('تمت الاستعادة');
-    }
-    return parts.join(' · ') || note;
-  } catch {
-    return note;
   }
+  return EVENT_NOTE_LABELS[note] ?? note;
 }
 
 export function paymentMethodLabel(method: PaymentMethod): string {
@@ -529,6 +555,26 @@ export function paymentMethodLabel(method: PaymentMethod): string {
     case 'WALLET':
       return 'محفظة';
   }
+}
+
+const EVENT_AT_FORMATTER = new Intl.DateTimeFormat('ar-EG', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+  hour12: true,
+});
+
+export function formatEventAt(iso: string | null | undefined): string {
+  if (!iso) {
+    return '';
+  }
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  return EVENT_AT_FORMATTER.format(date);
 }
 
 export function formatOrderAge(iso: string, now = Date.now()): string {

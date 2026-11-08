@@ -4,6 +4,7 @@ import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiErrorBody } from '../models/auth.model';
 import { Customer, CustomerPage, CustomerStatus } from '../models/customer.model';
+import { piastresToEgp } from '../models/zone.model';
 
 const CUSTOMERS_URL = `${environment.apiUrl}/v1/customers`;
 const STATUSES = new Set<CustomerStatus>(['ACTIVE', 'BLOCKED']);
@@ -14,6 +15,11 @@ interface CustomerApiRecord {
   fullName?: string | null;
   status?: string | null;
   createdAt?: string | null;
+  /** All orders for this customer. */
+  totalOrders?: number | null;
+  /** Delivered paid total in piastres (`totalSpent` / `totalPayments`). */
+  totalSpent?: number | null;
+  totalPayments?: number | null;
 }
 
 interface CustomerApiPage {
@@ -82,13 +88,23 @@ function toCustomerPage(body: CustomerApiPage): CustomerPage {
 }
 
 function toCustomer(row: CustomerApiRecord): Customer {
+  const spentPiastres = asNonNegativeInt(row.totalSpent ?? row.totalPayments);
   return {
     id: row.id,
     phone: row.phone?.trim() ?? '',
     fullName: row.fullName?.trim() ?? '',
+    totalOrders: asNonNegativeInt(row.totalOrders),
+    totalSpent: piastresToEgp(spentPiastres),
     status: asStatus(row.status),
     joinedAt: row.createdAt?.slice(0, 10) ?? '',
   };
+}
+
+function asNonNegativeInt(value: number | null | undefined): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+    return 0;
+  }
+  return Math.trunc(value);
 }
 
 function asStatus(value: string | null | undefined): CustomerStatus {

@@ -20,6 +20,43 @@
   color: var(--Combo-text-text-secondary-paragraph);
 }
 
+.period-filter__btn {
+  appearance: none;
+  margin: 0;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--Combo-text-text-secondary-paragraph);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    color: var(--Combo-text-text-default);
+    background: #f9fafb;
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #111827;
+    outline-offset: 1px;
+  }
+
+  &--active {
+    color: var(--Combo-text-text-display);
+    background: #f3f4f6;
+  }
+}
+
 .kpi-label {
   margin: 0;
   font-size: 13px;

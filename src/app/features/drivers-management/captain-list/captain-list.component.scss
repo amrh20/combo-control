@@ -221,56 +221,71 @@
     }
   }
 
-  &__actions {
+  &__menu-trigger {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  &__edit-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 7px 12px;
-    font-family: 'Alexandria', sans-serif;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--Combo-text-text-primary-paragraph);
-    background: transparent;
-    border: 1px solid var(--Combo-border-border-neutral-secondary);
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid transparent;
     border-radius: 8px;
+    background: transparent;
+    color: var(--Combo-icon-icon-neutral);
     cursor: pointer;
     transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 
-    .pi { font-size: 12px; }
+    .pi { font-size: 14px; }
 
-    &:hover {
-      background: var(--Combo-bg-background-neutral-100);
-      border-color: var(--Combo-border-border-neutral-primary);
-      color: var(--Combo-text-text-display);
+    &:hover,
+    &--open {
+      background: var(--Combo-bg-background-primary-50);
+      border-color: var(--Combo-border-border-primary-light);
+      color: var(--Combo-text-text-primary);
     }
   }
 
-  &__profile-btn {
-    display: inline-flex;
+  &__menu {
+    position: fixed;
+    inset: auto;
+    width: max-content;
+    min-width: 168px;
+    height: auto;
+    margin: 0;
+    padding: 6px;
+    overflow: visible;
+    background: var(--Combo-bg-background-white);
+    border: 1px solid var(--Combo-border-border-neutral-secondary);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 8%);
+    color: var(--Combo-text-text-default);
+  }
+
+  &__menu-item {
+    display: flex;
     align-items: center;
-    gap: 7px;
-    padding: 7px 14px;
-    font-family: 'Alexandria', sans-serif;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--Combo-text-text-primary);
-    background: transparent;
-    border: 1px solid var(--Combo-border-border-neutral-primary);
+    gap: 8px;
+    width: 100%;
+    padding: 8px 10px;
+    border: none;
     border-radius: 8px;
+    background: transparent;
+    font-family: 'Alexandria', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--Combo-text-text-default);
     text-decoration: none;
-    transition: background-color 0.15s ease, border-color 0.15s ease;
+    text-align: start;
+    cursor: pointer;
+
+    .pi {
+      font-size: 14px;
+      color: var(--Combo-icon-icon-primary);
+    }
 
     &:hover {
       background: var(--Combo-bg-background-primary-50);
-      border-color: var(--Combo-border-border-primary-light);
+      color: var(--Combo-text-text-primary);
     }
   }
 
