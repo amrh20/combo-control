@@ -7,11 +7,12 @@ import { Coupon } from '../../../core/models/coupon.model';
 import { Permission } from '../../../core/models/permission.model';
 import { AuthService } from '../../../core/services/auth.service';
 import { CouponService, couponErrorMessage } from '../../../core/services/coupon.service';
+import { ListEmptyComponent } from '../../../shared/components/list-empty/list-empty.component';
 
 @Component({
   selector: 'ctrl-coupon-list',
   standalone: true,
-  imports: [DecimalPipe, PermissionDirective, RouterLink],
+  imports: [DecimalPipe, PermissionDirective, RouterLink, ListEmptyComponent],
   templateUrl: './coupon-list.component.html',
   styleUrl: './coupon-list.component.scss',
 })

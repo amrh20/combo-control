@@ -96,13 +96,17 @@
             </tr>
           } @empty {
             <tr>
-              <td colspan="5" class="px-4 py-10 text-center text-sm text-gray-500">
+              <td colspan="5">
                 @if (loading()) {
-                  جاري تحميل الأدوار...
-                } @else if (searchQuery()) {
-                  لا توجد أدوار مطابقة للبحث.
+                  <p class="m-0 px-4 py-10 text-center text-sm text-gray-500">جاري تحميل الأدوار...</p>
                 } @else {
-                  لا توجد أدوار.
+                  <ctrl-list-empty
+                    [filtered]="!!searchQuery()"
+                    icon="pi pi-shield"
+                    title="لا توجد أدوار"
+                    hint="أنشئ دوراً وحدّد صلاحياته."
+                    filteredHint="جرّب اسماً آخر للدور."
+                  />
                 }
               </td>
             </tr>

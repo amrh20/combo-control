@@ -3,13 +3,14 @@ import { Staff, staffRoleBadgeClass, staffRoleLabel } from '../../../core/models
 import { PermissionDirective } from '../../../core/directives/permission.directive';
 import { AuthService } from '../../../core/services/auth.service';
 import { StaffService, staffErrorMessage } from '../../../core/services/staff.service';
+import { ListEmptyComponent } from '../../../shared/components/list-empty/list-empty.component';
 import { matchesSearch, readControlValue } from '../../../shared/utils/list-filter';
 import { StaffFormComponent } from '../staff-form/staff-form.component';
 
 @Component({
   selector: 'ctrl-staff-list',
   standalone: true,
-  imports: [PermissionDirective, StaffFormComponent],
+  imports: [PermissionDirective, StaffFormComponent, ListEmptyComponent],
   templateUrl: './staff-list.component.html',
 })
 export class StaffListComponent {

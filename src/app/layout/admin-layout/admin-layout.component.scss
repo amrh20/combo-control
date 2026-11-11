@@ -65,6 +65,14 @@ $mobile-bp: 991px;
       min-width: 0;
       max-width: 100%;
     }
+
+    h1,
+    h2,
+    h3,
+    p,
+    label {
+      overflow-wrap: anywhere;
+    }
   }
 
   // ── Desktop collapsed (icon rail) ────────────────

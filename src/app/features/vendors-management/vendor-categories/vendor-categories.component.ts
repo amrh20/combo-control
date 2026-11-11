@@ -11,12 +11,13 @@ import {
   isCategoryIconImage,
 } from '../../../core/services/vendor-category.service';
 import { VendorService, vendorErrorMessage } from '../../../core/services/vendor.service';
+import { ListEmptyComponent } from '../../../shared/components/list-empty/list-empty.component';
 import { CategoryFormComponent } from '../category-form/category-form.component';
 
 @Component({
   selector: 'ctrl-vendor-categories',
   standalone: true,
-  imports: [FormsModule, ToggleSwitchModule, PermissionDirective, CategoryFormComponent],
+  imports: [FormsModule, ToggleSwitchModule, PermissionDirective, CategoryFormComponent, ListEmptyComponent],
   templateUrl: './vendor-categories.component.html',
   styleUrl: './vendor-categories.component.scss',
 })

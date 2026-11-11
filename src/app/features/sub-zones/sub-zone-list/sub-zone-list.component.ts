@@ -8,6 +8,7 @@ import { RouterLink } from '@angular/router';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { PermissionDirective } from '../../../core/directives/permission.directive';
+import { ListEmptyComponent } from '../../../shared/components/list-empty/list-empty.component';
 import { HubService } from '../../../core/services/hub.service';
 import { SubZoneService } from '../../../core/services/sub-zone.service';
 import { ZoneService } from '../../../core/services/zone.service';
@@ -23,7 +24,7 @@ import {
 @Component({
   selector: 'ctrl-sub-zone-list',
   standalone: true,
-  imports: [NgClass, DecimalPipe, PermissionDirective, RouterLink, TableModule, ButtonModule, ToastModule],
+  imports: [NgClass, DecimalPipe, PermissionDirective, RouterLink, TableModule, ButtonModule, ToastModule, ListEmptyComponent],
   providers: [MessageService],
   templateUrl: './sub-zone-list.component.html',
   styleUrl: './sub-zone-list.component.scss',

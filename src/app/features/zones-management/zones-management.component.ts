@@ -6,6 +6,7 @@ import { RouterLink } from '@angular/router';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { PermissionDirective } from '../../core/directives/permission.directive';
+import { ListEmptyComponent } from '../../shared/components/list-empty/list-empty.component';
 import { HubService } from '../../core/services/hub.service';
 import { ZoneService } from '../../core/services/zone.service';
 import { SubZoneService } from '../../core/services/sub-zone.service';
@@ -21,7 +22,7 @@ import {
 @Component({
   selector: 'ctrl-zones-management',
   standalone: true,
-  imports: [DecimalPipe, NgClass, PermissionDirective, RouterLink, TableModule, ButtonModule],
+  imports: [DecimalPipe, NgClass, PermissionDirective, RouterLink, TableModule, ButtonModule, ListEmptyComponent],
   templateUrl: './zones-management.component.html',
   styleUrl: './zones-management.component.scss',
 })

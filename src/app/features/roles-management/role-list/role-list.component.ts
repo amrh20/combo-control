@@ -2,13 +2,14 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { PermissionDirective } from '../../../core/directives/permission.directive';
 import { Role, roleDescription, roleDisplayName } from '../../../core/models/role.model';
 import { RoleService } from '../../../core/services/role.service';
+import { ListEmptyComponent } from '../../../shared/components/list-empty/list-empty.component';
 import { matchesSearch, readControlValue } from '../../../shared/utils/list-filter';
 import { RoleFormComponent } from '../role-form/role-form.component';
 
 @Component({
   selector: 'ctrl-role-list',
   standalone: true,
-  imports: [PermissionDirective, RoleFormComponent],
+  imports: [PermissionDirective, RoleFormComponent, ListEmptyComponent],
   templateUrl: './role-list.component.html',
 })
 export class RoleListComponent {

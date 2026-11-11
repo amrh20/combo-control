@@ -25,12 +25,13 @@ import {
   isCustomerStatusFilter,
 } from '../../../core/models/customer.model';
 import { PermissionDirective } from '../../../core/directives/permission.directive';
+import { ListEmptyComponent } from '../../../shared/components/list-empty/list-empty.component';
 import { readControlValue } from '../../../shared/utils/list-filter';
 
 @Component({
   selector: 'ctrl-customer-list',
   standalone: true,
-  imports: [DecimalPipe, PermissionDirective, TablePagerComponent],
+  imports: [DecimalPipe, PermissionDirective, TablePagerComponent, ListEmptyComponent],
   templateUrl: './customer-list.component.html',
 })
 export class CustomerListComponent {

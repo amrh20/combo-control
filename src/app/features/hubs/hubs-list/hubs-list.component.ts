@@ -6,6 +6,7 @@ import { RouterLink } from '@angular/router';
 import { TableModule } from 'primeng/table';
 import { ButtonModule } from 'primeng/button';
 import { PermissionDirective } from '../../../core/directives/permission.directive';
+import { ListEmptyComponent } from '../../../shared/components/list-empty/list-empty.component';
 import { HubService } from '../../../core/services/hub.service';
 import { SubZoneService } from '../../../core/services/sub-zone.service';
 import { ZoneService } from '../../../core/services/zone.service';
@@ -20,7 +21,7 @@ import {
 @Component({
   selector: 'ctrl-hubs-list',
   standalone: true,
-  imports: [NgClass, PermissionDirective, RouterLink, TableModule, ButtonModule],
+  imports: [NgClass, PermissionDirective, RouterLink, TableModule, ButtonModule, ListEmptyComponent],
   templateUrl: './hubs-list.component.html',
   styleUrl: './hubs-list.component.scss',
 })

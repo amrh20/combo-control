@@ -1,0 +1,9 @@
+<div class="list-empty" [class.list-empty--filtered]="filtered()" role="status">
+  <span class="list-empty__badge" aria-hidden="true">
+    <i class="pi" [class]="filtered() ? filteredIcon() : icon()"></i>
+  </span>
+  <p class="list-empty__title">{{ filtered() ? filteredTitle() : title() }}</p>
+  @if (filtered() ? filteredHint() : hint(); as message) {
+    <p class="list-empty__hint">{{ message }}</p>
+  }
+</div>

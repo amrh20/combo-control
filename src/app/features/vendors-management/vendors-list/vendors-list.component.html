@@ -227,13 +227,17 @@
 
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="7" class="vendors-list__empty">
+          <td colspan="7">
             @if (loading()) {
-              جاري تحميل المتاجر...
-            } @else if (hasActiveFilters()) {
-              لا توجد متاجر مطابقة للفلاتر.
+              <div class="vendors-list__empty">جاري تحميل المتاجر...</div>
             } @else {
-              لا توجد متاجر.
+              <ctrl-list-empty
+                [filtered]="hasActiveFilters()"
+                icon="pi pi-shop"
+                title="لا توجد متاجر"
+                hint="أضف متجراً جديداً ليظهر في هذه القائمة."
+                filteredHint="غيّر البحث أو الفلاتر لعرض المتاجر."
+              />
             }
           </td>
         </tr>

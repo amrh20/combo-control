@@ -44,7 +44,13 @@
             </tr>
           } @else if (coupons().length === 0) {
             <tr>
-              <td colspan="7" class="coupons-list__empty">لا توجد كوبونات.</td>
+              <td colspan="7">
+                <ctrl-list-empty
+                  icon="pi pi-ticket"
+                  title="لا توجد كوبونات"
+                  hint="أنشئ كوبوناً ليظهر في هذه القائمة."
+                />
+              </td>
             </tr>
           } @else {
             @for (coupon of coupons(); track coupon.id) {

@@ -237,8 +237,14 @@
 
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="6" class="zones-management__empty">
-            {{ hasActiveFilters() ? 'لا توجد نتائج مطابقة للبحث أو التصفية.' : 'لا توجد مناطق.' }}
+          <td colspan="6">
+            <ctrl-list-empty
+              [filtered]="hasActiveFilters()"
+              icon="pi pi-map"
+              title="لا توجد مناطق"
+              hint="أنشئ منطقة جديدة لتظهر في هذه القائمة."
+              filteredHint="غيّر كلمة البحث أو حالة التصفية لعرض المناطق."
+            />
           </td>
         </tr>
       </ng-template>

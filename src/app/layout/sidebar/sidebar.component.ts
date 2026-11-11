@@ -101,6 +101,7 @@ export class SidebarComponent {
     link('الأدوار والصلاحيات', 'pi-key', '/roles', Permission.StaffRead),
     link('العملاء', 'pi-users', '/customers', Permission.CustomersRead),
     link('سجل التعديلات', 'pi-clock', '/audit-log', Permission.AuditRead),
+    link('منطقة الخطر', 'pi-exclamation-triangle', '/maintenance', Permission.StaffManage),
   ];
 
   /** Sidebar entries the signed-in user is allowed to open. */

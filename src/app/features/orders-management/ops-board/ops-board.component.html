@@ -83,14 +83,14 @@
           <p>جاري تحميل الطلبات...</p>
         </div>
       } @else if (groupedOrders().length === 0) {
-        <div class="ops-board__empty">
-          <i class="pi" [class.pi-search]="searchQuery()" [class.pi-inbox]="!searchQuery()"></i>
-          @if (searchQuery()) {
-            <p>لا توجد طلبات مطابقة لبحثك في الصفحة الحالية.</p>
-          } @else {
-            <p>لا توجد طلبات مطابقة للفلتر.</p>
-          }
-        </div>
+        <ctrl-list-empty
+          [filtered]="!!searchQuery()"
+          icon="pi pi-inbox"
+          title="لا توجد طلبات"
+          hint="الطلبات المطابقة لهذا التبويب ستظهر هنا."
+          filteredTitle="لا توجد طلبات مطابقة"
+          filteredHint="جرّب كلمة بحث أخرى في الصفحة الحالية."
+        />
       }
 
       @for (group of groupedOrders(); track group.status) {

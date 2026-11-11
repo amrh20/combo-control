@@ -13,6 +13,7 @@ import {
   isAuditEntity,
 } from '../../core/models/audit.model';
 import { AuditService } from '../../core/services/audit.service';
+import { ListEmptyComponent } from '../../shared/components/list-empty/list-empty.component';
 import { readControlValue } from '../../shared/utils/list-filter';
 
 const PAGE_SIZE = 20;
@@ -20,7 +21,7 @@ const PAGE_SIZE = 20;
 @Component({
   selector: 'ctrl-audit-log',
   standalone: true,
-  imports: [DatePipe],
+  imports: [DatePipe, ListEmptyComponent],
   templateUrl: './audit-log.component.html',
 })
 export class AuditLogComponent {

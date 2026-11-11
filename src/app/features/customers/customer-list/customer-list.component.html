@@ -28,7 +28,7 @@
       }
     </label>
 
-    <label class="flex items-center gap-2">
+    <label class="flex w-full min-w-0 items-center gap-2 sm:w-auto">
       <span class="text-xs font-semibold whitespace-nowrap text-gray-500">الحالة</span>
       <select
         class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-[13px] text-gray-800 outline-none focus:border-gray-400"
@@ -142,8 +142,15 @@
           </tr>
         } @empty {
           <tr>
-            <td colspan="6" class="px-4 py-10 text-center text-sm text-gray-500">
-              لا يوجد عملاء مطابقون للبحث.
+            <td colspan="6">
+              <ctrl-list-empty
+                [filtered]="!!searchQuery() || statusFilter() !== 'ALL'"
+                icon="pi pi-users"
+                title="لا يوجد عملاء"
+                hint="سيظهر العملاء هنا بعد تسجيلهم."
+                filteredTitle="لا يوجد عملاء مطابقون"
+                filteredHint="غيّر الاسم أو رقم الهاتف أو حالة الحساب."
+              />
             </td>
           </tr>
         }

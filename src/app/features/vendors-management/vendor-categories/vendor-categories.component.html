@@ -36,7 +36,11 @@
   @if (loading()) {
     <div class="vendor-categories__empty">جاري تحميل الفئات...</div>
   } @else if (categories().length === 0) {
-    <div class="vendor-categories__empty">لا توجد فئات.</div>
+    <ctrl-list-empty
+      icon="pi pi-th-large"
+      title="لا توجد فئات"
+      hint="أضف فئة متاجر لتظهر هنا."
+    />
   } @else {
     <div class="vendor-categories__grid">
       @for (category of categories(); track category.id) {

@@ -163,13 +163,17 @@
             </tr>
           } @empty {
             <tr>
-              <td colspan="6" class="px-4 py-10 text-center text-sm text-gray-500">
+              <td colspan="6">
                 @if (loading()) {
-                  جاري تحميل الموظفين...
-                } @else if (searchQuery()) {
-                  لا يوجد موظفون مطابقون للبحث.
+                  <p class="m-0 px-4 py-10 text-center text-sm text-gray-500">جاري تحميل الموظفين...</p>
                 } @else {
-                  لا يوجد موظفون.
+                  <ctrl-list-empty
+                    [filtered]="!!searchQuery()"
+                    icon="pi pi-id-card"
+                    title="لا يوجد موظفون"
+                    hint="أضف موظفاً ليظهر في هذه القائمة."
+                    filteredHint="جرّب اسماً أو بريداً آخر."
+                  />
                 }
               </td>
             </tr>

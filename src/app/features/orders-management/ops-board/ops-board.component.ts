@@ -3,6 +3,7 @@ import { Component, DestroyRef, computed, effect, inject, input, signal, untrack
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { EMPTY, Subject, catchError, debounceTime, forkJoin, interval, map, switchMap, tap } from 'rxjs';
 import { ComboInputComponent } from '../../../shared/components/combo-input/combo-input.component';
+import { ListEmptyComponent } from '../../../shared/components/list-empty/list-empty.component';
 import { OrderDetailsComponent } from '../../orders/order-details/order-details.component';
 import {
   CLOSED_ORDER_STATUSES,
@@ -63,7 +64,7 @@ const HISTORY_STATUS_OPTIONS: { value: BoardFilter; label: string }[] = [
 @Component({
   selector: 'ctrl-ops-board',
   standalone: true,
-  imports: [DecimalPipe, ComboInputComponent, OrderDetailsComponent],
+  imports: [DecimalPipe, ComboInputComponent, OrderDetailsComponent, ListEmptyComponent],
   templateUrl: './ops-board.component.html',
   styleUrl: './ops-board.component.scss',
 })

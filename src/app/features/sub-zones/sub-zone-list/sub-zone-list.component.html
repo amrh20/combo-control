@@ -157,11 +157,14 @@
 
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="5" class="sub-zone-list__empty">
-            <i class="pi pi-clone"></i>
-            <span>
-              {{ hasActiveFilters() ? 'لا توجد نتائج مطابقة للبحث أو التصفية.' : 'لا توجد مناطق فرعية بعد.' }}
-            </span>
+          <td colspan="5">
+            <ctrl-list-empty
+              [filtered]="hasActiveFilters()"
+              icon="pi pi-clone"
+              title="لا توجد مناطق فرعية"
+              hint="أضف منطقة فرعية داخل إحدى المناطق الرئيسية."
+              filteredHint="غيّر البحث أو المنطقة أو الحالة لعرض المناطق الفرعية."
+            />
           </td>
         </tr>
       </ng-template>

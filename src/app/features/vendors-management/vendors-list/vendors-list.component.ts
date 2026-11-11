@@ -36,6 +36,7 @@ import {
 } from '../../../core/models/vendor.model';
 import { AuthService } from '../../../core/services/auth.service';
 import { ComboInputComponent } from '../../../shared/components/combo-input/combo-input.component';
+import { ListEmptyComponent } from '../../../shared/components/list-empty/list-empty.component';
 import {
   VendorCategory,
   categoryIconSrc,
@@ -72,6 +73,7 @@ interface CategoryVisual {
     ToggleSwitchModule,
     PermissionDirective,
     ComboInputComponent,
+    ListEmptyComponent,
   ],
   templateUrl: './vendors-list.component.html',
   styleUrl: './vendors-list.component.scss',

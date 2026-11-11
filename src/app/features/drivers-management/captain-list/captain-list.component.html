@@ -158,13 +158,18 @@
 
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="9" class="drivers-list__empty">
+          <td colspan="9">
             @if (loading()) {
-              جاري تحميل الكباتن...
-            } @else if (searchQuery()) {
-              لا يوجد كباتن مطابقون لبحثك.
+              <div class="drivers-list__empty">جاري تحميل الكباتن...</div>
             } @else {
-              لا يوجد كباتن.
+              <ctrl-list-empty
+                [filtered]="!!searchQuery()"
+                icon="pi pi-users"
+                title="لا يوجد كباتن"
+                hint="أضف كابتن جديد ليظهر في هذه القائمة."
+                filteredTitle="لا يوجد كباتن مطابقون"
+                filteredHint="جرّب اسماً أو حالة أخرى."
+              />
             }
           </td>
         </tr>

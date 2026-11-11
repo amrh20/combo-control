@@ -354,6 +354,13 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/audit-log/audit-log.component').then((m) => m.AuditLogComponent),
       },
+      {
+        path: 'maintenance',
+        canActivate: [permissionGuard],
+        data: { permission: Permission.StaffManage },
+        loadComponent: () =>
+          import('./features/maintenance/danger-zone.component').then((m) => m.DangerZoneComponent),
+      },
     ],
   },
   { path: '**', redirectTo: '' },

@@ -131,8 +131,14 @@
 
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="5" class="hubs-list__empty">
-            {{ hasActiveFilters() ? 'لا توجد نتائج مطابقة للبحث أو التصفية.' : 'لا توجد شوارع أو مراكز انطلاق.' }}
+          <td colspan="5">
+            <ctrl-list-empty
+              [filtered]="hasActiveFilters()"
+              icon="pi pi-map-marker"
+              title="لا توجد شوارع أو مراكز انطلاق"
+              hint="أضف مركزاً جديداً ليظهر في هذه القائمة."
+              filteredHint="غيّر البحث أو التصفية لعرض الشوارع ومراكز الانطلاق."
+            />
           </td>
         </tr>
       </ng-template>

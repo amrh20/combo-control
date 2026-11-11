@@ -29,6 +29,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { CaptainService, captainErrorMessage } from '../../../core/services/captain.service';
 import { HubService } from '../../../core/services/hub.service';
 import { ComboInputComponent } from '../../../shared/components/combo-input/combo-input.component';
+import { ListEmptyComponent } from '../../../shared/components/list-empty/list-empty.component';
 import { matchesSearch } from '../../../shared/utils/list-filter';
 import { CaptainFormComponent } from '../captain-form/captain-form.component';
 
@@ -46,6 +47,7 @@ type CaptainRow = Captain & { hubName: string };
     PermissionDirective,
     ComboInputComponent,
     CaptainFormComponent,
+    ListEmptyComponent,
   ],
   providers: [MessageService],
   templateUrl: './captain-list.component.html',
